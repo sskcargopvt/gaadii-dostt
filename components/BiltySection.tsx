@@ -1,10 +1,9 @@
 
-import React, { useState } from 'react';
-import { ExternalLink, FileText, Download, Upload, Plus, Search, Filter } from 'lucide-react';
+import React from 'react';
+import { ExternalLink, FileText, Download, Upload, Plus, Search, Filter, ShieldCheck } from 'lucide-react';
 
 const BiltySection: React.FC<{ t: any }> = ({ t }) => {
-  const [biltyUrl, setBiltyUrl] = useState('https://biltybook.gadidost.com');
-  const [showConfig, setShowConfig] = useState(false);
+  const biltyUrl = 'https://www.biltybook.online/';
 
   const mockBilties = [
     { id: 'BL-8821', customer: 'Shree Cement Ltd', date: '22 Oct 2023', status: 'Delivered', weight: '22T' },
@@ -17,61 +16,52 @@ const BiltySection: React.FC<{ t: any }> = ({ t }) => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 className="text-3xl font-bold">{t.bilty}</h2>
-          <p className="text-slate-500">Secure digital document management system.</p>
+          <p className="text-slate-500 dark:text-slate-400">Secure digital document management system.</p>
         </div>
-        <div className="flex gap-2">
-          <button 
-            onClick={() => window.open(biltyUrl, '_blank')}
-            className="bg-amber-500 text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-amber-600 transition-colors shadow-lg"
+        <div className="flex gap-3">
+          <a 
+            href={biltyUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-amber-500 text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-amber-600 transition-all shadow-lg shadow-amber-500/20 active:scale-95"
           >
             <ExternalLink size={18} />
             Open Bilty Software
-          </button>
-          <button 
-            onClick={() => setShowConfig(!showConfig)}
-            className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 rounded-2xl text-slate-600 dark:text-slate-400"
-          >
-            Config
-          </button>
+          </a>
         </div>
       </div>
 
-      {showConfig && (
-        <div className="bg-slate-900 text-white p-6 rounded-3xl animate-in zoom-in duration-300">
-          <label className="text-sm font-medium mb-2 block">Enterprise Bilty Software URL</label>
-          <div className="flex gap-2">
-            <input 
-              type="url" 
-              value={biltyUrl}
-              onChange={(e) => setBiltyUrl(e.target.value)}
-              className="flex-1 bg-slate-800 border-0 rounded-xl p-3 text-sm focus:ring-2 focus:ring-amber-500" 
-            />
-            <button className="bg-amber-500 px-6 rounded-xl font-bold text-sm">Update</button>
-          </div>
-          <p className="text-xs text-slate-400 mt-2 italic">SSO tokens will be passed to this domain for seamless authentication.</p>
-        </div>
-      )}
-
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         <div className="lg:col-span-1 space-y-4">
-          <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-100 dark:border-slate-700">
+          <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm">
             <h3 className="font-bold mb-4 flex items-center gap-2">
               <Plus className="text-amber-500" size={18} />
               Quick Actions
             </h3>
             <div className="space-y-3">
-              <button className="w-full flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-900 text-sm font-medium hover:bg-amber-50 hover:text-amber-600 transition-all">
+              <button className="w-full flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-900 text-sm font-medium hover:bg-amber-50 hover:text-amber-600 transition-all border border-transparent hover:border-amber-200">
                 <FileText size={16} /> New Digital Bilty
               </button>
-              <button className="w-full flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-900 text-sm font-medium hover:bg-amber-50 hover:text-amber-600 transition-all">
+              <button className="w-full flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-900 text-sm font-medium hover:bg-amber-50 hover:text-amber-600 transition-all border border-transparent hover:border-amber-200">
                 <Upload size={16} /> Bulk Import CSV
               </button>
-              <button className="w-full flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-900 text-sm font-medium hover:bg-amber-50 hover:text-amber-600 transition-all">
+              <button className="w-full flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-900 text-sm font-medium hover:bg-amber-50 hover:text-amber-600 transition-all border border-transparent hover:border-amber-200">
                 <Download size={16} /> Archive Logs
               </button>
             </div>
           </div>
-          <div className="bg-emerald-500 rounded-3xl p-6 text-white text-center">
+          
+          <div className="bg-slate-900 dark:bg-amber-500/10 p-6 rounded-3xl border border-slate-800 dark:border-amber-500/20">
+            <div className="flex items-center gap-2 text-amber-500 mb-2">
+              <ShieldCheck size={16} />
+              <span className="text-[10px] font-black uppercase tracking-widest">Enterprise Security</span>
+            </div>
+            <p className="text-white dark:text-amber-200 text-xs leading-relaxed">
+              Your documentation is encrypted and synced with <strong>BiltyBook Online</strong> for legal compliance.
+            </p>
+          </div>
+
+          <div className="bg-emerald-500 rounded-3xl p-6 text-white text-center shadow-lg shadow-emerald-500/20">
             <p className="text-xs uppercase font-black tracking-widest opacity-80 mb-2">Paper Saved</p>
             <p className="text-4xl font-black">12.5k</p>
             <p className="text-xs mt-2">Bilty pages digitized this month</p>
@@ -83,9 +73,13 @@ const BiltySection: React.FC<{ t: any }> = ({ t }) => {
             <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex flex-col md:flex-row justify-between gap-4">
               <div className="relative flex-1 max-w-md">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                <input type="text" placeholder="Search by Bilty ID or Customer..." className="w-full bg-slate-50 dark:bg-slate-900 border-0 rounded-2xl p-3 pl-12 focus:ring-2 focus:ring-amber-500 text-sm" />
+                <input 
+                  type="text" 
+                  placeholder="Search by Bilty ID or Customer..." 
+                  className="w-full bg-slate-50 dark:bg-slate-900 border-0 rounded-2xl p-3 pl-12 focus:ring-2 focus:ring-amber-500 text-sm" 
+                />
               </div>
-              <button className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-slate-100 dark:bg-slate-700 font-bold text-sm">
+              <button className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-slate-100 dark:bg-slate-700 font-bold text-sm hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
                 <Filter size={18} /> Filters
               </button>
             </div>
@@ -103,7 +97,7 @@ const BiltySection: React.FC<{ t: any }> = ({ t }) => {
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {mockBilties.map((b) => (
-                    <tr key={b.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/20 transition-colors">
+                    <tr key={b.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/20 transition-colors group">
                       <td className="px-6 py-4 font-bold text-amber-600">{b.id}</td>
                       <td className="px-6 py-4 text-sm font-semibold">{b.customer}</td>
                       <td className="px-6 py-4 text-sm text-slate-500">{b.date}</td>
@@ -116,7 +110,7 @@ const BiltySection: React.FC<{ t: any }> = ({ t }) => {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <button className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-400 hover:text-amber-500">
+                        <button className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-400 hover:text-amber-500 transition-colors">
                           <Download size={18} />
                         </button>
                       </td>
@@ -126,7 +120,9 @@ const BiltySection: React.FC<{ t: any }> = ({ t }) => {
               </table>
             </div>
             <div className="p-4 bg-slate-50 dark:bg-slate-900 text-center">
-              <button className="text-sm font-bold text-slate-500 hover:text-amber-600 underline">View All Documentation History</button>
+              <button className="text-sm font-bold text-slate-500 hover:text-amber-600 underline transition-colors">
+                View All Documentation History
+              </button>
             </div>
           </div>
         </div>
