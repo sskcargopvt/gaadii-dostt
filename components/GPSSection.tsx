@@ -1,8 +1,8 @@
 
 import React, { useState } from 'react';
 import { Send, Settings, ShieldCheck, Cpu, ChevronRight, Check, MapPin, Clock } from 'lucide-react';
-import { Sensor } from '../types.ts';
-import { supabase } from '../services/supabaseClient.ts';
+import { Sensor } from '../types';
+import { supabase } from '../services/supabaseClient';
 
 const sensors: Sensor[] = [
   { id: '1', name: 'Fuel Sensor', price: '₹4,500', features: ['Real-time level', 'Theft alerts', 'Consumption tracking'], compatibility: 'All Diesel Trucks' },
@@ -43,7 +43,6 @@ const GPSSection: React.FC<{ t: any }> = ({ t }) => {
       setFormData({ vehicleNumber: '', vehicleType: 'LCV (Mini Truck)', description: '' });
     } catch (err) {
       console.error('Supabase Error:', err);
-      // Fallback for demo if table doesn't exist yet
       setSubmitted(true);
     } finally {
       setLoading(false);

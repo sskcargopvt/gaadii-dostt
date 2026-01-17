@@ -11,7 +11,7 @@ import {
   MapPin,
   Clock
 } from 'lucide-react';
-import { AppPanel } from '../types.ts';
+import { AppPanel } from '../types';
 
 interface DashboardHomeProps {
   onNavigate: (panel: AppPanel) => void;

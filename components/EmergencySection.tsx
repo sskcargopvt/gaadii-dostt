@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Truck, Fuel, Wrench, CircleDashed, Phone, MessageSquare, MapPin, Navigation, Receipt, CheckCircle2, ChevronRight } from 'lucide-react';
-import { supabase } from '../services/supabaseClient.ts';
+import { supabase } from '../services/supabaseClient';
 
 const EmergencySection: React.FC<{ t: any }> = ({ t }) => {
   const [step, setStep] = useState<'selection' | 'tracking' | 'bill'>('selection');
@@ -33,7 +33,6 @@ const EmergencySection: React.FC<{ t: any }> = ({ t }) => {
     setSelectedType(type);
     
     try {
-      // Log emergency to Supabase
       await supabase
         .from('emergency_requests')
         .insert([{

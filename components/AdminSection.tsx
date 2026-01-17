@@ -25,7 +25,7 @@ import {
   Line,
   Cell
 } from 'recharts';
-import { supabase } from '../services/supabaseClient.ts';
+import { supabase } from '../services/supabaseClient';
 
 const data = [
   { name: 'Mon', revenue: 45000, bookings: 12 },
@@ -44,7 +44,6 @@ const AdminSection: React.FC<{ t: any }> = ({ t }) => {
     const checkSupabase = async () => {
       try {
         const { error } = await supabase.from('gps_requests').select('id').limit(1);
-        // Supabase might return error if table is missing, but if URL works we consider connected for UI
         if (error && error.message.includes('fetch')) {
           setDbStatus('error');
         } else {
@@ -83,7 +82,6 @@ const AdminSection: React.FC<{ t: any }> = ({ t }) => {
         </div>
       </div>
 
-      {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
           { label: "Active Users", value: "2,481", icon: Users, trend: "+12%", color: "blue" },

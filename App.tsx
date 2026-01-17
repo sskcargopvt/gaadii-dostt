@@ -16,15 +16,15 @@ import {
   User,
   Activity
 } from 'lucide-react';
-import { translations } from './i18n.ts';
-import { AppPanel, Language } from './types.ts';
-import GPSSection from './components/GPSSection.tsx';
-import EmergencySection from './components/EmergencySection.tsx';
-import BookingSection from './components/BookingSection.tsx';
-import CalculatorSection from './components/CalculatorSection.tsx';
-import BiltySection from './components/BiltySection.tsx';
-import AdminSection from './components/AdminSection.tsx';
-import DashboardHome from './components/DashboardHome.tsx';
+import { translations } from './i18n';
+import { AppPanel, Language } from './types';
+import GPSSection from './components/GPSSection';
+import EmergencySection from './components/EmergencySection';
+import BookingSection from './components/BookingSection';
+import CalculatorSection from './components/CalculatorSection';
+import BiltySection from './components/BiltySection';
+import AdminSection from './components/AdminSection';
+import DashboardHome from './components/DashboardHome';
 
 const App: React.FC = () => {
   const [activePanel, setActivePanel] = useState<AppPanel>(AppPanel.DASHBOARD);

@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Calculator, Info, Zap, Map, Fuel, DollarSign, BrainCircuit } from 'lucide-react';
-import { getLoadEstimation } from '../services/geminiService.ts';
+import { getLoadEstimation } from '../services/geminiService';
 
 const CalculatorSection: React.FC<{ t: any }> = ({ t }) => {
   const [material, setMaterial] = useState('');
