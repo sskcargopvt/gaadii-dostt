@@ -1,6 +1,8 @@
 
 export type Language = 'en' | 'hi';
 
+export type UserRole = 'customer' | 'transporter';
+
 export enum AppPanel {
   DASHBOARD = 'dashboard',
   GPS = 'gps',
@@ -9,6 +11,12 @@ export enum AppPanel {
   BOOKING = 'booking',
   CALCULATOR = 'calculator',
   ADMIN = 'admin'
+}
+
+export interface User {
+  email: string;
+  role: UserRole;
+  name: string;
 }
 
 export interface Sensor {

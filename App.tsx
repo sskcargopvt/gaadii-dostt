@@ -13,11 +13,12 @@ import {
   Languages, 
   Moon, 
   Sun,
-  User,
-  Activity
+  User as UserIcon,
+  Activity,
+  LogOut
 } from 'lucide-react';
 import { translations } from './i18n';
-import { AppPanel, Language } from './types';
+import { AppPanel, Language, User } from './types';
 import GPSSection from './components/GPSSection';
 import EmergencySection from './components/EmergencySection';
 import BookingSection from './components/BookingSection';
@@ -25,12 +26,14 @@ import CalculatorSection from './components/CalculatorSection';
 import BiltySection from './components/BiltySection';
 import AdminSection from './components/AdminSection';
 import DashboardHome from './components/DashboardHome';
+import AuthSection from './components/AuthSection';
 
 const App: React.FC = () => {
   const [activePanel, setActivePanel] = useState<AppPanel>(AppPanel.DASHBOARD);
   const [lang, setLang] = useState<Language>('en');
   const [darkMode, setDarkMode] = useState<boolean>(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
+  const [user, setUser] = useState<User | null>(null);
 
   const t = useMemo(() => translations[lang], [lang]);
 
@@ -55,6 +58,16 @@ const App: React.FC = () => {
     { id: AppPanel.ADMIN, label: t.admin, icon: Activity },
   ];
 
+  const handleLogin = (userData: User) => {
+    setUser(userData);
+    setActivePanel(AppPanel.DASHBOARD);
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    setIsSidebarOpen(false);
+  };
+
   const renderContent = () => {
     switch (activePanel) {
       case AppPanel.DASHBOARD: return <DashboardHome onNavigate={setActivePanel} t={t} />;
@@ -67,6 +80,10 @@ const App: React.FC = () => {
       default: return <DashboardHome onNavigate={setActivePanel} t={t} />;
     }
   };
+
+  if (!user) {
+    return <AuthSection onLogin={handleLogin} t={t} />;
+  }
 
   return (
     <div className={`min-h-screen flex flex-col ${darkMode ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'} transition-colors duration-300`}>
@@ -103,8 +120,14 @@ const App: React.FC = () => {
           >
             {darkMode ? <Sun size={18} /> : <Moon size={18} />}
           </button>
-          <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 border border-slate-300/50 dark:border-slate-600/50 flex items-center justify-center overflow-hidden">
-            <User size={16} className="text-slate-500" />
+          <div className="flex items-center gap-3 ml-2 border-l border-slate-200 dark:border-slate-700 pl-4">
+             <div className="hidden sm:block text-right">
+                <p className="text-xs font-black leading-none">{user.name}</p>
+                <p className="text-[10px] text-amber-500 font-bold uppercase tracking-tighter">{user.role}</p>
+             </div>
+             <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 border border-slate-300/50 dark:border-slate-600/50 flex items-center justify-center overflow-hidden">
+               <UserIcon size={16} className="text-slate-500" />
+             </div>
           </div>
         </div>
       </header>
@@ -142,10 +165,19 @@ const App: React.FC = () => {
             ))}
           </nav>
 
-          <div className="mt-auto p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700/50">
-            <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mb-1">Partner Profile</p>
-            <p className="text-sm font-bold truncate">Rajesh Transport Co.</p>
-            <p className="text-[10px] text-slate-500">ID: GD-88219</p>
+          <div className="mt-auto space-y-3">
+            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700/50">
+              <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mb-1">Partner Profile</p>
+              <p className="text-sm font-bold truncate">{user.name}</p>
+              <p className="text-[10px] text-slate-500 uppercase font-bold">{user.role}</p>
+            </div>
+            <button 
+              onClick={handleLogout}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all"
+            >
+              <LogOut size={18} />
+              Logout
+            </button>
           </div>
         </aside>
 
