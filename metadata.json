@@ -1,0 +1,8 @@
+{
+  "name": "Gadi Dost - Indian Logistics Platform",
+  "description": "A comprehensive production-ready logistics and transport ecosystem for fleet owners and transporters, featuring GPS management, emergency services, truck booking, and digital bilty management.",
+  "requestFramePermissions": [
+    "camera",
+    "geolocation"
+  ]
+}
