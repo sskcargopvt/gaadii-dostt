@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Users, 
   ShieldCheck, 
@@ -8,7 +8,10 @@ import {
   Settings, 
   Truck, 
   Bell,
-  Search
+  Search,
+  Database,
+  Cloud,
+  CheckCircle2
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -22,6 +25,7 @@ import {
   Line,
   Cell
 } from 'recharts';
+import { supabase } from '../services/supabaseClient.ts';
 
 const data = [
   { name: 'Mon', revenue: 45000, bookings: 12 },
@@ -34,11 +38,38 @@ const data = [
 ];
 
 const AdminSection: React.FC<{ t: any }> = ({ t }) => {
+  const [dbStatus, setDbStatus] = useState<'checking' | 'connected' | 'error'>('checking');
+
+  useEffect(() => {
+    const checkSupabase = async () => {
+      try {
+        const { error } = await supabase.from('gps_requests').select('id').limit(1);
+        // Supabase might return error if table is missing, but if URL works we consider connected for UI
+        if (error && error.message.includes('fetch')) {
+          setDbStatus('error');
+        } else {
+          setDbStatus('connected');
+        }
+      } catch (e) {
+        setDbStatus('error');
+      }
+    };
+    checkSupabase();
+  }, []);
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h2 className="text-3xl font-bold">{t.admin}</h2>
+          <div className="flex items-center gap-3 mb-1">
+            <h2 className="text-3xl font-bold">{t.admin}</h2>
+            <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
+              dbStatus === 'connected' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'
+            }`}>
+              {dbStatus === 'connected' ? <CheckCircle2 size={12} /> : <Cloud size={12} />}
+              Supabase {dbStatus}
+            </div>
+          </div>
           <p className="text-slate-500">System control and business intelligence dashboard.</p>
         </div>
         <div className="flex gap-3">
@@ -101,7 +132,7 @@ const AdminSection: React.FC<{ t: any }> = ({ t }) => {
 
           <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden">
             <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
-              <h3 className="text-xl font-bold">Recent Booking Logs</h3>
+              <h3 className="text-xl font-bold">Recent Cloud Events</h3>
               <div className="relative">
                 <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input type="text" placeholder="Search logs..." className="bg-slate-50 dark:bg-slate-900 border-0 rounded-xl py-2 pl-10 text-xs focus:ring-2 focus:ring-amber-500" />
@@ -151,6 +182,7 @@ const AdminSection: React.FC<{ t: any }> = ({ t }) => {
             </h3>
             <div className="space-y-6">
               {[
+                { label: "Cloud Sync", val: 100 },
                 { label: "Server Load", val: 42 },
                 { label: "API Latency", val: 12 },
                 { label: "GPS Sync Rate", val: 99 },

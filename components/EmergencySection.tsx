@@ -1,11 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { Truck, Fuel, Wrench, CircleDashed, Phone, MessageSquare, MapPin, Navigation, Receipt, CheckCircle2, ChevronRight } from 'lucide-react';
+import { supabase } from '../services/supabaseClient.ts';
 
 const EmergencySection: React.FC<{ t: any }> = ({ t }) => {
   const [step, setStep] = useState<'selection' | 'tracking' | 'bill'>('selection');
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [eta, setEta] = useState(15);
+  const [loading, setLoading] = useState(false);
 
   const emergencyTypes = [
     { id: 'tow', label: t.towTruck, icon: Truck, color: "bg-orange-500" },
@@ -26,10 +28,27 @@ const EmergencySection: React.FC<{ t: any }> = ({ t }) => {
     return () => clearInterval(interval);
   }, [step, eta]);
 
-  const handleRequest = (type: string) => {
+  const handleRequest = async (type: string) => {
+    setLoading(true);
     setSelectedType(type);
-    setStep('tracking');
-    setEta(15);
+    
+    try {
+      // Log emergency to Supabase
+      await supabase
+        .from('emergency_requests')
+        .insert([{
+          type: type,
+          status: 'assigned',
+          eta: 15,
+          location: 'Auto-detected via Browser'
+        }]);
+    } catch (err) {
+      console.error('Logging failed:', err);
+    } finally {
+      setLoading(false);
+      setStep('tracking');
+      setEta(15);
+    }
   };
 
   return (
@@ -42,7 +61,7 @@ const EmergencySection: React.FC<{ t: any }> = ({ t }) => {
         {step === 'selection' && (
           <div className="hidden sm:flex items-center gap-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-4 py-2 rounded-full font-bold">
             <span className="w-2 h-2 bg-red-600 rounded-full animate-pulse" />
-            24/7 Operations Active
+            24/7 Cloud Support Active
           </div>
         )}
       </div>
@@ -55,8 +74,9 @@ const EmergencySection: React.FC<{ t: any }> = ({ t }) => {
               {emergencyTypes.map((item) => (
                 <button
                   key={item.id}
+                  disabled={loading}
                   onClick={() => handleRequest(item.id)}
-                  className="flex flex-col items-center gap-4 p-6 rounded-3xl bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all group border-2 border-transparent hover:border-red-500"
+                  className="flex flex-col items-center gap-4 p-6 rounded-3xl bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all group border-2 border-transparent hover:border-red-500 disabled:opacity-50"
                 >
                   <div className={`${item.color} p-5 rounded-2xl text-white shadow-lg shadow-${item.color.split('-')[1]}-200/50`}>
                     <item.icon size={32} />
