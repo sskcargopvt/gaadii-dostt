@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Send, Settings, ShieldCheck, Cpu, ChevronRight, Check, MapPin, Clock } from 'lucide-react';
-import { Sensor } from '../types';
+import { Sensor } from '../types.ts';
 
 const sensors: Sensor[] = [
   { id: '1', name: 'Fuel Sensor', price: '₹4,500', features: ['Real-time level', 'Theft alerts', 'Consumption tracking'], compatibility: 'All Diesel Trucks' },

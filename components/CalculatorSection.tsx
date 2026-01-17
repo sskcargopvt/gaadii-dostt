@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Calculator, Info, Zap, Map, Fuel, DollarSign, BrainCircuit } from 'lucide-react';
-import { getLoadEstimation } from '../services/geminiService';
+import { getLoadEstimation } from '../services/geminiService.ts';
 
 const CalculatorSection: React.FC<{ t: any }> = ({ t }) => {
   const [material, setMaterial] = useState('');
@@ -15,9 +15,14 @@ const CalculatorSection: React.FC<{ t: any }> = ({ t }) => {
     if (!material || !weight || !distance) return;
     
     setLoading(true);
-    const result = await getLoadEstimation(material, Number(weight), Number(distance));
-    setEstimate(result);
-    setLoading(false);
+    try {
+      const result = await getLoadEstimation(material, Number(weight), Number(distance));
+      setEstimate(result);
+    } catch (error) {
+      console.error("Calculation failed:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

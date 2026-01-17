@@ -1,14 +1,13 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
-// Initialize the Google GenAI client using the API key directly from environment variables.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
 /**
  * Calculates a logistics estimate for transporting materials using Gemini 3 Pro.
- * Gemini 3 Pro is selected for its superior reasoning capabilities in logistics and STEM tasks.
  */
 export const getLoadEstimation = async (material: string, weight: number, distance: number) => {
+  // Initialize AI client inside function to ensure environment variables are present
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-pro-preview",
@@ -35,7 +34,6 @@ export const getLoadEstimation = async (material: string, weight: number, distan
       }
     });
 
-    // Access the text property directly as per latest SDK documentation.
     const text = response.text || '{}';
     return JSON.parse(text);
   } catch (error) {
@@ -46,7 +44,7 @@ export const getLoadEstimation = async (material: string, weight: number, distan
       estimatedCost: distance * 40 * (weight / 10),
       fuelEstimate: distance * 15,
       tollEstimate: distance * 5,
-      reasoning: "Estimated based on standard Indian logistics rates."
+      reasoning: "Estimated based on standard Indian logistics rates (API Fallback)."
     };
   }
 };
