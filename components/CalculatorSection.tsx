@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Calculator, Info, Zap, Map, Fuel, DollarSign, BrainCircuit } from 'lucide-react';
+import { Calculator, Info, Zap, Map, Fuel, DollarSign, BrainCircuit, AlertTriangle } from 'lucide-react';
 import { getLoadEstimation } from '../services/geminiService';
 
 const CalculatorSection: React.FC<{ t: any }> = ({ t }) => {
@@ -9,15 +9,19 @@ const CalculatorSection: React.FC<{ t: any }> = ({ t }) => {
   const [distance, setDistance] = useState<number | string>('');
   const [loading, setLoading] = useState(false);
   const [estimate, setEstimate] = useState<any>(null);
+  const [estimateSource, setEstimateSource] = useState<'ai' | 'fallback' | null>(null);
 
   const handleCalculate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!material || !weight || !distance) return;
     
     setLoading(true);
+    setEstimate(null);
+    setEstimateSource(null);
     try {
       const result = await getLoadEstimation(material, Number(weight), Number(distance));
-      setEstimate(result);
+      setEstimate(result.data);
+      setEstimateSource(result.source);
     } catch (error) {
       console.error("Calculation failed:", error);
     } finally {
@@ -74,12 +78,12 @@ const CalculatorSection: React.FC<{ t: any }> = ({ t }) => {
             </div>
             <button 
               type="submit" 
-              className="w-full bg-slate-900 dark:bg-amber-500 text-white py-4 rounded-2xl font-bold text-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+              className="w-full bg-slate-900 dark:bg-amber-500 text-white dark:text-slate-900 py-4 rounded-2xl font-bold text-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
               disabled={loading}
             >
               {loading ? (
                 <>
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white dark:border-slate-900/30 dark:border-t-slate-900 rounded-full animate-spin" />
                   Analyzing with AI...
                 </>
               ) : (
@@ -111,10 +115,10 @@ const CalculatorSection: React.FC<{ t: any }> = ({ t }) => {
             </div>
           ) : estimate ? (
             <div className="space-y-6 animate-in fade-in slide-in-from-right duration-700">
-              <div className="bg-amber-500 rounded-3xl p-8 text-white shadow-xl shadow-amber-500/20">
+              <div className={`rounded-3xl p-8 text-white shadow-xl ${estimateSource === 'ai' ? 'bg-amber-500 shadow-amber-500/20' : 'bg-slate-700'}`}>
                 <div className="flex justify-between items-start mb-6">
                   <div>
-                    <p className="text-amber-100 text-sm font-bold uppercase tracking-wider">Estimated Total Cost</p>
+                    <p className="text-sm font-bold uppercase tracking-wider">{estimateSource === 'ai' ? 'AI Estimated Cost' : 'Standard Estimated Cost'}</p>
                     <h3 className="text-5xl font-black">₹{estimate.estimatedCost.toLocaleString()}</h3>
                   </div>
                   <div className="bg-white/20 p-3 rounded-2xl backdrop-blur-sm">
@@ -140,12 +144,12 @@ const CalculatorSection: React.FC<{ t: any }> = ({ t }) => {
                 </div>
               </div>
 
-              <div className="bg-slate-900 p-8 rounded-3xl text-white">
-                <h4 className="text-lg font-bold mb-3 flex items-center gap-2">
-                   <BrainCircuit size={18} className="text-amber-500" />
-                   AI Analysis
+              <div className={`${estimateSource === 'ai' ? 'bg-slate-900' : 'bg-amber-50 dark:bg-amber-900/10'} p-8 rounded-3xl`}>
+                <h4 className={`text-lg font-bold mb-3 flex items-center gap-2 ${estimateSource === 'ai' ? 'text-white' : 'text-amber-800 dark:text-amber-400'}`}>
+                   {estimateSource === 'ai' ? <BrainCircuit size={18} className="text-amber-500" /> : <AlertTriangle size={18} className="text-amber-500" />}
+                   {estimateSource === 'ai' ? 'AI Analysis' : 'Standard Estimate Note'}
                 </h4>
-                <p className="text-slate-400 text-sm leading-relaxed">
+                <p className={`text-sm leading-relaxed ${estimateSource === 'ai' ? 'text-slate-400' : 'text-amber-700 dark:text-amber-500'}`}>
                   {estimate.reasoning}
                 </p>
               </div>
