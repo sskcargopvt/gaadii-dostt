@@ -1,7 +1,7 @@
 
 export type Language = 'en' | 'hi';
 
-export type UserRole = 'customer' | 'transporter';
+export type UserRole = 'customer' | 'transporter' | 'admin';
 
 export enum AppPanel {
   DASHBOARD = 'dashboard',
@@ -14,6 +14,7 @@ export enum AppPanel {
 }
 
 export interface User {
+  id?: string;
   email: string;
   role: UserRole;
   name: string;

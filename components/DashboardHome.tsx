@@ -8,90 +8,91 @@ import {
   Calculator, 
   ArrowRight,
   TrendingUp,
-  MapPin,
-  Clock
+  Clock,
+  ChevronRight
 } from 'lucide-react';
-import { AppPanel } from '../types';
+import { AppPanel, User } from '../types';
 
 interface DashboardHomeProps {
   onNavigate: (panel: AppPanel) => void;
   t: any;
+  user: User;
 }
 
-const DashboardHome: React.FC<DashboardHomeProps> = ({ onNavigate, t }) => {
+const DashboardHome: React.FC<DashboardHomeProps> = ({ onNavigate, t, user }) => {
   const cards = [
-    { id: AppPanel.GPS, title: t.gps, icon: Navigation, color: "bg-blue-500", desc: "Track, monitor and upgrade sensors." },
-    { id: AppPanel.EMERGENCY, title: t.emergency, icon: ShieldAlert, color: "bg-red-500", desc: "Immediate roadside assistance 24/7." },
-    { id: AppPanel.BOOKING, title: t.booking, icon: Truck, color: "bg-amber-500", desc: "Live Uber-like truck bookings." },
-    { id: AppPanel.BILTY, title: t.bilty, icon: FileText, color: "bg-emerald-500", desc: "Manage digital bilty and documents." },
-    { id: AppPanel.CALCULATOR, title: t.calculator, icon: Calculator, color: "bg-purple-500", desc: "Cost and load estimations." },
+    { id: AppPanel.GPS, title: t.gps, icon: Navigation, color: "from-blue-700 to-indigo-600", desc: "Track fleet and monitor vehicle sensors." },
+    { id: AppPanel.EMERGENCY, title: t.emergency, icon: ShieldAlert, color: "from-red-700 to-orange-600", desc: "Instant roadside dispatch within 30 mins." },
+    { id: AppPanel.BOOKING, title: t.booking, icon: Truck, color: "from-orange-600 to-amber-500", desc: "Real-time truck load marketplace." },
+    { id: AppPanel.BILTY, title: t.bilty, icon: FileText, color: "from-emerald-700 to-teal-600", desc: "Secure digital document control center." },
+    { id: AppPanel.CALCULATOR, title: t.calculator, icon: Calculator, color: "from-purple-700 to-indigo-600", desc: "AI-powered trip cost estimations." },
   ];
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div className="space-y-12 animate-in fade-in duration-500">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h2 className="text-2xl font-bold">{t.welcome}</h2>
-          <p className="text-slate-500 dark:text-slate-400">{t.tagline}</p>
-        </div>
-        <div className="flex gap-4">
-          <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex items-center gap-3">
-            <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded-lg">
-              <TrendingUp className="text-green-600 dark:text-green-400" size={20} />
-            </div>
-            <div>
-              <p className="text-xs text-slate-500">Active Trucks</p>
-              <p className="text-xl font-bold">12 / 15</p>
-            </div>
-          </div>
-          <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex items-center gap-3">
-            <div className="bg-amber-100 dark:bg-amber-900/30 p-2 rounded-lg">
-              <Clock className="text-amber-600 dark:text-amber-400" size={20} />
-            </div>
-            <div>
-              <p className="text-xs text-slate-500">Pending Trips</p>
-              <p className="text-xl font-bold">4</p>
-            </div>
-          </div>
+          <h2 className="text-6xl font-black tracking-tighter text-slate-950 dark:text-white uppercase leading-none mb-2">{t.welcomeUser.replace('{name}', user.name)}</h2>
+          <p className="text-slate-500 dark:text-slate-400 text-2xl font-bold tracking-tight">{t.tagline}</p>
         </div>
       </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+          <div className="bg-slate-950 text-white p-10 rounded-[48px] shadow-2xl flex items-center gap-8 group hover:scale-[1.02] transition-transform cursor-pointer">
+            <div className="bg-orange-500 p-6 rounded-[32px] shadow-2xl shadow-orange-500/20">
+              <TrendingUp className="text-white" size={42} strokeWidth={3} />
+            </div>
+            <div>
+              <p className="text-sm text-orange-500 font-black uppercase tracking-[0.2em] mb-2">Fleet Status</p>
+              <p className="text-5xl font-black">12 / 15 <span className="text-lg opacity-40 font-medium ml-2">RUNNING</span></p>
+            </div>
+            <ChevronRight className="ml-auto text-orange-500 group-hover:translate-x-2 transition-transform" size={32} strokeWidth={3} />
+          </div>
+          <div className="bg-white dark:bg-slate-900 text-slate-950 dark:text-white p-10 rounded-[48px] shadow-2xl border-4 border-slate-950 dark:border-slate-800 flex items-center gap-8 group hover:scale-[1.02] transition-transform cursor-pointer">
+            <div className="bg-slate-950 dark:bg-slate-800 p-6 rounded-[32px] shadow-2xl">
+              <Clock className="text-white" size={42} strokeWidth={3} />
+            </div>
+            <div>
+              <p className="text-sm text-slate-400 font-black uppercase tracking-[0.2em] mb-2">Pending Jobs</p>
+              <p className="text-5xl font-black text-slate-950 dark:text-white">04 <span className="text-lg opacity-40 font-medium ml-2">TASKS</span></p>
+            </div>
+            <ChevronRight className="ml-auto text-slate-300 group-hover:translate-x-2 transition-transform" size={32} strokeWidth={3} />
+          </div>
+      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
         {cards.map((card) => (
           <button
             key={card.id}
             onClick={() => onNavigate(card.id)}
-            className="group relative bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 hover:border-amber-500 transition-all text-left overflow-hidden"
+            className="group relative bg-white dark:bg-slate-900 p-10 rounded-[56px] shadow-2xl border-2 border-slate-100 dark:border-slate-800 hover:border-slate-950 dark:hover:border-orange-500 transition-all text-left overflow-hidden hover:-translate-y-3 duration-500"
           >
-            <div className={`${card.color} w-14 h-14 rounded-2xl flex items-center justify-center text-white mb-6 group-hover:scale-110 transition-transform`}>
-              <card.icon size={30} />
+            <div className={`bg-gradient-to-br ${card.color} w-24 h-24 rounded-[32px] flex items-center justify-center text-white mb-10 shadow-2xl group-hover:scale-110 group-hover:rotate-6 transition-transform duration-500`}>
+              <card.icon size={48} strokeWidth={3} />
             </div>
-            <h3 className="text-xl font-bold mb-2">{card.title}</h3>
-            <p className="text-slate-500 dark:text-slate-400 text-sm line-clamp-2 mb-6">{card.desc}</p>
-            <div className="flex items-center text-amber-600 dark:text-amber-400 font-semibold text-sm">
-              Open Panel <ArrowRight size={16} className="ml-2 group-hover:translate-x-1 transition-transform" />
-            </div>
-            <div className="absolute -right-4 -bottom-4 text-slate-100 dark:text-slate-700/30 opacity-20 transform -rotate-12 group-hover:scale-110 transition-transform">
-              <card.icon size={120} />
+            <h3 className="text-3xl font-black mb-4 text-slate-950 dark:text-white tracking-tight leading-none group-hover:text-orange-600 transition-colors uppercase">{card.title}</h3>
+            <p className="text-slate-500 dark:text-slate-400 font-bold text-lg mb-8 leading-snug h-14 line-clamp-2">{card.desc}</p>
+            <div className="flex items-center text-slate-950 dark:text-orange-500 font-black text-xs uppercase tracking-widest border-t-2 border-slate-50 dark:border-slate-800 pt-6">
+              Access Tool <ChevronRight size={20} strokeWidth={3} className="ml-2 group-hover:translate-x-2 transition-transform" />
             </div>
           </button>
         ))}
-      </div>
-
-      <div className="bg-amber-500 rounded-3xl p-8 text-white relative overflow-hidden">
-        <div className="relative z-10 max-w-lg">
-          <h2 className="text-3xl font-bold mb-4">Urgent Help Needed?</h2>
-          <p className="text-amber-50 mb-6 text-lg">Quickly request roadside assistance, mechanics or towing services with one click.</p>
-          <button 
+         <button
             onClick={() => onNavigate(AppPanel.EMERGENCY)}
-            className="bg-white text-amber-600 px-8 py-4 rounded-2xl font-bold text-lg hover:bg-amber-50 transition-colors shadow-lg"
+            className="group relative bg-slate-950 p-12 rounded-[64px] shadow-2xl border-none text-white text-left overflow-hidden hover:-translate-y-2 duration-300 md:col-span-2 lg:col-span-3"
           >
-            {t.emergencyBtn}
+            <div className="relative z-10">
+              <div className="bg-orange-500 w-24 h-24 rounded-[32px] flex items-center justify-center text-white mb-10 shadow-2xl shadow-orange-500/40 group-hover:scale-110 transition-transform">
+                <ShieldAlert size={48} strokeWidth={3} />
+              </div>
+              <h3 className="text-6xl font-black mb-6 tracking-tighter leading-none uppercase">Need Highway Rescue?</h3>
+              <p className="text-slate-400 text-2xl font-bold max-w-3xl mb-12 leading-relaxed">Instantly request verified highway mechanics, fuel delivery, or 20-ton tow trucks with one-tap emergency dispatch.</p>
+              <div className="inline-flex items-center bg-orange-500 text-white px-12 py-6 rounded-[32px] font-black text-2xl shadow-2xl shadow-orange-500/40 hover:bg-orange-600 transition-all active:scale-95">
+                START EMERGENCY RESCUE <ArrowRight size={32} strokeWidth={3} className="ml-4 group-hover:translate-x-2 transition-transform" />
+              </div>
+            </div>
+            <ShieldAlert size={400} className="absolute -right-20 -bottom-20 opacity-5 rotate-12 pointer-events-none group-hover:scale-125 transition-transform duration-1000" />
           </button>
-        </div>
-        <div className="absolute right-0 top-0 bottom-0 w-1/3 flex items-center justify-center opacity-20">
-          <ShieldAlert size={200} />
-        </div>
       </div>
     </div>
   );

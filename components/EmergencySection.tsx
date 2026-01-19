@@ -224,7 +224,7 @@ const EmergencySection: React.FC<{ t: any }> = ({ t }) => {
                   key={service.id}
                   onClick={() => setSelectedService(service)}
                   className={`bg-white dark:bg-slate-800 p-6 rounded-3xl border-2 transition-all cursor-pointer ${
-                    selectedService?.id === service.id ? 'border-red-500 shadow-xl' : 'border-transparent shadow-sm'
+                    selectedService?.id === service.id ? 'border-red-500 shadow-xl' : 'border-slate-100 dark:border-slate-700 shadow-sm'
                   }`}
                 >
                   <div className="flex justify-between items-start mb-4">

@@ -11,7 +11,8 @@ import {
   Search,
   Database,
   Cloud,
-  CheckCircle2
+  CheckCircle2,
+  Lock
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -39,9 +40,13 @@ const data = [
 
 const AdminSection: React.FC<{ t: any }> = ({ t }) => {
   const [dbStatus, setDbStatus] = useState<'checking' | 'connected' | 'error'>('checking');
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
-    const checkSupabase = async () => {
+    const checkAuthAndSupabase = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setUserRole(session?.user?.user_metadata?.role || null);
+
       try {
         const { error } = await supabase.from('gps_requests').select('id').limit(1);
         if (error && error.message.includes('fetch')) {
@@ -53,8 +58,22 @@ const AdminSection: React.FC<{ t: any }> = ({ t }) => {
         setDbStatus('error');
       }
     };
-    checkSupabase();
+    checkAuthAndSupabase();
   }, []);
+
+  if (userRole !== 'admin') {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center text-center p-10 animate-in fade-in zoom-in">
+        <div className="w-24 h-24 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center text-red-600 mb-8 shadow-2xl">
+          <Lock size={48} strokeWidth={3} />
+        </div>
+        <h2 className="text-4xl font-black text-slate-950 dark:text-white mb-4 tracking-tighter uppercase">Access Denied</h2>
+        <p className="text-slate-500 text-xl font-medium max-w-md">
+          Administrative controls are strictly restricted to authorized personnel. Your attempt has been logged.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">

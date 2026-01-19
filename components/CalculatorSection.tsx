@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { Calculator, Info, Zap, Map, Fuel, DollarSign, BrainCircuit, AlertTriangle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Calculator, Info, Zap, Map, Fuel, DollarSign, BrainCircuit, AlertTriangle, RefreshCw } from 'lucide-react';
 import { getLoadEstimation } from '../services/geminiService';
 
 const CalculatorSection: React.FC<{ t: any }> = ({ t }) => {
@@ -11,23 +11,38 @@ const CalculatorSection: React.FC<{ t: any }> = ({ t }) => {
   const [estimate, setEstimate] = useState<any>(null);
   const [estimateSource, setEstimateSource] = useState<'ai' | 'fallback' | null>(null);
 
-  const handleCalculate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!material || !weight || !distance) return;
-    
-    setLoading(true);
-    setEstimate(null);
-    setEstimateSource(null);
-    try {
-      const result = await getLoadEstimation(material, Number(weight), Number(distance));
-      setEstimate(result.data);
-      setEstimateSource(result.source);
-    } catch (error) {
-      console.error("Calculation failed:", error);
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    const fetchEstimate = async () => {
+      setLoading(true);
+      try {
+        const result = await getLoadEstimation(material, Number(weight), Number(distance));
+        setEstimate(result.data);
+        setEstimateSource(result.source);
+      } catch (error) {
+        console.error("Calculation failed:", error);
+        setEstimate(null);
+        setEstimateSource(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const validInputs = material && weight && distance && Number(weight) > 0 && Number(distance) > 0;
+
+    if (validInputs) {
+      const handler = setTimeout(() => {
+        fetchEstimate();
+      }, 800); // Debounce time of 800ms
+
+      return () => {
+        clearTimeout(handler);
+      };
+    } else {
+      setEstimate(null);
+      setEstimateSource(null);
     }
-  };
+  }, [material, weight, distance]);
+
 
   return (
     <div className="space-y-6 animate-in zoom-in duration-500">
@@ -38,7 +53,7 @@ const CalculatorSection: React.FC<{ t: any }> = ({ t }) => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="bg-white dark:bg-slate-800 p-8 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm h-fit">
-          <form onSubmit={handleCalculate} className="space-y-6">
+          <div className="space-y-6">
             <div className="space-y-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Material Type</label>
@@ -61,6 +76,7 @@ const CalculatorSection: React.FC<{ t: any }> = ({ t }) => {
                     placeholder="10" 
                     className="w-full bg-slate-50 dark:bg-slate-900 border-0 rounded-2xl p-4 focus:ring-2 focus:ring-amber-500" 
                     required 
+                    min="1"
                   />
                 </div>
                 <div className="space-y-2">
@@ -72,30 +88,18 @@ const CalculatorSection: React.FC<{ t: any }> = ({ t }) => {
                     placeholder="500" 
                     className="w-full bg-slate-50 dark:bg-slate-900 border-0 rounded-2xl p-4 focus:ring-2 focus:ring-amber-500" 
                     required 
+                    min="1"
                   />
                 </div>
               </div>
             </div>
-            <button 
-              type="submit" 
-              className="w-full bg-slate-900 dark:bg-amber-500 text-white dark:text-slate-900 py-4 rounded-2xl font-bold text-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white dark:border-slate-900/30 dark:border-t-slate-900 rounded-full animate-spin" />
-                  Analyzing with AI...
-                </>
-              ) : (
-                <>
-                  <BrainCircuit size={20} />
-                  Generate AI Estimate
-                </>
-              )}
-            </button>
-          </form>
+            <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl flex items-center gap-3 text-sm">
+              <RefreshCw size={20} className="text-amber-500 flex-shrink-0" />
+              <p className="text-slate-500">Estimates update automatically as you type.</p>
+            </div>
+          </div>
 
-          <div className="mt-8 p-4 bg-amber-50 dark:bg-amber-900/10 rounded-2xl border border-amber-100 dark:border-amber-800 flex gap-4">
+          <div className="p-4 bg-amber-50 dark:bg-amber-900/10 rounded-2xl border border-amber-100 dark:border-amber-800 flex gap-4">
             <Info className="text-amber-500 flex-shrink-0" size={20} />
             <p className="text-xs text-amber-700 dark:text-amber-400">
               Estimates are calculated using real-time market data and fuel price benchmarks. Final rates may vary based on vehicle availability.
