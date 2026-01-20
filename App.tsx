@@ -39,34 +39,22 @@ const App: React.FC = () => {
   const t = useMemo(() => translations[lang], [lang]);
 
   useEffect(() => {
-    // Check current session
-    const initAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        setUser({
-          id: session.user.id,
-          email: session.user.email!,
-          role: session.user.user_metadata.role || 'customer',
-          name: session.user.user_metadata.name || session.user.email!.split('@')[0]
-        });
-      }
-      setInitializing(false);
-    };
-
-    initAuth();
-
-    // Listen for auth changes
+    // Single Source of Truth for Auth State
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         setUser({
           id: session.user.id,
           email: session.user.email!,
+          // Handle metadata from both Email and Google OAuth
           role: session.user.user_metadata.role || 'customer',
-          name: session.user.user_metadata.name || session.user.email!.split('@')[0]
+          name: session.user.user_metadata.full_name || session.user.user_metadata.name || session.user.email!.split('@')[0]
         });
       } else {
         setUser(null);
+        setActivePanel(AppPanel.DASHBOARD);
       }
+      // Critical: Only finish initialization after listener provides state
+      setInitializing(false);
     });
 
     return () => subscription.unsubscribe();
@@ -83,7 +71,6 @@ const App: React.FC = () => {
   const toggleLang = () => setLang(prev => prev === 'en' ? 'hi' : 'en');
   const toggleDarkMode = () => setDarkMode(!darkMode);
 
-  // Enforce role-based menu filtering
   const navItems = useMemo(() => {
     const items = [
       { id: AppPanel.DASHBOARD, label: t.dashboard, icon: LayoutDashboard },
@@ -95,47 +82,44 @@ const App: React.FC = () => {
       { id: AppPanel.ADMIN, label: t.admin, icon: Activity },
     ];
 
-    // Strictly restrict Admin Panel
     return items.filter(item => {
       if (item.id === AppPanel.ADMIN) return user?.role === 'admin';
       return true;
     });
   }, [t, user?.role]);
 
-  const handleLogin = (userData: User) => {
-    setUser(userData);
-    setActivePanel(AppPanel.DASHBOARD);
-  };
-
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    setUser(null);
     setIsSidebarOpen(false);
   };
 
   const renderContent = () => {
+    if (!user) return null;
     switch (activePanel) {
-      case AppPanel.DASHBOARD: return <DashboardHome onNavigate={setActivePanel} t={t} user={user!} />;
+      case AppPanel.DASHBOARD: return <DashboardHome onNavigate={setActivePanel} t={t} user={user} />;
       case AppPanel.GPS: return <GPSSection t={t} />;
       case AppPanel.EMERGENCY: return <EmergencySection t={t} />;
       case AppPanel.BOOKING: return <BookingSection t={t} />;
       case AppPanel.BILTY: return <BiltySection t={t} />;
       case AppPanel.CALCULATOR: return <CalculatorSection t={t} />;
-      case AppPanel.ADMIN: return <AdminSection t={t} />;
-      default: return <DashboardHome onNavigate={setActivePanel} t={t} user={user!} />;
+      case AppPanel.ADMIN: return <AdminSection t={t} user={user} />;
+      default: return <DashboardHome onNavigate={setActivePanel} t={t} user={user} />;
     }
   };
 
   if (initializing) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
-        <div className="w-12 h-12 border-4 border-orange-500/30 border-t-orange-500 rounded-full animate-spin" />
+        <div className="flex flex-col items-center gap-6">
+          <div className="w-16 h-16 border-4 border-orange-500/30 border-t-orange-500 rounded-full animate-spin" />
+          <p className="font-black text-slate-400 uppercase tracking-widest text-xs">Securing Highway Session...</p>
+        </div>
       </div>
     );
   }
 
   if (!user) {
-    return <AuthSection onLogin={handleLogin} t={t} />;
+    return <AuthSection t={t} />;
   }
 
   return (
@@ -160,30 +144,35 @@ const App: React.FC = () => {
         <div className="flex items-center gap-4">
           <button 
             onClick={toggleDarkMode}
-            className="p-3 bg-slate-100 dark:bg-slate-800 rounded-2xl transition-all hover:bg-slate-950 hover:text-white group"
-            aria-label="Toggle Theme"
+            className="hidden sm:block p-3 bg-slate-100 dark:bg-slate-800 rounded-2xl transition-all hover:bg-slate-950 hover:text-white group mr-2"
           >
             {darkMode ? <Sun size={20} className="text-yellow-400" /> : <Moon size={20} className="text-blue-600 group-hover:text-white" />}
           </button>
           
-          <div className="hidden sm:flex items-center gap-4 pl-6 border-l-2 border-slate-100 dark:border-slate-800">
-             <div className="text-right">
-                <p className="text-[11px] font-black uppercase tracking-widest text-orange-500 leading-none mb-1">
-                  {user.role}
+          <div className="flex items-center gap-4 pl-6 border-l-2 border-slate-100 dark:border-slate-800 group cursor-pointer">
+             <div className="text-right hidden md:block">
+                <p className={`text-[10px] font-black uppercase tracking-[0.2em] leading-none mb-1.5 ${
+                  user.role === 'admin' ? 'text-red-500' : 
+                  user.role === 'transporter' ? 'text-emerald-500' : 
+                  'text-blue-500'
+                }`}>
+                  {user.role} Account
                 </p>
-                <p className="font-black text-slate-950 dark:text-white text-xl leading-none tracking-tight">
-                  {user.name}!
+                <p className="font-black text-slate-950 dark:text-white text-lg leading-none tracking-tight group-hover:text-orange-500 transition-colors">
+                  {user.name}
                 </p>
              </div>
-             <div className="w-14 h-14 rounded-2xl bg-slate-950 dark:bg-white flex items-center justify-center shadow-2xl border-2 border-white/10">
-               <UserIcon size={28} strokeWidth={2.5} className="text-white dark:text-slate-950" />
+             <div className="relative">
+                <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-slate-950 dark:bg-white flex items-center justify-center shadow-xl border-2 border-white/10 group-hover:border-orange-500 transition-all">
+                  <UserIcon size={24} strokeWidth={2.5} className="text-white dark:text-slate-950" />
+                </div>
+                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-white dark:border-slate-950 rounded-full animate-pulse shadow-sm" />
              </div>
           </div>
 
           <button 
             onClick={handleLogout}
             className="p-3 bg-red-100 dark:bg-red-950/30 text-red-600 dark:text-red-400 rounded-2xl hover:bg-red-600 hover:text-white transition-all shadow-lg active:scale-95 ml-2"
-            aria-label="Sign Out"
           >
             <LogOut size={20} strokeWidth={3} />
           </button>
@@ -233,35 +222,12 @@ const App: React.FC = () => {
           </div>
         </aside>
 
-        {isSidebarOpen && (
-          <div 
-            className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[55] lg:hidden"
-            onClick={() => setIsSidebarOpen(false)}
-          />
-        )}
-
         <main className="flex-1 overflow-y-auto p-6 sm:p-10 lg:p-16 pb-32 lg:pb-16 bg-slate-50 dark:bg-slate-950">
           <div className="max-w-7xl mx-auto">
             {renderContent()}
           </div>
         </main>
       </div>
-
-      <nav className="fixed bottom-6 left-6 right-6 bg-slate-950 border border-white/10 rounded-[32px] shadow-2xl lg:hidden flex justify-around z-40 safe-area-bottom px-4 py-4">
-        {navItems.slice(0, 5).map((item) => (
-          <button
-            key={item.id}
-            onClick={() => setActivePanel(item.id)}
-            className={`flex flex-col items-center gap-1 transition-all ${
-              activePanel === item.id ? 'scale-110' : 'opacity-40 hover:opacity-100'
-            }`}
-          >
-            <div className={`p-4 rounded-[20px] transition-all ${activePanel === item.id ? 'bg-orange-500 text-white shadow-2xl shadow-orange-500/40' : 'text-white'}`}>
-              <item.icon size={26} strokeWidth={3} />
-            </div>
-          </button>
-        ))}
-      </nav>
     </div>
   );
 };

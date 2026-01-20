@@ -27,6 +27,12 @@ import {
   Cell
 } from 'recharts';
 import { supabase } from '../services/supabaseClient';
+import { User } from '../types';
+
+interface AdminSectionProps {
+  t: any;
+  user: User;
+}
 
 const data = [
   { name: 'Mon', revenue: 45000, bookings: 12 },
@@ -38,15 +44,11 @@ const data = [
   { name: 'Sun', revenue: 55000, bookings: 20 },
 ];
 
-const AdminSection: React.FC<{ t: any }> = ({ t }) => {
+const AdminSection: React.FC<AdminSectionProps> = ({ t, user }) => {
   const [dbStatus, setDbStatus] = useState<'checking' | 'connected' | 'error'>('checking');
-  const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
-    const checkAuthAndSupabase = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setUserRole(session?.user?.user_metadata?.role || null);
-
+    const checkSupabase = async () => {
       try {
         const { error } = await supabase.from('gps_requests').select('id').limit(1);
         if (error && error.message.includes('fetch')) {
@@ -58,10 +60,10 @@ const AdminSection: React.FC<{ t: any }> = ({ t }) => {
         setDbStatus('error');
       }
     };
-    checkAuthAndSupabase();
+    checkSupabase();
   }, []);
 
-  if (userRole !== 'admin') {
+  if (user.role !== 'admin') {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center text-center p-10 animate-in fade-in zoom-in">
         <div className="w-24 h-24 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center text-red-600 mb-8 shadow-2xl">
