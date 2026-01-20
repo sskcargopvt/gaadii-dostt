@@ -17,7 +17,8 @@ const CalculatorSection: React.FC<{ t: any }> = ({ t }) => {
       try {
         const result = await getLoadEstimation(material, Number(weight), Number(distance));
         setEstimate(result.data);
-        setEstimateSource(result.source);
+        // Explicitly cast to the expected union type to fix TS2345
+        setEstimateSource(result.source as 'ai' | 'fallback');
       } catch (error) {
         console.error("Calculation failed:", error);
         setEstimate(null);
