@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Search, 
@@ -140,10 +141,16 @@ const BookingSection: React.FC<{ t: any }> = ({ t }) => {
         const newLat = pickupCoords.lat + (dropoffCoords.lat - pickupCoords.lat) * progress;
         const newLng = pickupCoords.lng + (dropoffCoords.lng - pickupCoords.lng) * progress;
         setTruckPosition({ lat: newLat, lng: newLng });
-        if (progress >= 1 && interval) clearInterval(interval);
+        if (progress >= 1 && interval) {
+          clearInterval(interval);
+        }
       }, updateInterval);
     }
-    return () => interval && clearInterval(interval);
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
   }, [view, activeBooking, pickupCoords, dropoffCoords]);
 
   const handleSearch = (e: React.FormEvent) => {
