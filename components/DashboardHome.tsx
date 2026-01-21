@@ -9,7 +9,9 @@ import {
   ArrowRight,
   TrendingUp,
   Clock,
-  ChevronRight
+  ChevronRight,
+  Settings,
+  User as UserIcon
 } from 'lucide-react';
 import { AppPanel, User } from '../types';
 
@@ -26,15 +28,31 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ onNavigate, t, user }) =>
     { id: AppPanel.BOOKING, title: t.booking, icon: Truck, color: "from-orange-600 to-amber-500", desc: "Real-time truck load marketplace." },
     { id: AppPanel.BILTY, title: t.bilty, icon: FileText, color: "from-emerald-700 to-teal-600", desc: "Secure digital document control center." },
     { id: AppPanel.CALCULATOR, title: t.calculator, icon: Calculator, color: "from-purple-700 to-indigo-600", desc: "AI-powered trip cost estimations." },
+    { id: AppPanel.PROFILE, title: t.profile, icon: Settings, color: "from-slate-700 to-slate-900", desc: "View and edit your account details." },
   ];
 
   return (
     <div className="space-y-12 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h2 className="text-6xl font-black tracking-tighter text-slate-950 dark:text-white uppercase leading-none mb-2">{t.welcomeUser.replace('{name}', user.name)}</h2>
-          <p className="text-slate-500 dark:text-slate-400 text-2xl font-bold tracking-tight">{t.tagline}</p>
+          <h2 className="text-4xl md:text-6xl font-black tracking-tighter text-slate-950 dark:text-white uppercase leading-none mb-2 italic">
+            {t.welcomeUser.replace('{name}', user.name.split(' ')[0])}
+          </h2>
+          <p className="text-slate-500 dark:text-slate-400 text-xl md:text-2xl font-bold tracking-tight">{t.tagline}</p>
         </div>
+        <button 
+          onClick={() => onNavigate(AppPanel.PROFILE)}
+          className="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 p-6 rounded-[32px] flex items-center gap-4 hover:border-amber-500 transition-all shadow-xl group"
+        >
+          <div className="bg-slate-100 dark:bg-slate-800 p-3 rounded-2xl group-hover:bg-amber-500 transition-colors">
+            <UserIcon size={24} className="group-hover:text-slate-900" />
+          </div>
+          <div className="text-left">
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Account Status</p>
+            <p className="text-sm font-bold uppercase italic">Edit Profile Details</p>
+          </div>
+          <ChevronRight className="text-slate-300 group-hover:text-amber-500 group-hover:translate-x-1 transition-all" size={20} />
+        </button>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
@@ -70,7 +88,7 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ onNavigate, t, user }) =>
             <div className={`bg-gradient-to-br ${card.color} w-24 h-24 rounded-[32px] flex items-center justify-center text-white mb-10 shadow-2xl group-hover:scale-110 group-hover:rotate-6 transition-transform duration-500`}>
               <card.icon size={48} strokeWidth={3} />
             </div>
-            <h3 className="text-3xl font-black mb-4 text-slate-950 dark:text-white tracking-tight leading-none group-hover:text-orange-600 transition-colors uppercase">{card.title}</h3>
+            <h3 className="text-3xl font-black mb-4 text-slate-950 dark:text-white tracking-tight leading-none group-hover:text-orange-600 transition-colors uppercase italic">{card.title}</h3>
             <p className="text-slate-500 dark:text-slate-400 font-bold text-lg mb-8 leading-snug h-14 line-clamp-2">{card.desc}</p>
             <div className="flex items-center text-slate-950 dark:text-orange-500 font-black text-xs uppercase tracking-widest border-t-2 border-slate-50 dark:border-slate-800 pt-6">
               Access Tool <ChevronRight size={20} strokeWidth={3} className="ml-2 group-hover:translate-x-2 transition-transform" />
@@ -85,9 +103,9 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ onNavigate, t, user }) =>
               <div className="bg-orange-500 w-24 h-24 rounded-[32px] flex items-center justify-center text-white mb-10 shadow-2xl shadow-orange-500/40 group-hover:scale-110 transition-transform">
                 <ShieldAlert size={48} strokeWidth={3} />
               </div>
-              <h3 className="text-6xl font-black mb-6 tracking-tighter leading-none uppercase">Need Highway Rescue?</h3>
-              <p className="text-slate-400 text-2xl font-bold max-w-3xl mb-12 leading-relaxed">Instantly request verified highway mechanics, fuel delivery, or 20-ton tow trucks with one-tap emergency dispatch.</p>
-              <div className="inline-flex items-center bg-orange-500 text-white px-12 py-6 rounded-[32px] font-black text-2xl shadow-2xl shadow-orange-500/40 hover:bg-orange-600 transition-all active:scale-95">
+              <h3 className="text-4xl md:text-6xl font-black mb-6 tracking-tighter leading-none uppercase italic">Need Highway Rescue?</h3>
+              <p className="text-slate-400 text-xl md:text-2xl font-bold max-w-3xl mb-12 leading-relaxed">Instantly request verified highway mechanics, fuel delivery, or 20-ton tow trucks with one-tap emergency dispatch.</p>
+              <div className="inline-flex items-center bg-orange-500 text-white px-12 py-6 rounded-[32px] font-black text-xl md:text-2xl shadow-2xl shadow-orange-500/40 hover:bg-orange-600 transition-all active:scale-95">
                 START EMERGENCY RESCUE <ArrowRight size={32} strokeWidth={3} className="ml-4 group-hover:translate-x-2 transition-transform" />
               </div>
             </div>

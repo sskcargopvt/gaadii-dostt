@@ -17,7 +17,8 @@ import {
   LogOut,
   ShieldCheck,
   UserCircle,
-  Star
+  Star,
+  Settings
 } from 'lucide-react';
 import { translations } from './i18n';
 import { AppPanel, Language, User } from './types';
@@ -27,6 +28,7 @@ import BookingSection from './components/BookingSection';
 import CalculatorSection from './components/CalculatorSection';
 import BiltySection from './components/BiltySection';
 import AdminSection from './components/AdminSection';
+import ProfileSection from './components/ProfileSection';
 import DashboardHome from './components/DashboardHome';
 import AuthSection from './components/AuthSection';
 import { supabase } from './services/supabaseClient';
@@ -45,13 +47,16 @@ const App: React.FC = () => {
     // Persistent auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
-        // Sync user metadata (role, name) from Supabase session
+        // Sync user metadata (role, name, etc.) from Supabase session
         const metadata = session.user.user_metadata;
         setUser({
           id: session.user.id,
           email: session.user.email!,
           role: metadata.role || 'customer',
-          name: metadata.name || metadata.full_name || session.user.email!.split('@')[0]
+          name: metadata.name || metadata.full_name || session.user.email!.split('@')[0],
+          phone: metadata.phone,
+          businessName: metadata.businessName,
+          address: metadata.address
         });
       } else {
         setUser(null);
@@ -89,6 +94,7 @@ const App: React.FC = () => {
       { id: AppPanel.BOOKING, label: t.booking, icon: Truck },
       { id: AppPanel.BILTY, label: t.bilty, icon: FileText },
       { id: AppPanel.CALCULATOR, label: t.calculator, icon: Calculator },
+      { id: AppPanel.PROFILE, label: t.profile, icon: Settings },
       { id: AppPanel.ADMIN, label: t.admin, icon: Activity },
     ];
     // Restrict Admin Panel to 'admin' role
@@ -109,6 +115,7 @@ const App: React.FC = () => {
       case AppPanel.BOOKING: return <BookingSection t={t} />;
       case AppPanel.BILTY: return <BiltySection t={t} />;
       case AppPanel.CALCULATOR: return <CalculatorSection t={t} />;
+      case AppPanel.PROFILE: return <ProfileSection t={t} user={user} onUpdate={setUser} />;
       case AppPanel.ADMIN: return <AdminSection t={t} user={user} />;
       default: return <DashboardHome onNavigate={setActivePanel} t={t} user={user} />;
     }
@@ -146,7 +153,7 @@ const App: React.FC = () => {
             <div className="bg-amber-500 p-2 rounded-lg shadow-lg transform rotate-2">
               <Truck size={24} strokeWidth={2.5} className="text-slate-900" />
             </div>
-            <div className="flex flex-col">
+            <div className="flex flex-col cursor-pointer" onClick={() => setActivePanel(AppPanel.DASHBOARD)}>
               <h1 className="font-bold text-xl tracking-tight uppercase text-slate-900 dark:text-white leading-none italic">{t.appName}</h1>
               <span className="text-[7px] font-bold text-slate-400 uppercase tracking-widest mt-1">Digital Highway</span>
             </div>
@@ -165,9 +172,16 @@ const App: React.FC = () => {
                 </div>
                 <p className="font-bold text-slate-900 dark:text-white text-sm leading-none tracking-tight">{user.name}</p>
              </div>
-             <div className="w-10 h-10 rounded-lg bg-slate-900 dark:bg-white flex items-center justify-center shadow-lg border-2 border-transparent overflow-hidden">
-                <UserIcon size={22} className="text-white dark:text-slate-900" />
-             </div>
+             <button 
+                onClick={() => setActivePanel(AppPanel.PROFILE)}
+                className={`w-10 h-10 rounded-lg flex items-center justify-center shadow-lg border-2 transition-all overflow-hidden ${
+                  activePanel === AppPanel.PROFILE 
+                    ? 'bg-amber-500 border-slate-900 dark:border-white' 
+                    : 'bg-slate-900 dark:bg-white border-transparent'
+                }`}
+             >
+                <UserIcon size={22} className={activePanel === AppPanel.PROFILE ? 'text-slate-900' : 'text-white dark:text-slate-900'} />
+             </button>
           </div>
 
           <button onClick={handleLogout} className="p-2.5 bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-600 hover:text-white transition-all">

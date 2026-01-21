@@ -10,7 +10,8 @@ export enum AppPanel {
   BILTY = 'bilty',
   BOOKING = 'booking',
   CALCULATOR = 'calculator',
-  ADMIN = 'admin'
+  ADMIN = 'admin',
+  PROFILE = 'profile'
 }
 
 export interface User {
@@ -18,6 +19,9 @@ export interface User {
   email: string;
   role: UserRole;
   name: string;
+  phone?: string;
+  businessName?: string;
+  address?: string;
 }
 
 export interface Sensor {

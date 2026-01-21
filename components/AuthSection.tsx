@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Mail, Lock, User, Truck, ArrowRight, ShieldCheck, CheckCircle2, AlertCircle, Star, X, Info } from 'lucide-react';
+import { Mail, Lock, User, Truck, ArrowRight, ShieldCheck, CheckCircle2, AlertCircle, Star, X, Info, Chrome, Phone, Building2, MapPin } from 'lucide-react';
 import { UserRole } from '../types';
 import { supabase } from '../services/supabaseClient';
 
@@ -9,13 +9,36 @@ interface AuthSectionProps {
 }
 
 /**
+ * Official Google 'G' Logo SVG
+ */
+const GoogleLogo = ({ size = 20 }: { size?: number }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} xmlns="http://www.w3.org/2000/svg">
+    <path
+      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+      fill="#4285F4"
+    />
+    <path
+      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+      fill="#34A853"
+    />
+    <path
+      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"
+      fill="#FBBC05"
+    />
+    <path
+      d="M12 5.38c1.62 0 3.06.56 4.21 1.66l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+      fill="#EA4335"
+    />
+  </svg>
+);
+
+/**
  * Reconstructed Gadi Dost Logo - Circular, High-Fidelity.
  */
 const GadiDostLogo: React.FC<{ className?: string }> = ({ className }) => (
   <div className={`relative rounded-full bg-white flex flex-col items-center justify-center border-[4px] border-slate-900 overflow-hidden shadow-xl ${className}`}>
     <div className="absolute inset-0 border border-amber-500 rounded-full m-0.5 pointer-events-none" />
     
-    {/* Truck Illustration Section */}
     <div className="relative z-10 flex items-end justify-center w-full h-[45%] mt-3 gap-0">
       <div className="relative -mr-2 translate-y-1 scale-75 opacity-80">
         <svg width="45" height="30" viewBox="0 0 60 40" fill="none">
@@ -38,7 +61,6 @@ const GadiDostLogo: React.FC<{ className?: string }> = ({ className }) => (
       </div>
     </div>
 
-    {/* Branding Bars */}
     <div className="relative z-30 w-[115%] bg-slate-900 py-1 flex justify-center -mt-0.5 shadow-md">
       <span className="text-white font-bold text-[10px] tracking-widest uppercase italic">GADI DOST</span>
     </div>
@@ -46,7 +68,6 @@ const GadiDostLogo: React.FC<{ className?: string }> = ({ className }) => (
       <span className="text-slate-900 font-bold text-[6px] tracking-[0.2em] uppercase">ON THE MOVE</span>
     </div>
 
-    {/* Star Elements */}
     <div className="flex gap-1.5 mt-1.5 mb-2.5">
       <Star size={7} fill="black" strokeWidth={0} />
       <Star size={7} fill="black" strokeWidth={0} />
@@ -62,11 +83,38 @@ const AuthSection: React.FC<AuthSectionProps> = ({ t }) => {
   const [loading, setLoading] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ email: '', password: '', name: '' });
+  const [formData, setFormData] = useState({ 
+    email: '', 
+    password: '', 
+    name: '',
+    phone: '',
+    businessName: '',
+    address: ''
+  });
 
   const resetState = () => {
     setErrorMsg(null);
     setLoading(false);
+  };
+
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        }
+      });
+      if (error) throw error;
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Google login failed.');
+      setLoading(false);
+    }
   };
 
   const handleAuth = async (e: React.FormEvent) => {
@@ -82,12 +130,15 @@ const AuthSection: React.FC<AuthSectionProps> = ({ t }) => {
           options: {
             data: { 
               role, 
-              name: formData.name || formData.email.split('@')[0] 
+              name: formData.name || formData.email.split('@')[0],
+              phone: formData.phone,
+              businessName: formData.businessName,
+              address: formData.address
             }
           }
         });
         if (error) throw error;
-        alert("Verification email sent! Please check your inbox.");
+        alert("Registration initiated! If email verification is enabled, please check your inbox.");
       } else if (mode === 'signin') {
         const { error } = await supabase.auth.signInWithPassword({
           email: formData.email,
@@ -180,12 +231,10 @@ const AuthSection: React.FC<AuthSectionProps> = ({ t }) => {
     <div className="min-h-screen bg-[#020617] text-white flex flex-col lg:flex-row overflow-hidden relative">
       <style>{wheelStyles}</style>
       
-      {/* Background Lighting */}
       <div className="fixed inset-0 z-0 pointer-events-none opacity-40">
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-tr from-amber-500/10 via-transparent to-sky-500/10" />
       </div>
 
-      {/* Visual Identity Section */}
       <div className={`relative z-10 flex flex-col items-center justify-center p-6 lg:w-1/2 lg:p-16 transition-all duration-700 ${isFocused ? 'opacity-40 scale-95 lg:opacity-100 lg:scale-100' : ''}`}>
         <div className="lg:absolute lg:top-12 lg:left-12 flex items-center gap-3 mb-6 lg:mb-0">
           <div className="bg-amber-500 p-2 rounded-lg shadow-lg">
@@ -196,7 +245,6 @@ const AuthSection: React.FC<AuthSectionProps> = ({ t }) => {
 
         <div className="wheel-container lg:scale-125 mb-4 lg:mb-12">
           <div className={`wheel ${isFocused ? 'focused' : ''}`}>
-            {/* Double-sided Logo Placement */}
             <div className="rim">
               <GadiDostLogo className="w-[85%] h-[85%] border-none shadow-none" />
             </div>
@@ -220,9 +268,8 @@ const AuthSection: React.FC<AuthSectionProps> = ({ t }) => {
         </div>
       </div>
 
-      {/* Auth Interaction Section */}
-      <div className="flex-1 flex items-center justify-center p-4 sm:p-8 lg:p-12 z-20">
-        <div className="w-full max-w-md">
+      <div className="flex-1 flex items-center justify-center p-4 sm:p-8 lg:p-12 z-20 overflow-y-auto">
+        <div className="w-full max-w-md py-10">
           <div className="bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-[32px] p-6 lg:p-10 shadow-2xl relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-amber-500/20 to-transparent" />
             
@@ -243,7 +290,7 @@ const AuthSection: React.FC<AuthSectionProps> = ({ t }) => {
                       {mode === 'signin' ? 'LOG IN' : mode === 'signup' ? 'SIGN UP' : 'RESET KEY'}
                     </h3>
                     <p className="text-slate-500 font-semibold text-xs">
-                      {mode === 'signin' ? 'Welcome back to your command center.' : mode === 'signup' ? 'Create your fleet account today.' : 'Enter your email to recover access.'}
+                      {mode === 'signin' ? 'Welcome back to your command center.' : mode === 'signup' ? 'Create and update your profile details.' : 'Enter your email to recover access.'}
                     </p>
                   </div>
 
@@ -253,6 +300,23 @@ const AuthSection: React.FC<AuthSectionProps> = ({ t }) => {
                       <p className="text-[10px] font-bold uppercase">{errorMsg}</p>
                     </div>
                   )}
+
+                  <div className="grid grid-cols-1 gap-4">
+                    <button
+                      onClick={handleGoogleLogin}
+                      disabled={loading}
+                      className="w-full bg-white text-slate-900 py-3.5 rounded-xl font-bold text-sm hover:bg-slate-50 transition-all flex items-center justify-center gap-3 active:scale-[0.98] border border-slate-200 shadow-sm"
+                    >
+                      <GoogleLogo />
+                      <span className="tracking-tight">CONTINUE WITH GOOGLE</span>
+                    </button>
+                    
+                    <div className="relative flex items-center">
+                      <div className="flex-grow border-t border-white/10"></div>
+                      <span className="flex-shrink mx-4 text-[10px] font-bold text-slate-600 uppercase tracking-widest">OR</span>
+                      <div className="flex-grow border-t border-white/10"></div>
+                    </div>
+                  </div>
 
                   {mode !== 'forgot-password' && (
                     <div className="flex bg-slate-950/30 p-1 rounded-xl border border-white/5">
@@ -276,25 +340,6 @@ const AuthSection: React.FC<AuthSectionProps> = ({ t }) => {
                   )}
 
                   <form onSubmit={handleAuth} className="space-y-4">
-                    {mode === 'signup' && (
-                      <div className="space-y-1">
-                        <label className="text-[8px] font-bold uppercase text-slate-500 tracking-[0.2em] ml-1">Business Name</label>
-                        <div className="relative group">
-                          <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-amber-500 transition-colors" size={14} />
-                          <input
-                            type="text"
-                            required
-                            placeholder="e.g. Gadi Dost Logi"
-                            onFocus={() => setIsFocused(true)}
-                            onBlur={() => setIsFocused(false)}
-                            className="w-full bg-slate-950/20 border border-white/5 rounded-xl py-3.5 pl-11 pr-4 text-white font-semibold text-sm focus:border-amber-500/30 outline-none transition-all placeholder:text-slate-800"
-                            value={formData.name}
-                            onChange={(e) => setFormData({...formData, name: e.target.value})}
-                          />
-                        </div>
-                      </div>
-                    )}
-
                     <div className="space-y-1">
                       <label className="text-[8px] font-bold uppercase text-slate-500 tracking-[0.2em] ml-1">Email Address</label>
                       <div className="relative group">
@@ -327,6 +372,70 @@ const AuthSection: React.FC<AuthSectionProps> = ({ t }) => {
                             value={formData.password}
                             onChange={(e) => setFormData({...formData, password: e.target.value})}
                           />
+                        </div>
+                      </div>
+                    )}
+
+                    {mode === 'signup' && (
+                      <div className="space-y-4 pt-2 border-t border-white/5 animate-in slide-in-from-top-2 duration-300">
+                        <p className="text-[9px] font-black text-amber-500 uppercase tracking-widest text-center">Complete Your Profile Details</p>
+                        
+                        <div className="space-y-1">
+                          <label className="text-[8px] font-bold uppercase text-slate-500 tracking-[0.2em] ml-1">Full Name</label>
+                          <div className="relative group">
+                            <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-amber-500 transition-colors" size={14} />
+                            <input
+                              type="text"
+                              required
+                              placeholder="John Doe"
+                              className="w-full bg-slate-950/20 border border-white/5 rounded-xl py-3.5 pl-11 pr-4 text-white font-semibold text-sm focus:border-amber-500/30 outline-none transition-all placeholder:text-slate-800"
+                              value={formData.name}
+                              onChange={(e) => setFormData({...formData, name: e.target.value})}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="space-y-1">
+                            <label className="text-[8px] font-bold uppercase text-slate-500 tracking-[0.2em] ml-1">Phone</label>
+                            <div className="relative group">
+                              <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
+                              <input
+                                type="tel"
+                                placeholder="+91..."
+                                className="w-full bg-slate-950/20 border border-white/5 rounded-xl py-3.5 pl-11 pr-4 text-white font-semibold text-sm focus:border-amber-500/30 outline-none transition-all"
+                                value={formData.phone}
+                                onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                              />
+                            </div>
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[8px] font-bold uppercase text-slate-500 tracking-[0.2em] ml-1">Business</label>
+                            <div className="relative group">
+                              <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
+                              <input
+                                type="text"
+                                placeholder="Co. Name"
+                                className="w-full bg-slate-950/20 border border-white/5 rounded-xl py-3.5 pl-11 pr-4 text-white font-semibold text-sm focus:border-amber-500/30 outline-none transition-all"
+                                value={formData.businessName}
+                                onChange={(e) => setFormData({...formData, businessName: e.target.value})}
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[8px] font-bold uppercase text-slate-500 tracking-[0.2em] ml-1">Address</label>
+                          <div className="relative group">
+                            <MapPin className="absolute left-4 top-4 text-slate-500" size={14} />
+                            <textarea
+                              placeholder="Full Office Address"
+                              rows={2}
+                              className="w-full bg-slate-950/20 border border-white/5 rounded-xl py-3.5 pl-11 pr-4 text-white font-semibold text-sm focus:border-amber-500/30 outline-none transition-all resize-none"
+                              value={formData.address}
+                              onChange={(e) => setFormData({...formData, address: e.target.value})}
+                            />
+                          </div>
                         </div>
                       </div>
                     )}
