@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Mail, Lock, User, Truck, ArrowRight, ShieldCheck, CheckCircle2, MailCheck, AlertCircle } from 'lucide-react';
+import { Mail, Lock, User, Truck, ArrowRight, ShieldCheck, CheckCircle2, AlertCircle, Star, X, Info } from 'lucide-react';
 import { UserRole } from '../types';
 import { supabase } from '../services/supabaseClient';
 
@@ -8,345 +8,363 @@ interface AuthSectionProps {
   t: any;
 }
 
+/**
+ * Reconstructed Gadi Dost Logo - Circular, High-Fidelity.
+ */
+const GadiDostLogo: React.FC<{ className?: string }> = ({ className }) => (
+  <div className={`relative rounded-full bg-white flex flex-col items-center justify-center border-[4px] border-slate-900 overflow-hidden shadow-xl ${className}`}>
+    <div className="absolute inset-0 border border-amber-500 rounded-full m-0.5 pointer-events-none" />
+    
+    {/* Truck Illustration Section */}
+    <div className="relative z-10 flex items-end justify-center w-full h-[45%] mt-3 gap-0">
+      <div className="relative -mr-2 translate-y-1 scale-75 opacity-80">
+        <svg width="45" height="30" viewBox="0 0 60 40" fill="none">
+          <rect x="5" y="15" width="45" height="15" fill="#f59e0b" stroke="#000" strokeWidth="2"/>
+          <rect x="5" y="10" width="20" height="10" fill="#f59e0b" stroke="#000" strokeWidth="2"/>
+          <rect x="8" y="12" width="12" height="6" fill="#38bdf8" stroke="#000" strokeWidth="1"/>
+          <circle cx="15" cy="30" r="4" fill="#d1d5db" stroke="#000" strokeWidth="2"/>
+          <circle cx="40" cy="30" r="4" fill="#d1d5db" stroke="#000" strokeWidth="2"/>
+        </svg>
+      </div>
+      <div className="relative z-20 scale-90">
+        <svg width="75" height="50" viewBox="0 0 100 65" fill="none">
+          <path d="M10 25 H40 V50 H10 Z" fill="#f59e0b" stroke="#000" strokeWidth="3"/>
+          <path d="M40 15 H90 V40 H40 Z" fill="#f59e0b" stroke="#000" strokeWidth="3"/>
+          <path d="M15 28 H35 V40 H15 Z" fill="#38bdf8" stroke="#000" strokeWidth="2"/>
+          <circle cx="25" cy="50" r="7" fill="#d1d5db" stroke="#000" strokeWidth="2.5"/>
+          <circle cx="65" cy="50" r="7" fill="#d1d5db" stroke="#000" strokeWidth="2.5"/>
+          <circle cx="82" cy="50" r="7" fill="#d1d5db" stroke="#000" strokeWidth="2.5"/>
+        </svg>
+      </div>
+    </div>
+
+    {/* Branding Bars */}
+    <div className="relative z-30 w-[115%] bg-slate-900 py-1 flex justify-center -mt-0.5 shadow-md">
+      <span className="text-white font-bold text-[10px] tracking-widest uppercase italic">GADI DOST</span>
+    </div>
+    <div className="relative z-20 w-[80%] bg-amber-500 py-0.5 border-x border-b border-slate-900 flex justify-center -mt-0.5 shadow-sm">
+      <span className="text-slate-900 font-bold text-[6px] tracking-[0.2em] uppercase">ON THE MOVE</span>
+    </div>
+
+    {/* Star Elements */}
+    <div className="flex gap-1.5 mt-1.5 mb-2.5">
+      <Star size={7} fill="black" strokeWidth={0} />
+      <Star size={7} fill="black" strokeWidth={0} />
+      <Star size={7} fill="black" strokeWidth={0} />
+    </div>
+  </div>
+);
+
 const AuthSection: React.FC<AuthSectionProps> = ({ t }) => {
   type AuthMode = 'signin' | 'signup' | 'forgot-password' | 'reset-sent';
   const [mode, setMode] = useState<AuthMode>('signin');
   const [role, setRole] = useState<UserRole>('customer');
   const [loading, setLoading] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    name: ''
-  });
-  const [emailError, setEmailError] = useState<string | null>(null);
+  const [formData, setFormData] = useState({ email: '', password: '', name: '' });
 
-  const validateEmail = (email: string) => {
-    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return regex.test(email);
-  };
-
-  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const email = e.target.value;
-    setFormData({ ...formData, email });
-    if (email && !validateEmail(email)) {
-      setEmailError('Please enter a valid email address.');
-    } else {
-      setEmailError(null);
-    }
-  };
-
-  const handleGoogleLogin = async () => {
-    setLoading(true);
+  const resetState = () => {
     setErrorMsg(null);
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: window.location.origin,
-          queryParams: {
-            // We pass the intended role in metadata if possible, 
-            // though standard OAuth users default to customer
-            access_type: 'offline',
-            prompt: 'consent',
-          }
-        }
-      });
-      if (error) throw error;
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Google Sign-In failed.');
-      setLoading(false);
-    }
+    setLoading(false);
   };
 
-  const resetFormState = () => {
-    setFormData({ email: '', password: '', name: '' });
-    setEmailError(null);
-    setErrorMsg(null);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMsg(null);
-    if (!validateEmail(formData.email)) {
-      setEmailError('Please enter a valid email address.');
-      return;
-    }
+    resetState();
     setLoading(true);
+
     try {
       if (mode === 'signup') {
         const { error } = await supabase.auth.signUp({
           email: formData.email,
           password: formData.password,
           options: {
-            data: { role, name: formData.name }
+            data: { 
+              role, 
+              name: formData.name || formData.email.split('@')[0] 
+            }
           }
         });
         if (error) throw error;
-      } else {
+        alert("Verification email sent! Please check your inbox.");
+      } else if (mode === 'signin') {
         const { error } = await supabase.auth.signInWithPassword({
           email: formData.email,
           password: formData.password
         });
         if (error) throw error;
+      } else if (mode === 'forgot-password') {
+        const { error } = await supabase.auth.resetPasswordForEmail(formData.email);
+        if (error) throw error;
+        setMode('reset-sent');
       }
     } catch (err: any) {
-      setErrorMsg(err.message || 'Authentication failed. Please check your credentials.');
+      setErrorMsg(err.message || 'Authentication failed. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const renderFormContent = () => {
-    switch (mode) {
-      case 'forgot-password':
-        return (
-          <div className="space-y-8 animate-in fade-in">
-            <div className="text-center lg:text-left">
-              <h3 className="text-4xl font-black text-slate-950 dark:text-white mb-3 tracking-tight">Reset Password</h3>
-              <p className="text-slate-600 dark:text-slate-400 font-medium text-lg">Enter your email to receive a secure recovery link.</p>
-            </div>
-            {errorMsg && (
-              <div className="bg-red-50 dark:bg-red-950/30 p-4 rounded-2xl flex items-center gap-3 text-red-600 border border-red-100 dark:border-red-900/30">
-                <AlertCircle size={20} />
-                <p className="text-sm font-bold">{errorMsg}</p>
-              </div>
-            )}
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 dark:text-slate-400 ml-1">Email Address</label>
-                <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-                  <input
-                    type="email"
-                    required
-                    placeholder="name@company.com"
-                    className={`w-full bg-white dark:bg-slate-900 border-2 rounded-2xl py-5 pl-12 pr-4 transition-all text-lg font-bold ${
-                      emailError ? 'border-red-500' : 'border-slate-300 dark:border-slate-700 focus:border-orange-500'
-                    }`}
-                    value={formData.email}
-                    onChange={handleEmailChange}
-                  />
-                </div>
-              </div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-slate-950 dark:bg-orange-500 text-white py-5 rounded-2xl font-black text-xl hover:bg-black transition-all shadow-2xl flex items-center justify-center gap-3 disabled:opacity-50"
-              >
-                Send Reset Link <ArrowRight size={22} />
-              </button>
-            </form>
-            <div className="text-center">
-              <button onClick={() => setMode('signin')} className="font-black text-orange-600 hover:text-orange-700 uppercase tracking-widest text-sm border-b-2 border-orange-200 transition-all">← Back to Sign In</button>
-            </div>
-          </div>
-        );
-      case 'reset-sent':
-        return (
-          <div className="text-center space-y-8 animate-in fade-in zoom-in">
-            <div className="w-24 h-24 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center text-emerald-600 mx-auto shadow-xl">
-              <MailCheck size={48} strokeWidth={2.5} />
-            </div>
-            <div>
-              <h3 className="text-4xl font-black text-slate-950 dark:text-white mb-3 tracking-tighter">Check your inbox</h3>
-              <p className="text-slate-600 dark:text-slate-400 text-xl font-medium max-w-sm mx-auto">
-                We've sent a recovery link to <span className="font-black text-slate-950 underline decoration-orange-500">{formData.email}</span>.
-              </p>
-            </div>
-            <button
-              onClick={() => { setMode('signin'); resetFormState(); }}
-              className="w-full bg-slate-950 dark:bg-white text-white dark:text-slate-950 py-5 rounded-2xl font-black text-xl hover:bg-black transition-all shadow-2xl"
-            >
-              Return to Login
-            </button>
-          </div>
-        );
-      case 'signin':
-      case 'signup':
-      default:
-        return (
-          <div className="space-y-8">
-            <div className="text-center lg:text-left">
-              <div className="lg:hidden flex items-center justify-center gap-2 mb-8 scale-110">
-                 <div className="bg-orange-500 p-2.5 rounded-xl">
-                   <Truck className="text-white" size={32} strokeWidth={2.5} />
-                 </div>
-                 <span className="text-4xl font-black text-slate-950 uppercase tracking-tighter">{t.appName}</span>
-              </div>
-              <h3 className="text-5xl font-black text-slate-950 dark:text-white mb-3 tracking-tighter">
-                {mode === 'signin' ? 'Sign In' : 'Sign Up'}
-              </h3>
-              <p className="text-slate-600 dark:text-slate-400 text-xl font-medium">
-                {mode === 'signin' ? 'Manage your fleet like a pro.' : 'Join 50,000+ Indian transporters today.'}
-              </p>
-            </div>
-
-            {errorMsg && (
-              <div className="bg-red-50 dark:bg-red-950/30 p-4 rounded-2xl flex items-center gap-3 text-red-600 border border-red-100">
-                <AlertCircle size={20} />
-                <p className="text-sm font-bold">{errorMsg}</p>
-              </div>
-            )}
-
-            {/* Social Login Button */}
-            <button
-              onClick={handleGoogleLogin}
-              disabled={loading}
-              className="w-full bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 text-slate-950 dark:text-white py-5 rounded-2xl font-black text-lg hover:bg-slate-50 transition-all flex items-center justify-center gap-4 group active:scale-[0.98] shadow-sm"
-            >
-              <svg className="w-6 h-6" viewBox="0 0 24 24">
-                <path fill="#EA4335" d="M12 11h11v2H12z" />
-                <path fill="#4285F4" d="M23 12c0-0.7-0.1-1.3-0.2-2H12v4h6.3c-0.3 1.5-1.1 2.8-2.3 3.7l3.7 2.8c2.2-2 3.5-5 3.5-8.5z" />
-                <path fill="#34A853" d="M12 23c3 0 5.5-1 7.4-2.7l-3.7-2.8c-1 0.7-2.4 1.2-3.7 1.2-2.9 0-5.3-2-6.2-4.6l-3.8 2.9C3.8 20.3 7.6 23 12 23z" />
-                <path fill="#FBBC05" d="M5.8 14.1c-0.2-0.7-0.3-1.4-0.3-2.1s0.1-1.4 0.3-2.1l-3.8-2.9C1.1 8.8 1 10.4 1 12s0.1 3.2 1 4.7l3.8-2.9z" />
-                <path fill="#EA4335" d="M12 4.8c1.6 0 3.1 0.6 4.2 1.6l3.1-3.1C17.4 1.3 14.9 0 12 0 7.6 0 3.8 2.7 2 6.4l3.8 2.9c0.9-2.6 3.3-4.5 6.2-4.5z" />
-              </svg>
-              CONTINUE WITH GOOGLE
-            </button>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-slate-200 dark:border-slate-800" /></div>
-              <div className="relative flex justify-center text-[10px] font-black uppercase"><span className="bg-white dark:bg-slate-950 px-4 text-slate-400">Or use email instead</span></div>
-            </div>
-
-            <div className="flex bg-slate-100 dark:bg-slate-900 p-2 rounded-2xl border border-slate-200 dark:border-slate-800">
-              <button
-                onClick={() => setRole('customer')}
-                className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-[14px] text-sm font-black transition-all ${
-                  role === 'customer' ? 'bg-slate-950 text-white shadow-2xl scale-[1.02]' : 'text-slate-500'
-                }`}
-              >
-                <User size={18} /> CUSTOMER
-              </button>
-              <button
-                onClick={() => setRole('transporter')}
-                className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-[14px] text-sm font-black transition-all ${
-                  role === 'transporter' ? 'bg-slate-950 text-white shadow-2xl scale-[1.02]' : 'text-slate-500'
-                }`}
-              >
-                <Truck size={18} /> TRANSPORTER
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {mode === 'signup' && (
-                <div className="space-y-2">
-                  <label className="text-xs font-black uppercase text-slate-400 ml-1">Full Name</label>
-                  <div className="relative">
-                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-                    <input
-                      type="text"
-                      required
-                      placeholder="Enter your name"
-                      className="w-full bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-700 rounded-2xl py-4 pl-12 pr-4 text-lg font-bold"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    />
-                  </div>
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <label className="text-xs font-black uppercase text-slate-400 ml-1">Email Address</label>
-                <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-                  <input
-                    type="email"
-                    required
-                    placeholder="name@company.com"
-                    className="w-full bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-700 rounded-2xl py-4 pl-12 pr-4 text-lg font-bold"
-                    value={formData.email}
-                    onChange={handleEmailChange}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-black uppercase text-slate-400 ml-1">Password</label>
-                <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-                  <input
-                    type="password"
-                    required
-                    placeholder="••••••••"
-                    className="w-full bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-700 rounded-2xl py-4 pl-12 pr-4 text-lg font-bold"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              {mode === 'signin' && (
-                <div className="text-right">
-                  <button type="button" onClick={() => { setMode('forgot-password'); setEmailError(null); }} className="text-sm font-black text-orange-600 uppercase tracking-widest underline underline-offset-4">Forgot Password?</button>
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-slate-950 dark:bg-orange-500 text-white py-6 rounded-2xl font-black text-xl hover:bg-black transition-all shadow-2xl flex items-center justify-center gap-3 group disabled:opacity-50"
-              >
-                {loading ? <div className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin" /> : <> {mode === 'signin' ? 'SIGN IN' : 'CREATE ACCOUNT'} <ArrowRight size={24} className="group-hover:translate-x-2 transition-transform" /></>}
-              </button>
-            </form>
-
-            <div className="text-center pt-4">
-              <p className="text-lg font-bold text-slate-500">
-                {mode === 'signin' ? "Don't have an account?" : "Already joined?"}{' '}
-                <button
-                  onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); resetFormState(); }}
-                  className="font-black text-orange-600 underline decoration-4 underline-offset-8"
-                >
-                  {mode === 'signin' ? 'Sign Up Free' : 'Sign In Now'}
-                </button>
-              </p>
-            </div>
-          </div>
-        );
+  const wheelStyles = `
+    @keyframes rotate3d {
+      0% { transform: rotateY(0deg); }
+      100% { transform: rotateY(360deg); }
     }
-  };
+    .wheel-container {
+      perspective: 1200px;
+      width: 100%;
+      height: 240px;
+      transform-style: preserve-3d;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: all 0.6s ease;
+    }
+    .wheel {
+      position: relative;
+      width: 210px;
+      height: 210px;
+      transform-style: preserve-3d;
+      animation: rotate3d 18s linear infinite;
+      transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .wheel.focused {
+      animation-play-state: paused;
+      transform: rotateY(0deg) !important;
+    }
+    .rim {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 170px;
+      height: 170px;
+      margin-left: -85px;
+      margin-top: -85px;
+      background: #1e293b;
+      border: 6px solid #334155;
+      border-radius: 50%;
+      transform: translateZ(35px);
+      box-shadow: inset 0 0 30px rgba(0,0,0,0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .rim-back { 
+      transform: translateZ(-35px) rotateY(180deg); 
+    }
+    .tire {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 210px;
+      height: 210px;
+      margin-left: -105px;
+      margin-top: -105px;
+      border-radius: 50%;
+      border: 24px solid #020617;
+      box-shadow: 0 0 20px rgba(0,0,0,0.4);
+    }
+    .spoke {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 2px;
+      height: 85px;
+      background: #475569;
+      transform-origin: top center;
+    }
+  `;
 
   return (
-    <div className="min-h-screen bg-white dark:bg-slate-950 flex flex-col lg:flex-row overflow-hidden">
-      <div className="hidden lg:flex lg:w-5/12 bg-slate-950 p-20 flex-col justify-between relative overflow-hidden shadow-2xl z-10 border-r border-white/5">
-        <div className="relative z-20">
-          <div className="flex items-center gap-4 text-white mb-16">
-            <div className="bg-orange-500 p-3.5 rounded-2xl shadow-2xl shadow-orange-500/40">
-              <Truck size={42} strokeWidth={2.5} className="text-white" />
-            </div>
-            <h1 className="text-5xl font-black tracking-tighter uppercase">{t.appName}</h1>
-          </div>
-          <h2 className="text-7xl font-black text-white leading-[1] mb-10 tracking-tight">
-            The New Standard <br /> for Indian Transport.
-          </h2>
-          <p className="text-slate-400 text-2xl font-medium max-w-lg leading-relaxed">
-            Revolutionizing logistics with AI-powered load estimation, real-time GPS tracking, and instant SOS dispatch.
-          </p>
-        </div>
-        
-        <div className="relative z-20 space-y-6">
-           <div className="flex items-center gap-6 group">
-             <div className="w-14 h-14 bg-orange-500/10 border border-orange-500/20 rounded-2xl flex items-center justify-center text-orange-500 group-hover:bg-orange-500 group-hover:text-white transition-all shadow-xl">
-               <ShieldCheck size={32} strokeWidth={2.5} />
-             </div>
-             <div><p className="text-white font-black text-xl">Highway Verified</p><p className="text-slate-500 text-sm font-bold uppercase tracking-widest">Secured Logistics Network</p></div>
-           </div>
-           <div className="flex items-center gap-6 group">
-             <div className="w-14 h-14 bg-orange-500/10 border border-orange-500/20 rounded-2xl flex items-center justify-center text-orange-500 group-hover:bg-orange-500 group-hover:text-white transition-all shadow-xl">
-               <CheckCircle2 size={32} strokeWidth={2.5} />
-             </div>
-             <div><p className="text-white font-black text-xl">Digital Proof</p><p className="text-slate-500 text-sm font-bold uppercase tracking-widest">Instant POD & Bilty Sync</p></div>
-           </div>
-        </div>
-        <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-br from-orange-500/5 via-transparent to-transparent pointer-events-none" />
-        <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-orange-500/10 rounded-full blur-[120px] pointer-events-none" />
+    <div className="min-h-screen bg-[#020617] text-white flex flex-col lg:flex-row overflow-hidden relative">
+      <style>{wheelStyles}</style>
+      
+      {/* Background Lighting */}
+      <div className="fixed inset-0 z-0 pointer-events-none opacity-40">
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-tr from-amber-500/10 via-transparent to-sky-500/10" />
       </div>
 
-      <div className="flex-1 flex items-center justify-center p-8 lg:p-24 bg-white dark:bg-slate-950">
-        <div className="w-full max-w-xl animate-in fade-in slide-in-from-bottom-8 duration-700">
-          {renderFormContent()}
+      {/* Visual Identity Section */}
+      <div className={`relative z-10 flex flex-col items-center justify-center p-6 lg:w-1/2 lg:p-16 transition-all duration-700 ${isFocused ? 'opacity-40 scale-95 lg:opacity-100 lg:scale-100' : ''}`}>
+        <div className="lg:absolute lg:top-12 lg:left-12 flex items-center gap-3 mb-6 lg:mb-0">
+          <div className="bg-amber-500 p-2 rounded-lg shadow-lg">
+            <Truck size={20} className="text-white" />
+          </div>
+          <h1 className="text-xl font-bold tracking-tight uppercase italic">{t.appName}</h1>
+        </div>
+
+        <div className="wheel-container lg:scale-125 mb-4 lg:mb-12">
+          <div className={`wheel ${isFocused ? 'focused' : ''}`}>
+            {/* Double-sided Logo Placement */}
+            <div className="rim">
+              <GadiDostLogo className="w-[85%] h-[85%] border-none shadow-none" />
+            </div>
+            <div className="rim rim-back">
+              <GadiDostLogo className="w-[85%] h-[85%] border-none shadow-none" />
+            </div>
+            <div className="tire" />
+            {[0, 60, 120, 180, 240, 300].map((deg) => (
+              <div key={deg} className="spoke" style={{ transform: `rotate(${deg}deg) translateZ(10px)` }} />
+            ))}
+          </div>
+        </div>
+
+        <div className="text-center max-w-sm hidden lg:block animate-in slide-in-from-bottom duration-700">
+          <h2 className="text-3xl font-bold leading-tight tracking-tight uppercase italic mb-3">
+            YOUR <span className="text-amber-500">DIGITAL</span> TRANSPORT PARTNER.
+          </h2>
+          <p className="text-slate-500 text-sm font-medium leading-relaxed">
+            The standard for Indian logistics—verified fleets, drivers, and digital bilty.
+          </p>
+        </div>
+      </div>
+
+      {/* Auth Interaction Section */}
+      <div className="flex-1 flex items-center justify-center p-4 sm:p-8 lg:p-12 z-20">
+        <div className="w-full max-w-md">
+          <div className="bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-[32px] p-6 lg:p-10 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-amber-500/20 to-transparent" />
+            
+            <div className="space-y-6">
+              {mode === 'reset-sent' ? (
+                <div className="text-center space-y-4 py-8 animate-in zoom-in">
+                  <div className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto text-emerald-500">
+                    <CheckCircle2 size={32} />
+                  </div>
+                  <h3 className="text-2xl font-bold italic uppercase tracking-tight">Email Sent</h3>
+                  <p className="text-slate-400 text-sm font-medium">Please check your inbox for instructions to reset your access key.</p>
+                  <button onClick={() => setMode('signin')} className="text-amber-500 font-bold uppercase text-xs tracking-widest underline underline-offset-4">Return to Login</button>
+                </div>
+              ) : (
+                <>
+                  <div className="text-center lg:text-left">
+                    <h3 className="text-2xl lg:text-3xl font-bold tracking-tight italic uppercase text-white">
+                      {mode === 'signin' ? 'LOG IN' : mode === 'signup' ? 'SIGN UP' : 'RESET KEY'}
+                    </h3>
+                    <p className="text-slate-500 font-semibold text-xs">
+                      {mode === 'signin' ? 'Welcome back to your command center.' : mode === 'signup' ? 'Create your fleet account today.' : 'Enter your email to recover access.'}
+                    </p>
+                  </div>
+
+                  {errorMsg && (
+                    <div className="bg-red-500/10 border border-red-500/20 p-3 rounded-xl flex items-center gap-3 text-red-400 animate-in shake">
+                      <AlertCircle size={14} />
+                      <p className="text-[10px] font-bold uppercase">{errorMsg}</p>
+                    </div>
+                  )}
+
+                  {mode !== 'forgot-password' && (
+                    <div className="flex bg-slate-950/30 p-1 rounded-xl border border-white/5">
+                      <button
+                        onClick={() => setRole('customer')}
+                        className={`flex-1 py-2 rounded-lg text-[9px] font-bold transition-all uppercase tracking-widest ${
+                          role === 'customer' ? 'bg-amber-500 text-slate-900' : 'text-slate-500'
+                        }`}
+                      >
+                        CUSTOMER
+                      </button>
+                      <button
+                        onClick={() => setRole('transporter')}
+                        className={`flex-1 py-2 rounded-lg text-[9px] font-bold transition-all uppercase tracking-widest ${
+                          role === 'transporter' ? 'bg-amber-500 text-slate-900' : 'text-slate-500'
+                        }`}
+                      >
+                        TRANSPORTER
+                      </button>
+                    </div>
+                  )}
+
+                  <form onSubmit={handleAuth} className="space-y-4">
+                    {mode === 'signup' && (
+                      <div className="space-y-1">
+                        <label className="text-[8px] font-bold uppercase text-slate-500 tracking-[0.2em] ml-1">Business Name</label>
+                        <div className="relative group">
+                          <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-amber-500 transition-colors" size={14} />
+                          <input
+                            type="text"
+                            required
+                            placeholder="e.g. Gadi Dost Logi"
+                            onFocus={() => setIsFocused(true)}
+                            onBlur={() => setIsFocused(false)}
+                            className="w-full bg-slate-950/20 border border-white/5 rounded-xl py-3.5 pl-11 pr-4 text-white font-semibold text-sm focus:border-amber-500/30 outline-none transition-all placeholder:text-slate-800"
+                            value={formData.name}
+                            onChange={(e) => setFormData({...formData, name: e.target.value})}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="space-y-1">
+                      <label className="text-[8px] font-bold uppercase text-slate-500 tracking-[0.2em] ml-1">Email Address</label>
+                      <div className="relative group">
+                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-amber-500 transition-colors" size={14} />
+                        <input
+                          type="email"
+                          required
+                          placeholder="partner@gadidost.com"
+                          onFocus={() => setIsFocused(true)}
+                          onBlur={() => setIsFocused(false)}
+                          className="w-full bg-slate-950/20 border border-white/5 rounded-xl py-3.5 pl-11 pr-4 text-white font-semibold text-sm focus:border-amber-500/30 outline-none transition-all placeholder:text-slate-800"
+                          value={formData.email}
+                          onChange={(e) => setFormData({...formData, email: e.target.value})}
+                        />
+                      </div>
+                    </div>
+
+                    {mode !== 'forgot-password' && (
+                      <div className="space-y-1">
+                        <label className="text-[8px] font-bold uppercase text-slate-500 tracking-[0.2em] ml-1">Access Pin</label>
+                        <div className="relative group">
+                          <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-amber-500 transition-colors" size={14} />
+                          <input
+                            type="password"
+                            required
+                            placeholder="••••••••"
+                            onFocus={() => setIsFocused(true)}
+                            onBlur={() => setIsFocused(false)}
+                            className="w-full bg-slate-950/20 border border-white/5 rounded-xl py-3.5 pl-11 pr-4 text-white font-semibold text-sm focus:border-amber-500/30 outline-none transition-all placeholder:text-slate-800"
+                            value={formData.password}
+                            onChange={(e) => setFormData({...formData, password: e.target.value})}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between py-1">
+                      {mode === 'signin' && (
+                        <button type="button" onClick={() => setMode('forgot-password')} className="text-[10px] font-bold text-amber-500 uppercase tracking-widest hover:text-amber-400">Lost Key?</button>
+                      )}
+                      {mode === 'forgot-password' && (
+                        <button type="button" onClick={() => setMode('signin')} className="text-[10px] font-bold text-amber-500 uppercase tracking-widest hover:text-amber-400">Back to Login</button>
+                      )}
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full bg-amber-500 text-slate-900 py-4 rounded-xl font-bold text-sm hover:bg-amber-400 transition-all flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50 group"
+                    >
+                      <span className="italic">{loading ? 'PROCESSING...' : mode === 'signin' ? 'ENTER HIGHWAY' : mode === 'signup' ? 'CREATE PROFILE' : 'SEND RESET LINK'}</span>
+                      {!loading && <ArrowRight className="group-hover:translate-x-1 transition-transform" size={16} strokeWidth={3} />}
+                    </button>
+                  </form>
+
+                  <div className="text-center pt-2">
+                    <p className="text-slate-500 font-semibold text-[11px]">
+                      {mode === 'signin' ? "New Transport Partner?" : "Already a member?"}{' '}
+                      <button
+                        onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); resetState(); }}
+                        className="text-amber-500 font-bold hover:text-amber-400 underline underline-offset-4 transition-all uppercase italic ml-1"
+                      >
+                        {mode === 'signin' ? 'Register Now' : 'Sign In'}
+                      </button>
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>
