@@ -45,7 +45,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     // Persistent auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
         // Sync user metadata (role, name, etc.) from Supabase session
         const metadata = session.user.user_metadata;
@@ -53,11 +53,18 @@ const App: React.FC = () => {
           id: session.user.id,
           email: session.user.email!,
           role: metadata.role || 'customer',
-          name: metadata.name || metadata.full_name || session.user.email!.split('@')[0],
+          // Extract name from Google metadata (full_name) or custom metadata (name)
+          name: metadata.full_name || metadata.name || session.user.email!.split('@')[0],
           phone: metadata.phone,
           businessName: metadata.businessName,
           address: metadata.address
         });
+
+        // FIX: Clean up the URL if it contains the access token hash from Google Login
+        if (window.location.hash && window.location.hash.includes('access_token')) {
+          // Use replaceState to clear the hash without refreshing the page
+          window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        }
       } else {
         setUser(null);
         setActivePanel(AppPanel.DASHBOARD);
