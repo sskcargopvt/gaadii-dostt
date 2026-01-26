@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Navigation, 
   ShieldAlert, 
@@ -11,9 +11,15 @@ import {
   Clock,
   ChevronRight,
   Settings,
-  User as UserIcon
+  User as UserIcon,
+  Loader2,
+  Activity,
+  Zap,
+  ShieldCheck,
+  Smartphone
 } from 'lucide-react';
 import { AppPanel, User } from '../types';
+import { supabase } from '../services/supabaseClient';
 
 interface DashboardHomeProps {
   onNavigate: (panel: AppPanel) => void;
@@ -22,95 +28,166 @@ interface DashboardHomeProps {
 }
 
 const DashboardHome: React.FC<DashboardHomeProps> = ({ onNavigate, t, user }) => {
-  const cards = [
-    { id: AppPanel.GPS, title: t.gps, icon: Navigation, color: "from-blue-700 to-indigo-600", desc: "Track fleet and monitor vehicle sensors." },
-    { id: AppPanel.EMERGENCY, title: t.emergency, icon: ShieldAlert, color: "from-red-700 to-orange-600", desc: "Instant roadside dispatch within 30 mins." },
-    { id: AppPanel.BOOKING, title: t.booking, icon: Truck, color: "from-orange-600 to-amber-500", desc: "Real-time truck load marketplace." },
-    { id: AppPanel.BILTY, title: t.bilty, icon: FileText, color: "from-emerald-700 to-teal-600", desc: "Secure digital document control center." },
-    { id: AppPanel.CALCULATOR, title: t.calculator, icon: Calculator, color: "from-purple-700 to-indigo-600", desc: "AI-powered trip cost estimations." },
-    { id: AppPanel.PROFILE, title: t.profile, icon: Settings, color: "from-slate-700 to-slate-900", desc: "View and edit your account details." },
+  const [fleetStats, setFleetStats] = useState({ total: 0, running: 0 });
+  const [loadingStats, setLoadingStats] = useState(true);
+
+  const fetchStats = async () => {
+    setLoadingStats(true);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return;
+
+    const { data, error } = await supabase
+      .from('vehicles')
+      .select('id, ignition')
+      .eq('owner_id', session.user.id);
+
+    if (!error && data) {
+      setFleetStats({
+        total: data.length,
+        running: data.filter(v => v.ignition).length
+      });
+    }
+    setLoadingStats(false);
+  };
+
+  useEffect(() => {
+    fetchStats();
+    const channel = supabase
+      .channel('dash-updates')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicles' }, fetchStats)
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
+  const mainTools = [
+    { id: AppPanel.GPS, title: t.gps, icon: Navigation, color: "bg-blue-600", border: "border-blue-500/20" },
+    { id: AppPanel.BOOKING, title: t.booking, icon: Truck, color: "bg-amber-600", border: "border-amber-500/20" },
+    { id: AppPanel.BILTY, title: t.bilty, icon: FileText, color: "bg-emerald-600", border: "border-emerald-500/20" },
+    { id: AppPanel.CALCULATOR, title: t.calculator, icon: Calculator, color: "bg-indigo-600", border: "border-indigo-500/20" },
+    { id: AppPanel.PROFILE, title: t.profile, icon: Settings, color: "bg-slate-700", border: "border-slate-500/20" },
   ];
 
   return (
-    <div className="space-y-12 animate-in fade-in duration-500">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <div>
-          <h2 className="text-4xl md:text-6xl font-black tracking-tighter text-slate-950 dark:text-white uppercase leading-none mb-2 italic">
-            {t.welcomeUser.replace('{name}', user.name.split(' ')[0])}
-          </h2>
-          <p className="text-slate-500 dark:text-slate-400 text-xl md:text-2xl font-bold tracking-tight">{t.tagline}</p>
+    <div className="space-y-6 animate-in fade-in duration-500 pb-12">
+      {/* Header Identity Row */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-slate-900 p-4 rounded-[32px] border border-slate-100 dark:border-white/5 shadow-sm">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-amber-500 flex items-center justify-center text-slate-900 shadow-lg shadow-amber-500/20">
+            <UserIcon size={24} strokeWidth={2.5} />
+          </div>
+          <div>
+            <h2 className="text-xl font-black tracking-tight uppercase italic leading-none text-slate-950 dark:text-white">
+              {user.name.split(' ')[0]} <span className="text-amber-500">Dost</span>
+            </h2>
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Network Active • {user.role}</p>
+          </div>
         </div>
-        <button 
-          onClick={() => onNavigate(AppPanel.PROFILE)}
-          className="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 p-6 rounded-[32px] flex items-center gap-4 hover:border-amber-500 transition-all shadow-xl group"
-        >
-          <div className="bg-slate-100 dark:bg-slate-800 p-3 rounded-2xl group-hover:bg-amber-500 transition-colors">
-            <UserIcon size={24} className="group-hover:text-slate-900" />
-          </div>
-          <div className="text-left">
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Account Status</p>
-            <p className="text-sm font-bold uppercase italic">Edit Profile Details</p>
-          </div>
-          <ChevronRight className="text-slate-300 group-hover:text-amber-500 group-hover:translate-x-1 transition-all" size={20} />
-        </button>
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-          <div className="bg-slate-950 text-white p-10 rounded-[48px] shadow-2xl flex items-center gap-8 group hover:scale-[1.02] transition-transform cursor-pointer">
-            <div className="bg-orange-500 p-6 rounded-[32px] shadow-2xl shadow-orange-500/20">
-              <TrendingUp className="text-white" size={42} strokeWidth={3} />
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="flex-1 sm:flex-none px-4 py-2 bg-emerald-50 dark:bg-emerald-500/10 rounded-xl border border-emerald-100 dark:border-emerald-500/20">
+            <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
+              <ShieldCheck size={14} />
+              <span className="text-[9px] font-black uppercase tracking-widest">Verified Partner</span>
             </div>
-            <div>
-              <p className="text-sm text-orange-500 font-black uppercase tracking-[0.2em] mb-2">Fleet Status</p>
-              <p className="text-5xl font-black">12 / 15 <span className="text-lg opacity-40 font-medium ml-2">RUNNING</span></p>
-            </div>
-            <ChevronRight className="ml-auto text-orange-500 group-hover:translate-x-2 transition-transform" size={32} strokeWidth={3} />
           </div>
-          <div className="bg-white dark:bg-slate-900 text-slate-950 dark:text-white p-10 rounded-[48px] shadow-2xl border-4 border-slate-950 dark:border-slate-800 flex items-center gap-8 group hover:scale-[1.02] transition-transform cursor-pointer">
-            <div className="bg-slate-950 dark:bg-slate-800 p-6 rounded-[32px] shadow-2xl">
-              <Clock className="text-white" size={42} strokeWidth={3} />
-            </div>
-            <div>
-              <p className="text-sm text-slate-400 font-black uppercase tracking-[0.2em] mb-2">Pending Jobs</p>
-              <p className="text-5xl font-black text-slate-950 dark:text-white">04 <span className="text-lg opacity-40 font-medium ml-2">TASKS</span></p>
-            </div>
-            <ChevronRight className="ml-auto text-slate-300 group-hover:translate-x-2 transition-transform" size={32} strokeWidth={3} />
-          </div>
+          <button onClick={() => onNavigate(AppPanel.PROFILE)} className="p-2.5 bg-slate-50 dark:bg-slate-800 rounded-xl hover:bg-slate-100 transition-all border border-slate-200 dark:border-white/5">
+            <Settings size={18} className="text-slate-500" />
+          </button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-        {cards.map((card) => (
+      {/* KPI Stats Row (Horizontal & Vertical mix) */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div onClick={() => onNavigate(AppPanel.GPS)} className="bg-slate-950 p-5 rounded-[28px] text-white shadow-xl cursor-pointer group relative overflow-hidden">
+          <div className="flex justify-between items-start mb-2 relative z-10">
+            <TrendingUp size={18} className="text-orange-500" />
+            {loadingStats ? <Loader2 size={12} className="animate-spin opacity-40" /> : <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />}
+          </div>
+          <p className="text-[9px] font-black uppercase text-slate-500 tracking-widest mb-1 relative z-10">Fleet Pulse</p>
+          <p className="text-2xl font-black italic relative z-10">{fleetStats.running}<span className="text-xs text-slate-500 ml-1">/ {fleetStats.total}</span></p>
+          <Activity size={60} className="absolute -right-4 -bottom-4 opacity-10 rotate-12 group-hover:scale-110 transition-transform" />
+        </div>
+
+        <div onClick={() => onNavigate(AppPanel.BILTY)} className="bg-white dark:bg-slate-900 p-5 rounded-[28px] border border-slate-100 dark:border-white/5 shadow-sm cursor-pointer group relative overflow-hidden">
+          <Clock size={18} className="text-indigo-500 mb-2" />
+          <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest mb-1">Active Tasks</p>
+          <p className="text-2xl font-black dark:text-white">04 <span className="text-xs text-slate-400 font-bold ml-1 uppercase">Pending</span></p>
+          <FileText size={60} className="absolute -right-4 -bottom-4 opacity-5 dark:opacity-10 rotate-12 group-hover:scale-110 transition-transform" />
+        </div>
+
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-[28px] border border-slate-100 dark:border-white/5 shadow-sm hidden md:block relative overflow-hidden">
+          <Zap size={18} className="text-amber-500 mb-2" />
+          <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest mb-1">System Uptime</p>
+          <p className="text-2xl font-black dark:text-white">99.9<span className="text-xs text-slate-400 font-bold ml-1">%</span></p>
+          <Smartphone size={60} className="absolute -right-4 -bottom-4 opacity-5 rotate-12" />
+        </div>
+
+        <div className="bg-amber-500 p-5 rounded-[28px] shadow-lg shadow-amber-500/20 relative overflow-hidden cursor-pointer group" onClick={() => onNavigate(AppPanel.CALCULATOR)}>
+          <Calculator size={18} className="text-slate-900 mb-2" />
+          <p className="text-[9px] font-black uppercase text-slate-700 tracking-widest mb-1">Trip Profit</p>
+          <p className="text-2xl font-black text-slate-950">₹0.00</p>
+          <TrendingUp size={60} className="absolute -right-4 -bottom-4 opacity-10 rotate-12 group-hover:scale-110 transition-transform" />
+        </div>
+      </div>
+
+      {/* Main Grid View */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Navigation Matrix */}
+        <div className="lg:col-span-2 grid grid-cols-2 sm:grid-cols-3 gap-4">
+          {mainTools.map((tool) => (
+            <button
+              key={tool.id}
+              onClick={() => onNavigate(tool.id)}
+              className={`group relative flex flex-col items-center justify-center p-6 rounded-[32px] bg-white dark:bg-slate-900 border ${tool.border} shadow-sm transition-all hover:-translate-y-1 hover:shadow-xl duration-300`}
+            >
+              <div className={`${tool.color} w-14 h-14 rounded-2xl flex items-center justify-center text-white mb-4 shadow-lg group-hover:scale-110 transition-transform`}>
+                <tool.icon size={28} strokeWidth={2.5} />
+              </div>
+              <h4 className="text-[11px] font-black uppercase tracking-widest text-slate-900 dark:text-white">{tool.title}</h4>
+              <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                <ChevronRight size={14} className="text-slate-300" />
+              </div>
+            </button>
+          ))}
+          {/* Empty spacer or custom card to fill grid nicely */}
+          <div className="hidden sm:flex p-6 rounded-[32px] border-2 border-dashed border-slate-100 dark:border-white/5 flex-col items-center justify-center text-center">
+            <Smartphone size={24} className="text-slate-200 mb-2" />
+            <p className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">More Tools<br/>Coming Soon</p>
+          </div>
+        </div>
+
+        {/* Emergency High-Priority Card */}
+        <div className="lg:col-span-1">
           <button
-            key={card.id}
-            onClick={() => onNavigate(card.id)}
-            className="group relative bg-white dark:bg-slate-900 p-10 rounded-[56px] shadow-2xl border-2 border-slate-100 dark:border-slate-800 hover:border-slate-950 dark:hover:border-orange-500 transition-all text-left overflow-hidden hover:-translate-y-3 duration-500"
-          >
-            <div className={`bg-gradient-to-br ${card.color} w-24 h-24 rounded-[32px] flex items-center justify-center text-white mb-10 shadow-2xl group-hover:scale-110 group-hover:rotate-6 transition-transform duration-500`}>
-              <card.icon size={48} strokeWidth={3} />
-            </div>
-            <h3 className="text-3xl font-black mb-4 text-slate-950 dark:text-white tracking-tight leading-none group-hover:text-orange-600 transition-colors uppercase italic">{card.title}</h3>
-            <p className="text-slate-500 dark:text-slate-400 font-bold text-lg mb-8 leading-snug h-14 line-clamp-2">{card.desc}</p>
-            <div className="flex items-center text-slate-950 dark:text-orange-500 font-black text-xs uppercase tracking-widest border-t-2 border-slate-50 dark:border-slate-800 pt-6">
-              Access Tool <ChevronRight size={20} strokeWidth={3} className="ml-2 group-hover:translate-x-2 transition-transform" />
-            </div>
-          </button>
-        ))}
-         <button
             onClick={() => onNavigate(AppPanel.EMERGENCY)}
-            className="group relative bg-slate-950 p-12 rounded-[64px] shadow-2xl border-none text-white text-left overflow-hidden hover:-translate-y-2 duration-300 md:col-span-2 lg:col-span-3"
+            className="w-full h-full bg-slate-900 dark:bg-red-950/20 rounded-[40px] p-8 text-left group relative overflow-hidden shadow-2xl border border-white/5 hover:bg-slate-950 transition-colors"
           >
-            <div className="relative z-10">
-              <div className="bg-orange-500 w-24 h-24 rounded-[32px] flex items-center justify-center text-white mb-10 shadow-2xl shadow-orange-500/40 group-hover:scale-110 transition-transform">
-                <ShieldAlert size={48} strokeWidth={3} />
+            <div className="relative z-10 flex flex-col h-full justify-between">
+              <div>
+                <div className="bg-red-600 w-14 h-14 rounded-2xl flex items-center justify-center text-white mb-6 shadow-xl shadow-red-600/30 group-hover:rotate-12 transition-transform">
+                  <ShieldAlert size={32} strokeWidth={3} />
+                </div>
+                <h3 className="text-3xl font-black text-white italic tracking-tighter uppercase leading-none mb-3">Roadside<br/>Rescue</h3>
+                <p className="text-slate-400 text-[11px] font-bold uppercase tracking-widest max-w-[160px] leading-relaxed">Verified dispatch within 30 mins</p>
               </div>
-              <h3 className="text-4xl md:text-6xl font-black mb-6 tracking-tighter leading-none uppercase italic">Need Highway Rescue?</h3>
-              <p className="text-slate-400 text-xl md:text-2xl font-bold max-w-3xl mb-12 leading-relaxed">Instantly request verified highway mechanics, fuel delivery, or 20-ton tow trucks with one-tap emergency dispatch.</p>
-              <div className="inline-flex items-center bg-orange-500 text-white px-12 py-6 rounded-[32px] font-black text-xl md:text-2xl shadow-2xl shadow-orange-500/40 hover:bg-orange-600 transition-all active:scale-95">
-                START EMERGENCY RESCUE <ArrowRight size={32} strokeWidth={3} className="ml-4 group-hover:translate-x-2 transition-transform" />
+              <div className="mt-8 flex items-center gap-2 text-red-500 font-black text-[10px] uppercase tracking-widest border-t border-white/5 pt-4">
+                Deploy Help <ArrowRight size={14} className="group-hover:translate-x-2 transition-transform" />
               </div>
             </div>
-            <ShieldAlert size={400} className="absolute -right-20 -bottom-20 opacity-5 rotate-12 pointer-events-none group-hover:scale-125 transition-transform duration-1000" />
+            <ShieldAlert size={200} className="absolute -right-12 -bottom-12 opacity-5 dark:opacity-[0.03] rotate-12 pointer-events-none group-hover:scale-125 transition-transform duration-1000" />
           </button>
+        </div>
+      </div>
+
+      {/* Quick Action Footer Strip */}
+      <div className="bg-slate-50 dark:bg-white/5 rounded-[24px] p-3 flex items-center justify-between border border-slate-100 dark:border-white/5">
+        <div className="flex items-center gap-3 ml-2">
+           <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+           <span className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Global Network Online</span>
+        </div>
+        <div className="flex gap-2">
+           <button onClick={() => onNavigate(AppPanel.BOOKING)} className="px-5 py-2 bg-white dark:bg-slate-800 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-sm hover:bg-slate-100 transition-all">Quick Book</button>
+           <button onClick={() => onNavigate(AppPanel.GPS)} className="px-5 py-2 bg-amber-500 text-slate-900 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-sm hover:bg-amber-400 transition-all">Track Fleet</button>
+        </div>
       </div>
     </div>
   );

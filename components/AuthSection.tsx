@@ -129,7 +129,7 @@ const AuthSection: React.FC<AuthSectionProps> = ({ t }) => {
           password: formData.password,
           options: {
             data: { 
-              role, 
+              role, // CRITICAL: Ensures role is correctly passed to metadata
               name: formData.name || formData.email.split('@')[0],
               phone: formData.phone,
               businessName: formData.businessName,
@@ -307,8 +307,18 @@ const AuthSection: React.FC<AuthSectionProps> = ({ t }) => {
                   </div>
 
                   <div className="flex bg-slate-950/30 p-1 rounded-xl border border-white/5">
-                    <button onClick={() => setRole('customer')} className={`flex-1 py-2 rounded-lg text-[9px] font-bold transition-all uppercase tracking-widest ${role === 'customer' ? 'bg-amber-500 text-slate-900' : 'text-slate-500'}`}>CUSTOMER</button>
-                    <button onClick={() => setRole('transporter')} className={`flex-1 py-2 rounded-lg text-[9px] font-bold transition-all uppercase tracking-widest ${role === 'transporter' ? 'bg-amber-500 text-slate-900' : 'text-slate-500'}`}>TRANSPORTER</button>
+                    <button 
+                      onClick={() => setRole('customer')} 
+                      className={`flex-1 py-3 rounded-lg text-[10px] font-black transition-all uppercase tracking-widest flex items-center justify-center gap-2 ${role === 'customer' ? 'bg-amber-500 text-slate-900 shadow-lg' : 'text-slate-500 hover:text-slate-400'}`}
+                    >
+                      {role === 'customer' && <CheckCircle2 size={12} />} Customer
+                    </button>
+                    <button 
+                      onClick={() => setRole('transporter')} 
+                      className={`flex-1 py-3 rounded-lg text-[10px] font-black transition-all uppercase tracking-widest flex items-center justify-center gap-2 ${role === 'transporter' ? 'bg-amber-500 text-slate-900 shadow-lg' : 'text-slate-500 hover:text-slate-400'}`}
+                    >
+                      {role === 'transporter' && <CheckCircle2 size={12} />} Transporter
+                    </button>
                   </div>
 
                   <form onSubmit={handleAuth} className="space-y-4">
@@ -316,7 +326,7 @@ const AuthSection: React.FC<AuthSectionProps> = ({ t }) => {
                       <label className="text-[8px] font-bold uppercase text-slate-500 tracking-[0.2em] ml-1">Email</label>
                       <div className="relative group">
                         <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
-                        <input type="email" required placeholder="name@domain.com" className="w-full bg-slate-950/20 border border-white/5 rounded-xl py-3.5 pl-11 pr-4 text-white font-semibold text-sm outline-none" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
+                        <input type="email" required placeholder="name@domain.com" className="w-full bg-slate-950/20 border border-white/5 rounded-xl py-3.5 pl-11 pr-4 text-white font-semibold text-sm outline-none focus:border-amber-500/50 transition-colors" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
                       </div>
                     </div>
 
@@ -325,7 +335,7 @@ const AuthSection: React.FC<AuthSectionProps> = ({ t }) => {
                         <label className="text-[8px] font-bold uppercase text-slate-500 tracking-[0.2em] ml-1">Access Pin</label>
                         <div className="relative group">
                           <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
-                          <input type="password" required placeholder="••••••••" className="w-full bg-slate-950/20 border border-white/5 rounded-xl py-3.5 pl-11 pr-4 text-white font-semibold text-sm outline-none" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} />
+                          <input type="password" required placeholder="••••••••" className="w-full bg-slate-950/20 border border-white/5 rounded-xl py-3.5 pl-11 pr-4 text-white font-semibold text-sm outline-none focus:border-amber-500/50 transition-colors" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} />
                         </div>
                       </div>
                     )}
@@ -337,28 +347,28 @@ const AuthSection: React.FC<AuthSectionProps> = ({ t }) => {
                           <label className="text-[8px] font-bold uppercase text-slate-500 tracking-[0.2em] ml-1">Full Name</label>
                           <div className="relative group">
                             <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
-                            <input type="text" required placeholder="John Doe" className="w-full bg-slate-950/20 border border-white/5 rounded-xl py-3.5 pl-11 pr-4 text-white font-semibold text-sm outline-none" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
+                            <input type="text" required placeholder="John Doe" className="w-full bg-slate-950/20 border border-white/5 rounded-xl py-3.5 pl-11 pr-4 text-white font-semibold text-sm outline-none focus:border-amber-500/50 transition-colors" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-1">
                             <label className="text-[8px] font-bold uppercase text-slate-500 tracking-[0.2em] ml-1">Phone</label>
-                            <input type="tel" placeholder="+91..." className="w-full bg-slate-950/20 border border-white/5 rounded-xl py-3.5 px-4 text-white font-semibold text-sm outline-none" value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} />
+                            <input type="tel" placeholder="+91..." className="w-full bg-slate-950/20 border border-white/5 rounded-xl py-3.5 px-4 text-white font-semibold text-sm outline-none focus:border-amber-500/50 transition-colors" value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} />
                           </div>
                           <div className="space-y-1">
                             <label className="text-[8px] font-bold uppercase text-slate-500 tracking-[0.2em] ml-1">Business</label>
-                            <input type="text" placeholder="Co. Name" className="w-full bg-slate-950/20 border border-white/5 rounded-xl py-3.5 px-4 text-white font-semibold text-sm outline-none" value={formData.businessName} onChange={(e) => setFormData({...formData, businessName: e.target.value})} />
+                            <input type="text" placeholder="Co. Name" className="w-full bg-slate-950/20 border border-white/5 rounded-xl py-3.5 px-4 text-white font-semibold text-sm outline-none focus:border-amber-500/50 transition-colors" value={formData.businessName} onChange={(e) => setFormData({...formData, businessName: e.target.value})} />
                           </div>
                         </div>
                         <div className="space-y-1">
                           <label className="text-[8px] font-bold uppercase text-slate-500 tracking-[0.2em] ml-1">Office Address</label>
-                          <textarea placeholder="Full Registered Address" rows={2} className="w-full bg-slate-950/20 border border-white/5 rounded-xl py-3.5 px-4 text-white font-semibold text-sm outline-none resize-none" value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} />
+                          <textarea placeholder="Full Registered Address" rows={2} className="w-full bg-slate-950/20 border border-white/5 rounded-xl py-3.5 px-4 text-white font-semibold text-sm outline-none focus:border-amber-500/50 transition-colors resize-none" value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} />
                         </div>
                       </div>
                     )}
 
-                    <button type="submit" disabled={loading} className="w-full bg-amber-500 text-slate-900 py-4 rounded-xl font-bold text-sm hover:bg-amber-400 transition-all flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50 group shadow-lg">
-                      <span className="italic uppercase">{loading ? 'Processing...' : mode === 'signin' ? 'Enter Highway' : mode === 'signup' ? 'Create & Save Profile' : 'Send Reset Link'}</span>
+                    <button type="submit" disabled={loading} className="w-full bg-amber-500 text-slate-900 py-4 rounded-xl font-bold text-sm hover:bg-amber-400 transition-all flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50 group shadow-lg shadow-amber-500/20">
+                      <span className="italic uppercase font-black tracking-tight">{loading ? 'Processing...' : mode === 'signin' ? 'Enter Highway' : mode === 'signup' ? 'Create & Save Profile' : 'Send Reset Link'}</span>
                       {!loading && <ArrowRight className="group-hover:translate-x-1 transition-transform" size={16} strokeWidth={3} />}
                     </button>
                   </form>

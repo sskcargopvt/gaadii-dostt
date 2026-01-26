@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Truck, 
   Navigation, 
@@ -15,10 +15,8 @@ import {
   User as UserIcon,
   Activity,
   LogOut,
-  ShieldCheck,
-  UserCircle,
-  Star,
-  Settings
+  Settings,
+  Bell
 } from 'lucide-react';
 import { translations } from './i18n';
 import { AppPanel, Language, User } from './types';
@@ -33,38 +31,88 @@ import DashboardHome from './components/DashboardHome';
 import AuthSection from './components/AuthSection';
 import { supabase } from './services/supabaseClient';
 
+/**
+ * Custom Tooltip Component
+ * Handles Desktop Hover and Mobile Long-press
+ */
+const NavTooltip: React.FC<{ 
+  label: string; 
+  children: React.ReactNode; 
+  position?: 'right' | 'top' 
+}> = ({ label, children, position = 'right' }) => {
+  const [isVisible, setIsVisible] = useState(false);
+  const timerRef = useRef<number | null>(null);
+
+  const handleTouchStart = () => {
+    timerRef.current = window.setTimeout(() => {
+      setIsVisible(true);
+    }, 500); // Long press threshold
+  };
+
+  const handleTouchEnd = () => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+    }
+    setTimeout(() => setIsVisible(false), 1500); // Hide after a short delay on mobile
+  };
+
+  const positionClasses = {
+    right: 'left-full ml-4 top-1/2 -translate-y-1/2',
+    top: 'bottom-full mb-3 left-1/2 -translate-x-1/2'
+  };
+
+  return (
+    <div 
+      className="relative flex items-center group w-full"
+      onMouseEnter={() => setIsVisible(true)}
+      onMouseLeave={() => setIsVisible(false)}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
+      {children}
+      {isVisible && (
+        <div className={`absolute z-[100] px-3 py-1.5 bg-slate-950 text-white text-[10px] font-black uppercase tracking-widest rounded-lg shadow-2xl border border-white/10 pointer-events-none whitespace-nowrap animate-in fade-in zoom-in duration-200 ${positionClasses[position]}`}>
+          {label}
+          {/* Tooltip Arrow */}
+          <div className={`absolute w-2 h-2 bg-slate-950 border-white/10 rotate-45 ${
+            position === 'right' ? '-left-1 top-1/2 -translate-y-1/2 border-l border-b' : '-bottom-1 left-1/2 -translate-x-1/2 border-r border-b'
+          }`} />
+        </div>
+      )}
+    </div>
+  );
+};
+
 const App: React.FC = () => {
   const [activePanel, setActivePanel] = useState<AppPanel>(AppPanel.DASHBOARD);
   const [lang, setLang] = useState<Language>('en');
   const [darkMode, setDarkMode] = useState<boolean>(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [user, setUser] = useState<User | null>(null);
   const [initializing, setInitializing] = useState(true);
 
   const t = useMemo(() => translations[lang], [lang]);
 
+  // URL cleanup for Google Auth tokens on localhost
   useEffect(() => {
-    // Persistent auth state listener
+    const cleanHash = () => {
+      if (window.location.hash && (window.location.hash.includes('access_token') || window.location.hash.includes('id_token'))) {
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      }
+    };
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
-        // Sync user metadata (role, name, etc.) from Supabase session
         const metadata = session.user.user_metadata;
         setUser({
           id: session.user.id,
           email: session.user.email!,
           role: metadata.role || 'customer',
-          // Extract name from Google metadata (full_name) or custom metadata (name)
           name: metadata.full_name || metadata.name || session.user.email!.split('@')[0],
           phone: metadata.phone,
           businessName: metadata.businessName,
           address: metadata.address
         });
-
-        // FIX: Clean up the URL if it contains the access token hash from Google Login
-        if (window.location.hash && window.location.hash.includes('access_token')) {
-          // Use replaceState to clear the hash without refreshing the page
-          window.history.replaceState(null, '', window.location.pathname + window.location.search);
-        }
+        cleanHash();
       } else {
         setUser(null);
         setActivePanel(AppPanel.DASHBOARD);
@@ -72,7 +120,7 @@ const App: React.FC = () => {
       setInitializing(false);
     });
     
-    // Initial session check
+    cleanHash();
     const checkInitialSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) setInitializing(false);
@@ -102,15 +150,15 @@ const App: React.FC = () => {
       { id: AppPanel.BILTY, label: t.bilty, icon: FileText },
       { id: AppPanel.CALCULATOR, label: t.calculator, icon: Calculator },
       { id: AppPanel.PROFILE, label: t.profile, icon: Settings },
-      { id: AppPanel.ADMIN, label: t.admin, icon: Activity },
     ];
-    // Restrict Admin Panel to 'admin' role
-    return items.filter(item => item.id !== AppPanel.ADMIN || user?.role === 'admin');
+    if (user?.role === 'admin') {
+      items.push({ id: AppPanel.ADMIN, label: t.admin, icon: Activity });
+    }
+    return items;
   }, [t, user?.role]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    setIsSidebarOpen(false);
   };
 
   const renderContent = () => {
@@ -130,10 +178,10 @@ const App: React.FC = () => {
 
   if (initializing) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+      <div className="min-h-screen flex items-center justify-center bg-slate-950">
         <div className="flex flex-col items-center gap-6">
-          <div className="w-12 h-12 border-4 border-amber-500/30 border-t-amber-500 rounded-full animate-spin" />
-          <p className="font-bold text-slate-400 uppercase tracking-widest text-[9px]">Authorizing Connection...</p>
+          <div className="w-16 h-16 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin" />
+          <p className="font-black text-amber-500 uppercase tracking-[0.3em] text-[10px] animate-pulse">Syncing Network...</p>
         </div>
       </div>
     );
@@ -141,94 +189,117 @@ const App: React.FC = () => {
 
   if (!user) return <AuthSection t={t} />;
 
-  const getRoleStyle = (role: string) => {
-    switch (role) {
-      case 'admin': return 'bg-slate-900 text-white border-slate-900';
-      case 'transporter': return 'bg-amber-500 text-slate-900 border-amber-600';
-      default: return 'bg-sky-500 text-white border-sky-600';
-    }
-  };
-
   return (
-    <div className={`min-h-screen flex flex-col ${darkMode ? 'bg-slate-950 text-slate-100' : 'bg-white text-slate-950'} transition-colors duration-300`}>
-      <header className="sticky top-0 z-50 w-full backdrop-blur-3xl border-b-[4px] border-slate-900 dark:border-slate-800 bg-white/95 dark:bg-slate-950/95 px-6 h-20 flex items-center justify-between shadow-xl">
-        <div className="flex items-center gap-4">
-          <button onClick={() => setIsSidebarOpen(true)} className="p-2.5 bg-slate-900 text-white rounded-lg lg:hidden active:scale-90 transition-transform">
-            <Menu size={20} strokeWidth={3} />
-          </button>
-          <div className="flex items-center gap-3">
-            <div className="bg-amber-500 p-2 rounded-lg shadow-lg transform rotate-2">
-              <Truck size={24} strokeWidth={2.5} className="text-slate-900" />
+    <div className={`min-h-screen flex flex-col ${darkMode ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-950'} transition-colors duration-300`}>
+      <div className="flex flex-1 overflow-hidden relative text-slate-950 dark:text-white">
+        {/* Desktop Sidebar */}
+        <aside className="hidden lg:flex w-72 flex-col bg-slate-900 text-white border-r border-white/5 shadow-2xl z-40 relative">
+          <div className="p-8">
+            <div className="flex items-center gap-3 mb-10 group cursor-pointer" onClick={() => setActivePanel(AppPanel.DASHBOARD)}>
+              <div className="bg-amber-500 p-2.5 rounded-xl shadow-lg shadow-amber-500/20 group-hover:rotate-12 transition-transform">
+                <Truck size={24} strokeWidth={3} className="text-slate-900" />
+              </div>
+              <h1 className="font-black text-2xl tracking-tighter uppercase italic">{t.appName}</h1>
             </div>
-            <div className="flex flex-col cursor-pointer" onClick={() => setActivePanel(AppPanel.DASHBOARD)}>
-              <h1 className="font-bold text-xl tracking-tight uppercase text-slate-900 dark:text-white leading-none italic">{t.appName}</h1>
-              <span className="text-[7px] font-bold text-slate-400 uppercase tracking-widest mt-1">Digital Highway</span>
-            </div>
-          </div>
-        </div>
 
-        <div className="flex items-center gap-4">
-          <button onClick={toggleDarkMode} className="hidden sm:flex p-2.5 bg-slate-100 dark:bg-slate-800 rounded-lg transition-all">
-            {darkMode ? <Sun size={18} className="text-amber-400" /> : <Moon size={18} className="text-slate-600" />}
-          </button>
-          
-          <div className="flex items-center gap-3 pl-4 border-l border-slate-100 dark:border-slate-800">
-             <div className="text-right hidden md:block">
-                <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-widest border-b mb-0.5 ${getRoleStyle(user.role)}`}>
-                  {user.role}
-                </div>
-                <p className="font-bold text-slate-900 dark:text-white text-sm leading-none tracking-tight">{user.name}</p>
-             </div>
-             <button 
-                onClick={() => setActivePanel(AppPanel.PROFILE)}
-                className={`w-10 h-10 rounded-lg flex items-center justify-center shadow-lg border-2 transition-all overflow-hidden ${
-                  activePanel === AppPanel.PROFILE 
-                    ? 'bg-amber-500 border-slate-900 dark:border-white' 
-                    : 'bg-slate-900 dark:bg-white border-transparent'
-                }`}
-             >
-                <UserIcon size={22} className={activePanel === AppPanel.PROFILE ? 'text-slate-900' : 'text-white dark:text-slate-900'} />
-             </button>
+            <nav className="space-y-2">
+              {navItems.map((item) => (
+                <NavTooltip key={item.id} label={item.label} position="right">
+                  <button
+                    onClick={() => setActivePanel(item.id)}
+                    className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all ${
+                      activePanel === item.id 
+                        ? 'bg-amber-500 text-slate-900 shadow-xl shadow-amber-500/20' 
+                        : 'text-slate-400 hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    <item.icon size={18} strokeWidth={2.5} /> {item.label}
+                  </button>
+                </NavTooltip>
+              ))}
+            </nav>
           </div>
 
-          <button onClick={handleLogout} className="p-2.5 bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-600 hover:text-white transition-all">
-            <LogOut size={18} strokeWidth={3} />
-          </button>
-        </div>
-      </header>
-
-      <div className="flex flex-1 overflow-hidden">
-        <aside className={`fixed inset-y-0 left-0 z-[60] w-64 transform lg:translate-x-0 lg:static transition-transform duration-500 ease-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} bg-slate-900 p-5 flex flex-col shadow-2xl`}>
-          <div className="flex items-center justify-between mb-10 lg:hidden">
-            <h1 className="font-bold text-white text-xl tracking-tighter uppercase italic">{t.appName}</h1>
-            <button onClick={() => setIsSidebarOpen(false)} className="p-2 bg-white/10 text-white rounded-lg"><X size={20} /></button>
+          <div className="mt-auto p-8 space-y-4">
+            <button onClick={toggleLang} className="w-full flex items-center gap-4 px-5 py-3 rounded-xl text-[10px] font-black uppercase text-amber-500 bg-white/5 border border-white/5 hover:bg-white/10 transition-all">
+              <Languages size={16} /> {lang === 'en' ? 'हिन्दी VERSION' : 'ENGLISH MODE'}
+            </button>
+            <button onClick={handleLogout} className="w-full flex items-center gap-4 px-5 py-3 rounded-xl text-[10px] font-black uppercase text-red-400 bg-red-500/5 border border-red-500/10 hover:bg-red-500/20 transition-all">
+              <LogOut size={16} /> Sign Out
+            </button>
           </div>
-
-          <nav className="flex-1 space-y-2">
-            {navItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => { setActivePanel(item.id); setIsSidebarOpen(false); }}
-                className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-xl text-sm font-bold uppercase tracking-tight transition-all ${
-                  activePanel === item.id 
-                    ? 'bg-amber-500 text-slate-900 shadow-lg' 
-                    : 'text-slate-400 hover:text-white hover:bg-white/5'
-                }`}
-              >
-                <item.icon size={20} strokeWidth={2.5} /> {item.label}
-              </button>
-            ))}
-          </nav>
-          
-          <button onClick={toggleLang} className="mt-auto w-full flex items-center gap-4 px-4 py-3.5 rounded-xl text-[10px] font-bold text-white bg-slate-800 border border-white/5">
-            <Languages size={18} className="text-amber-500" />
-            {lang === 'en' ? 'हिन्दी - HINDI' : 'ENGLISH VERSION'}
-          </button>
         </aside>
 
-        <main className="flex-1 overflow-y-auto p-4 lg:p-10 bg-slate-50 dark:bg-slate-950">
-          <div className="max-w-7xl mx-auto">{renderContent()}</div>
-        </main>
+        {/* Main Area */}
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+          <header className="h-20 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-white/5 px-6 lg:px-10 flex items-center justify-between z-30 shadow-sm">
+            <div className="lg:hidden flex items-center gap-3">
+               <div className="bg-amber-500 p-1.5 rounded-lg">
+                <Truck size={18} strokeWidth={3} className="text-slate-900" />
+              </div>
+              <h1 className="font-black text-lg uppercase italic">{t.appName}</h1>
+            </div>
+
+            <div className="hidden lg:block">
+              <h2 className="text-sm font-black uppercase tracking-widest text-slate-400">
+                Network Status: <span className="text-emerald-500 ml-1">Operational</span>
+              </h2>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <button onClick={toggleDarkMode} className="p-2.5 bg-slate-100 dark:bg-white/5 rounded-xl hover:bg-slate-200 dark:hover:bg-white/10 transition-all">
+                {darkMode ? <Sun size={18} className="text-amber-400" /> : <Moon size={18} className="text-slate-600" />}
+              </button>
+              <div className="h-8 w-[1px] bg-slate-200 dark:bg-white/10 mx-2" />
+              <div className="flex items-center gap-4 cursor-pointer" onClick={() => setActivePanel(AppPanel.PROFILE)}>
+                <div className="text-right hidden sm:block">
+                  <p className="text-xs font-black uppercase tracking-tight leading-none mb-1.5">{user.name}</p>
+                  <div className={`inline-block px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${
+                    user.role === 'admin' ? 'bg-red-500 text-white' : 
+                    user.role === 'transporter' ? 'bg-amber-500 text-slate-900 shadow-sm' : 
+                    'bg-indigo-600 text-white shadow-sm'
+                  }`}>
+                    {user.role}
+                  </div>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-slate-950 flex items-center justify-center text-white border-2 border-amber-500 shadow-lg group">
+                  <UserIcon size={20} className="group-hover:scale-110 transition-transform" />
+                </div>
+              </div>
+            </div>
+          </header>
+
+          <main className="flex-1 overflow-y-auto p-4 md:p-8 lg:p-12 scroll-smooth">
+            <div className="max-w-7xl mx-auto pb-24 lg:pb-0">
+              {renderContent()}
+            </div>
+          </main>
+        </div>
+
+        {/* Mobile Bottom Navigation with Tooltips */}
+        <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-20 bg-white/90 dark:bg-slate-900/95 backdrop-blur-2xl border-t border-slate-200 dark:border-white/10 flex items-center justify-around px-2 z-50 safe-area-bottom">
+           {[
+             { id: AppPanel.DASHBOARD, icon: LayoutDashboard },
+             { id: AppPanel.GPS, icon: Navigation },
+             { id: AppPanel.BOOKING, icon: Truck },
+             { id: AppPanel.BILTY, icon: FileText },
+             { id: AppPanel.EMERGENCY, icon: ShieldAlert },
+           ].map((item) => (
+             <NavTooltip key={item.id} label={translations[lang][item.id as keyof typeof translations['en']]} position="top">
+               <button
+                 onClick={() => setActivePanel(item.id)}
+                 className={`flex flex-col items-center justify-center gap-1.5 px-4 py-2 rounded-2xl transition-all ${
+                   activePanel === item.id 
+                    ? 'text-amber-500 bg-amber-500/10' 
+                    : 'text-slate-400'
+                 }`}
+               >
+                 <item.icon size={22} strokeWidth={activePanel === item.id ? 3 : 2} />
+                 <span className="text-[8px] font-black uppercase tracking-widest">{translations[lang][item.id as keyof typeof translations['en']]}</span>
+               </button>
+             </NavTooltip>
+           ))}
+        </nav>
       </div>
     </div>
   );

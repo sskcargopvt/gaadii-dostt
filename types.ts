@@ -24,6 +24,28 @@ export interface User {
   address?: string;
 }
 
+export interface Vehicle {
+  id: string;
+  registration_number: string;
+  owner_id: string;
+  type: string;
+  status: 'Running' | 'Stopped' | 'Offline';
+  speed: number;
+  fuel_level: number;
+  ignition: boolean;
+  lat: number;
+  lng: number;
+  last_updated: string;
+  created_at?: string;
+}
+
+export interface VehicleActivity {
+  total_km: number;
+  idle_hours: number;
+  overspeed_alerts: number;
+  active_days: number;
+}
+
 export interface Sensor {
   id: string;
   name: string;
