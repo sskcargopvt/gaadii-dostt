@@ -33,43 +33,32 @@ const GoogleLogo = ({ size = 20 }: { size?: number }) => (
 );
 
 /**
- * Gadi Dost Logo Component
+ * New Gadi Dost Logo Component based on user-provided brand identity
  */
 const GadiDostLogo: React.FC<{ className?: string }> = ({ className }) => (
-  <div className={`relative rounded-full bg-white flex flex-col items-center justify-center border-[4px] border-slate-900 overflow-hidden shadow-xl ${className}`}>
-    <div className="absolute inset-0 border border-amber-500 rounded-full m-0.5 pointer-events-none" />
-    <div className="relative z-10 flex items-end justify-center w-full h-[45%] mt-3 gap-0">
-      <div className="relative -mr-2 translate-y-1 scale-75 opacity-80">
-        <svg width="45" height="30" viewBox="0 0 60 40" fill="none">
-          <rect x="5" y="15" width="45" height="15" fill="#f59e0b" stroke="#000" strokeWidth="2"/>
-          <rect x="5" y="10" width="20" height="10" fill="#f59e0b" stroke="#000" strokeWidth="2"/>
-          <rect x="8" y="12" width="12" height="6" fill="#38bdf8" stroke="#000" strokeWidth="1"/>
-          <circle cx="15" cy="30" r="4" fill="#d1d5db" stroke="#000" strokeWidth="2"/>
-          <circle cx="40" cy="30" r="4" fill="#d1d5db" stroke="#000" strokeWidth="2"/>
-        </svg>
-      </div>
-      <div className="relative z-20 scale-90">
-        <svg width="75" height="50" viewBox="0 0 100 65" fill="none">
-          <path d="M10 25 H40 V50 H10 Z" fill="#f59e0b" stroke="#000" strokeWidth="3"/>
-          <path d="M40 15 H90 V40 H40 Z" fill="#f59e0b" stroke="#000" strokeWidth="3"/>
-          <path d="M15 28 H35 V40 H15 Z" fill="#38bdf8" stroke="#000" strokeWidth="2"/>
-          <circle cx="25" cy="50" r="7" fill="#d1d5db" stroke="#000" strokeWidth="2.5"/>
-          <circle cx="65" cy="50" r="7" fill="#d1d5db" stroke="#000" strokeWidth="2.5"/>
-          <circle cx="82" cy="50" r="7" fill="#d1d5db" stroke="#000" strokeWidth="2.5"/>
-        </svg>
-      </div>
-    </div>
-    <div className="relative z-30 w-[115%] bg-slate-900 py-1 flex justify-center -mt-0.5 shadow-md">
-      <span className="text-white font-bold text-[10px] tracking-widest uppercase italic">GADI DOST</span>
-    </div>
-    <div className="relative z-20 w-[80%] bg-amber-500 py-0.5 border-x border-b border-slate-900 flex justify-center -mt-0.5 shadow-sm">
-      <span className="text-slate-900 font-bold text-[6px] tracking-[0.2em] uppercase">ON THE MOVE</span>
-    </div>
-    <div className="flex gap-1.5 mt-1.5 mb-2.5">
-      <Star size={7} fill="black" strokeWidth={0} />
-      <Star size={7} fill="black" strokeWidth={0} />
-      <Star size={7} fill="black" strokeWidth={0} />
-    </div>
+  <div className={`relative flex flex-col items-center justify-center ${className}`}>
+    <svg viewBox="0 0 400 300" className="w-full h-full drop-shadow-2xl" fill="none" xmlns="http://www.w3.org/2000/svg">
+      {/* Background for visibility in some contexts, but usually transparent */}
+      
+      {/* Truck Silhouette */}
+      <path d="M140 180h80l40 40h40v40H140v-80z" fill="white" className="opacity-0" />
+      <g transform="translate(140, 130) scale(1.2)">
+        <path d="M60 40 L100 40 L120 70 L120 100 L10 100 L10 80 L30 80 L30 40 Z" fill="white" />
+        <path d="M85 45 L105 45 L115 65 L85 65 Z" fill="#a2d149" /> {/* Window highlight */}
+        <circle cx="95" cy="100" r="12" fill="#a2d149" stroke="white" strokeWidth="4" /> {/* Wheel */}
+      </g>
+
+      {/* Bird Silhouette (Lime Green) */}
+      <path d="M80 100 C120 80 180 150 210 120 C230 100 210 80 200 80 C230 80 260 110 210 160 C180 190 120 220 100 230 C120 200 110 140 80 100 Z" fill="#a2d149" />
+      <path d="M100 130 C130 110 170 140 190 135" stroke="#a2d149" strokeWidth="3" strokeLinecap="round" />
+      <path d="M90 115 C110 100 140 110 160 115" stroke="#a2d149" strokeWidth="2" strokeLinecap="round" />
+      
+      {/* Typography */}
+      <text x="50%" y="250" textAnchor="middle" className="font-black italic">
+        <tspan fill="white" style={{ fontSize: '54px', letterSpacing: '-2px' }}>GADI</tspan>
+        <tspan fill="#a2d149" style={{ fontSize: '54px', letterSpacing: '-2px' }}>DOST</tspan>
+      </text>
+    </svg>
   </div>
 );
 
@@ -129,7 +118,7 @@ const AuthSection: React.FC<AuthSectionProps> = ({ t }) => {
           password: formData.password,
           options: {
             data: { 
-              role, // CRITICAL: Ensures role is correctly passed to metadata
+              role,
               name: formData.name || formData.email.split('@')[0],
               phone: formData.phone,
               businessName: formData.businessName,
@@ -157,120 +146,45 @@ const AuthSection: React.FC<AuthSectionProps> = ({ t }) => {
     }
   };
 
-  const wheelStyles = `
-    @keyframes rotate3d {
-      0% { transform: rotateY(0deg); }
-      100% { transform: rotateY(360deg); }
-    }
-    .wheel-container {
-      perspective: 1200px;
-      width: 100%;
-      height: 240px;
-      transform-style: preserve-3d;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-    .wheel {
-      position: relative;
-      width: 210px;
-      height: 210px;
-      transform-style: preserve-3d;
-      animation: rotate3d 18s linear infinite;
-      transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .wheel.focused {
-      animation-play-state: paused;
-      transform: rotateY(0deg) !important;
-    }
-    .rim {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 170px;
-      height: 170px;
-      margin-left: -85px;
-      margin-top: -85px;
-      background: #1e293b;
-      border: 6px solid #334155;
-      border-radius: 50%;
-      transform: translateZ(35px);
-      box-shadow: inset 0 0 30px rgba(0,0,0,0.8);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .rim-back { 
-      transform: translateZ(-35px) rotateY(180deg); 
-    }
-    .tire {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 210px;
-      height: 210px;
-      margin-left: -105px;
-      margin-top: -105px;
-      border-radius: 50%;
-      border: 24px solid #020617;
-      box-shadow: 0 0 20px rgba(0,0,0,0.4);
-    }
-    .spoke {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 2px;
-      height: 85px;
-      background: #475569;
-      transform-origin: top center;
-    }
-  `;
-
   return (
-    <div className="min-h-screen bg-[#020617] text-white flex flex-col lg:flex-row overflow-hidden relative">
-      <style>{wheelStyles}</style>
-      <div className="fixed inset-0 z-0 pointer-events-none opacity-40 bg-gradient-to-tr from-amber-500/10 via-transparent to-sky-500/10" />
+    <div className="min-h-screen bg-[#001f3f] text-white flex flex-col lg:flex-row overflow-hidden relative">
+      <div className="fixed inset-0 z-0 pointer-events-none opacity-20 bg-[radial-gradient(circle_at_50%_50%,#a2d14922_0%,transparent_50%)]" />
 
       <div className={`relative z-10 flex flex-col items-center justify-center p-6 lg:w-1/2 lg:p-16 transition-all duration-700 ${isFocused ? 'opacity-40 scale-95 lg:opacity-100 lg:scale-100' : ''}`}>
         <div className="lg:absolute lg:top-12 lg:left-12 flex items-center gap-3 mb-6 lg:mb-0">
-          <div className="bg-amber-500 p-2 rounded-lg shadow-lg">
-            <Truck size={20} className="text-white" />
+          <div className="bg-[#a2d149] p-2 rounded-lg shadow-lg">
+            <Truck size={20} className="text-[#001f3f]" />
           </div>
-          <h1 className="text-xl font-bold tracking-tight uppercase italic">{t.appName}</h1>
+          <h1 className="text-xl font-bold tracking-tight uppercase italic">
+            GADI <span className="text-[#a2d149]">DOST</span>
+          </h1>
         </div>
 
-        <div className="wheel-container lg:scale-125 mb-4 lg:mb-12">
-          <div className={`wheel ${isFocused ? 'focused' : ''}`}>
-            <div className="rim"><GadiDostLogo className="w-[85%] h-[85%] border-none shadow-none" /></div>
-            <div className="rim rim-back"><GadiDostLogo className="w-[85%] h-[85%] border-none shadow-none" /></div>
-            <div className="tire" />
-            {[0, 60, 120, 180, 240, 300].map((deg) => (
-              <div key={deg} className="spoke" style={{ transform: `rotate(${deg}deg) translateZ(10px)` }} />
-            ))}
-          </div>
+        <div className="w-full max-w-lg mb-8 lg:mb-12 animate-in zoom-in duration-1000">
+          <GadiDostLogo className="w-full h-auto" />
         </div>
 
         <div className="text-center max-w-sm hidden lg:block animate-in slide-in-from-bottom duration-700">
           <h2 className="text-3xl font-bold leading-tight tracking-tight uppercase italic mb-3">
-            YOUR <span className="text-amber-500">DIGITAL</span> TRANSPORT PARTNER.
+            YOUR <span className="text-[#a2d149]">ULTIMATE</span> HIGHWAY PARTNER.
           </h2>
-          <p className="text-slate-500 text-sm font-medium leading-relaxed">
-            Standardizing Indian logistics—verified fleets and digital document control.
+          <p className="text-slate-400 text-sm font-medium leading-relaxed">
+            Revolutionizing Indian logistics with speed, safety, and digital transparency.
           </p>
         </div>
       </div>
 
       <div className="flex-1 flex items-center justify-center p-4 sm:p-8 lg:p-12 z-20 overflow-y-auto">
         <div className="w-full max-w-md py-10">
-          <div className="bg-slate-900/40 backdrop-blur-xl border border-white/5 rounded-[32px] p-6 lg:p-10 shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-amber-500/20 to-transparent" />
+          <div className="bg-[#002b55]/60 backdrop-blur-xl border border-white/5 rounded-[32px] p-6 lg:p-10 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[#a2d149]/30 to-transparent" />
             
             <div className="space-y-6">
               {mode === 'reset-sent' ? (
                 <div className="text-center space-y-4 py-8 animate-in zoom-in">
                   <div className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto text-emerald-500"><CheckCircle2 size={32} /></div>
                   <h3 className="text-2xl font-bold italic uppercase tracking-tight">Email Sent</h3>
-                  <button onClick={() => setMode('signin')} className="text-amber-500 font-bold uppercase text-xs tracking-widest underline underline-offset-4">Back to Login</button>
+                  <button onClick={() => setMode('signin')} className="text-[#a2d149] font-bold uppercase text-xs tracking-widest underline underline-offset-4">Back to Login</button>
                 </div>
               ) : (
                 <>
@@ -309,13 +223,13 @@ const AuthSection: React.FC<AuthSectionProps> = ({ t }) => {
                   <div className="flex bg-slate-950/30 p-1 rounded-xl border border-white/5">
                     <button 
                       onClick={() => setRole('customer')} 
-                      className={`flex-1 py-3 rounded-lg text-[10px] font-black transition-all uppercase tracking-widest flex items-center justify-center gap-2 ${role === 'customer' ? 'bg-amber-500 text-slate-900 shadow-lg' : 'text-slate-500 hover:text-slate-400'}`}
+                      className={`flex-1 py-3 rounded-lg text-[10px] font-black transition-all uppercase tracking-widest flex items-center justify-center gap-2 ${role === 'customer' ? 'bg-[#a2d149] text-[#001f3f] shadow-lg' : 'text-slate-500 hover:text-slate-400'}`}
                     >
                       {role === 'customer' && <CheckCircle2 size={12} />} Customer
                     </button>
                     <button 
                       onClick={() => setRole('transporter')} 
-                      className={`flex-1 py-3 rounded-lg text-[10px] font-black transition-all uppercase tracking-widest flex items-center justify-center gap-2 ${role === 'transporter' ? 'bg-amber-500 text-slate-900 shadow-lg' : 'text-slate-500 hover:text-slate-400'}`}
+                      className={`flex-1 py-3 rounded-lg text-[10px] font-black transition-all uppercase tracking-widest flex items-center justify-center gap-2 ${role === 'transporter' ? 'bg-[#a2d149] text-[#001f3f] shadow-lg' : 'text-slate-500 hover:text-slate-400'}`}
                     >
                       {role === 'transporter' && <CheckCircle2 size={12} />} Transporter
                     </button>
@@ -326,7 +240,7 @@ const AuthSection: React.FC<AuthSectionProps> = ({ t }) => {
                       <label className="text-[8px] font-bold uppercase text-slate-500 tracking-[0.2em] ml-1">Email</label>
                       <div className="relative group">
                         <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
-                        <input type="email" required placeholder="name@domain.com" className="w-full bg-slate-950/20 border border-white/5 rounded-xl py-3.5 pl-11 pr-4 text-white font-semibold text-sm outline-none focus:border-amber-500/50 transition-colors" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
+                        <input type="email" required placeholder="name@domain.com" className="w-full bg-[#001f3f]/40 border border-white/5 rounded-xl py-3.5 pl-11 pr-4 text-white font-semibold text-sm outline-none focus:border-[#a2d149]/50 transition-colors" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
                       </div>
                     </div>
 
@@ -335,39 +249,39 @@ const AuthSection: React.FC<AuthSectionProps> = ({ t }) => {
                         <label className="text-[8px] font-bold uppercase text-slate-500 tracking-[0.2em] ml-1">Access Pin</label>
                         <div className="relative group">
                           <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
-                          <input type="password" required placeholder="••••••••" className="w-full bg-slate-950/20 border border-white/5 rounded-xl py-3.5 pl-11 pr-4 text-white font-semibold text-sm outline-none focus:border-amber-500/50 transition-colors" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} />
+                          <input type="password" required placeholder="••••••••" className="w-full bg-[#001f3f]/40 border border-white/5 rounded-xl py-3.5 pl-11 pr-4 text-white font-semibold text-sm outline-none focus:border-[#a2d149]/50 transition-colors" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} />
                         </div>
                       </div>
                     )}
 
                     {mode === 'signup' && (
                       <div className="space-y-4 pt-4 border-t border-white/5 animate-in slide-in-from-top-2 duration-300">
-                        <p className="text-[9px] font-black text-amber-500 uppercase tracking-widest text-center">Business & Identity Details</p>
+                        <p className="text-[9px] font-black text-[#a2d149] uppercase tracking-widest text-center">Business & Identity Details</p>
                         <div className="space-y-1">
                           <label className="text-[8px] font-bold uppercase text-slate-500 tracking-[0.2em] ml-1">Full Name</label>
                           <div className="relative group">
                             <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
-                            <input type="text" required placeholder="John Doe" className="w-full bg-slate-950/20 border border-white/5 rounded-xl py-3.5 pl-11 pr-4 text-white font-semibold text-sm outline-none focus:border-amber-500/50 transition-colors" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
+                            <input type="text" required placeholder="John Doe" className="w-full bg-[#001f3f]/40 border border-white/5 rounded-xl py-3.5 pl-11 pr-4 text-white font-semibold text-sm outline-none focus:border-[#a2d149]/50 transition-colors" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-1">
                             <label className="text-[8px] font-bold uppercase text-slate-500 tracking-[0.2em] ml-1">Phone</label>
-                            <input type="tel" placeholder="+91..." className="w-full bg-slate-950/20 border border-white/5 rounded-xl py-3.5 px-4 text-white font-semibold text-sm outline-none focus:border-amber-500/50 transition-colors" value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} />
+                            <input type="tel" placeholder="+91..." className="w-full bg-[#001f3f]/40 border border-white/5 rounded-xl py-3.5 px-4 text-white font-semibold text-sm outline-none focus:border-[#a2d149]/50 transition-colors" value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} />
                           </div>
                           <div className="space-y-1">
                             <label className="text-[8px] font-bold uppercase text-slate-500 tracking-[0.2em] ml-1">Business</label>
-                            <input type="text" placeholder="Co. Name" className="w-full bg-slate-950/20 border border-white/5 rounded-xl py-3.5 px-4 text-white font-semibold text-sm outline-none focus:border-amber-500/50 transition-colors" value={formData.businessName} onChange={(e) => setFormData({...formData, businessName: e.target.value})} />
+                            <input type="text" placeholder="Co. Name" className="w-full bg-[#001f3f]/40 border border-white/5 rounded-xl py-3.5 px-4 text-white font-semibold text-sm outline-none focus:border-[#a2d149]/50 transition-colors" value={formData.businessName} onChange={(e) => setFormData({...formData, businessName: e.target.value})} />
                           </div>
                         </div>
                         <div className="space-y-1">
                           <label className="text-[8px] font-bold uppercase text-slate-500 tracking-[0.2em] ml-1">Office Address</label>
-                          <textarea placeholder="Full Registered Address" rows={2} className="w-full bg-slate-950/20 border border-white/5 rounded-xl py-3.5 px-4 text-white font-semibold text-sm outline-none focus:border-amber-500/50 transition-colors resize-none" value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} />
+                          <textarea placeholder="Full Registered Address" rows={2} className="w-full bg-[#001f3f]/40 border border-white/5 rounded-xl py-3.5 px-4 text-white font-semibold text-sm outline-none focus:border-[#a2d149]/50 transition-colors resize-none" value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} />
                         </div>
                       </div>
                     )}
 
-                    <button type="submit" disabled={loading} className="w-full bg-amber-500 text-slate-900 py-4 rounded-xl font-bold text-sm hover:bg-amber-400 transition-all flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50 group shadow-lg shadow-amber-500/20">
+                    <button type="submit" disabled={loading} className="w-full bg-[#a2d149] text-[#001f3f] py-4 rounded-xl font-bold text-sm hover:bg-[#b8e05d] transition-all flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50 group shadow-lg shadow-[#a2d149]/20">
                       <span className="italic uppercase font-black tracking-tight">{loading ? 'Processing...' : mode === 'signin' ? 'Enter Highway' : mode === 'signup' ? 'Create & Save Profile' : 'Send Reset Link'}</span>
                       {!loading && <ArrowRight className="group-hover:translate-x-1 transition-transform" size={16} strokeWidth={3} />}
                     </button>
@@ -376,7 +290,7 @@ const AuthSection: React.FC<AuthSectionProps> = ({ t }) => {
                   <div className="text-center pt-2">
                     <p className="text-slate-500 font-semibold text-[11px]">
                       {mode === 'signin' ? "New Partner?" : "Already member?"}{' '}
-                      <button onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); resetState(); }} className="text-amber-500 font-bold hover:text-amber-400 underline underline-offset-4 transition-all uppercase italic ml-1">
+                      <button onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); resetState(); }} className="text-[#a2d149] font-bold hover:text-white underline underline-offset-4 transition-all uppercase italic ml-1">
                         {mode === 'signin' ? 'Register Now' : 'Sign In'}
                       </button>
                     </p>

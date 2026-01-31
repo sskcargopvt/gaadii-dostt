@@ -73,7 +73,6 @@ const NavTooltip: React.FC<{
       {isVisible && (
         <div className={`absolute z-[100] px-3 py-1.5 bg-slate-950 text-white text-[10px] font-black uppercase tracking-widest rounded-lg shadow-2xl border border-white/10 pointer-events-none whitespace-nowrap animate-in fade-in zoom-in duration-200 ${positionClasses[position]}`}>
           {label}
-          {/* Tooltip Arrow */}
           <div className={`absolute w-2 h-2 bg-slate-950 border-white/10 rotate-45 ${
             position === 'right' ? '-left-1 top-1/2 -translate-y-1/2 border-l border-b' : '-bottom-1 left-1/2 -translate-x-1/2 border-r border-b'
           }`} />
@@ -91,6 +90,19 @@ const App: React.FC = () => {
   const [initializing, setInitializing] = useState(true);
 
   const t = useMemo(() => translations[lang], [lang]);
+
+  // SEO: Update HTML Document Title and Metadata dynamically
+  useEffect(() => {
+    const panelTitle = t[activePanel as keyof typeof t] || 'Logistics';
+    document.title = `${panelTitle} | Gadi Dost - Indian Transport Platform`;
+    document.documentElement.lang = lang;
+    
+    // Update Meta Description
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) {
+      metaDesc.setAttribute('content', `Gadi Dost ${panelTitle}: The leading digital solution for Indian fleet management, truck booking, and highway safety.`);
+    }
+  }, [activePanel, lang, t]);
 
   // URL cleanup for Google Auth tokens on localhost
   useEffect(() => {
@@ -164,24 +176,24 @@ const App: React.FC = () => {
   const renderContent = () => {
     if (!user) return null;
     switch (activePanel) {
-      case AppPanel.DASHBOARD: return <DashboardHome onNavigate={setActivePanel} t={t} user={user} />;
+      case AppPanel.DASHBOARD: return <DashboardHome onNavigate={setActivePanel} t={t} user={user} onLogout={handleLogout} />;
       case AppPanel.GPS: return <GPSSection t={t} />;
       case AppPanel.EMERGENCY: return <EmergencySection t={t} />;
       case AppPanel.BOOKING: return <BookingSection t={t} />;
       case AppPanel.BILTY: return <BiltySection t={t} />;
       case AppPanel.CALCULATOR: return <CalculatorSection t={t} />;
-      case AppPanel.PROFILE: return <ProfileSection t={t} user={user} onUpdate={setUser} />;
+      case AppPanel.PROFILE: return <ProfileSection t={t} user={user} onUpdate={setUser} onLogout={handleLogout} />;
       case AppPanel.ADMIN: return <AdminSection t={t} user={user} />;
-      default: return <DashboardHome onNavigate={setActivePanel} t={t} user={user} />;
+      default: return <DashboardHome onNavigate={setActivePanel} t={t} user={user} onLogout={handleLogout} />;
     }
   };
 
   if (initializing) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-950">
+      <div className="min-h-screen flex items-center justify-center bg-[#001f3f]" aria-busy="true">
         <div className="flex flex-col items-center gap-6">
-          <div className="w-16 h-16 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin" />
-          <p className="font-black text-amber-500 uppercase tracking-[0.3em] text-[10px] animate-pulse">Syncing Network...</p>
+          <div className="w-16 h-16 border-4 border-[#a2d149]/20 border-t-[#a2d149] rounded-full animate-spin" />
+          <p className="font-black text-[#a2d149] uppercase tracking-[0.3em] text-[10px] animate-pulse">Syncing Secure Network...</p>
         </div>
       </div>
     );
@@ -192,14 +204,14 @@ const App: React.FC = () => {
   return (
     <div className={`min-h-screen flex flex-col ${darkMode ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-950'} transition-colors duration-300`}>
       <div className="flex flex-1 overflow-hidden relative text-slate-950 dark:text-white">
-        {/* Desktop Sidebar */}
-        <aside className="hidden lg:flex w-72 flex-col bg-slate-900 text-white border-r border-white/5 shadow-2xl z-40 relative">
+        {/* Desktop Sidebar Landmarks */}
+        <aside className="hidden lg:flex w-72 flex-col bg-[#001f3f] text-white border-r border-white/5 shadow-2xl z-40 relative" role="navigation" aria-label="Main Navigation">
           <div className="p-8">
-            <div className="flex items-center gap-3 mb-10 group cursor-pointer" onClick={() => setActivePanel(AppPanel.DASHBOARD)}>
-              <div className="bg-amber-500 p-2.5 rounded-xl shadow-lg shadow-amber-500/20 group-hover:rotate-12 transition-transform">
-                <Truck size={24} strokeWidth={3} className="text-slate-900" />
+            <div className="flex items-center gap-3 mb-10 group cursor-pointer" onClick={() => setActivePanel(AppPanel.DASHBOARD)} aria-label="Gadi Dost Home">
+              <div className="bg-[#a2d149] p-2.5 rounded-xl shadow-lg shadow-[#a2d149]/20 group-hover:rotate-12 transition-transform">
+                <Truck size={24} strokeWidth={3} className="text-[#001f3f]" />
               </div>
-              <h1 className="font-black text-2xl tracking-tighter uppercase italic">{t.appName}</h1>
+              <h1 className="font-black text-2xl tracking-tighter uppercase italic">GADI <span className="text-[#a2d149]">DOST</span></h1>
             </div>
 
             <nav className="space-y-2">
@@ -207,13 +219,14 @@ const App: React.FC = () => {
                 <NavTooltip key={item.id} label={item.label} position="right">
                   <button
                     onClick={() => setActivePanel(item.id)}
+                    aria-current={activePanel === item.id ? 'page' : undefined}
                     className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all ${
                       activePanel === item.id 
-                        ? 'bg-amber-500 text-slate-900 shadow-xl shadow-amber-500/20' 
+                        ? 'bg-[#a2d149] text-[#001f3f] shadow-xl shadow-[#a2d149]/20' 
                         : 'text-slate-400 hover:text-white hover:bg-white/5'
                     }`}
                   >
-                    <item.icon size={18} strokeWidth={2.5} /> {item.label}
+                    <item.icon size={18} strokeWidth={2.5} aria-hidden="true" /> {item.label}
                   </button>
                 </NavTooltip>
               ))}
@@ -221,7 +234,7 @@ const App: React.FC = () => {
           </div>
 
           <div className="mt-auto p-8 space-y-4">
-            <button onClick={toggleLang} className="w-full flex items-center gap-4 px-5 py-3 rounded-xl text-[10px] font-black uppercase text-amber-500 bg-white/5 border border-white/5 hover:bg-white/10 transition-all">
+            <button onClick={toggleLang} className="w-full flex items-center gap-4 px-5 py-3 rounded-xl text-[10px] font-black uppercase text-[#a2d149] bg-white/5 border border-white/5 hover:bg-white/10 transition-all">
               <Languages size={16} /> {lang === 'en' ? 'हिन्दी VERSION' : 'ENGLISH MODE'}
             </button>
             <button onClick={handleLogout} className="w-full flex items-center gap-4 px-5 py-3 rounded-xl text-[10px] font-black uppercase text-red-400 bg-red-500/5 border border-red-500/10 hover:bg-red-500/20 transition-all">
@@ -230,14 +243,14 @@ const App: React.FC = () => {
           </div>
         </aside>
 
-        {/* Main Area */}
+        {/* Main Area Landmark */}
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-          <header className="h-20 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-white/5 px-6 lg:px-10 flex items-center justify-between z-30 shadow-sm">
+          <header className="h-20 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-white/5 px-6 lg:px-10 flex items-center justify-between z-30 shadow-sm" role="banner">
             <div className="lg:hidden flex items-center gap-3">
-               <div className="bg-amber-500 p-1.5 rounded-lg">
-                <Truck size={18} strokeWidth={3} className="text-slate-900" />
+               <div className="bg-[#a2d149] p-1.5 rounded-lg">
+                <Truck size={18} strokeWidth={3} className="text-[#001f3f]" />
               </div>
-              <h1 className="font-black text-lg uppercase italic">{t.appName}</h1>
+              <h1 className="font-black text-lg uppercase italic">GADI <span className="text-[#a2d149]">DOST</span></h1>
             </div>
 
             <div className="hidden lg:block">
@@ -247,55 +260,57 @@ const App: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-4">
-              <button onClick={toggleDarkMode} className="p-2.5 bg-slate-100 dark:bg-white/5 rounded-xl hover:bg-slate-200 dark:hover:bg-white/10 transition-all">
-                {darkMode ? <Sun size={18} className="text-amber-400" /> : <Moon size={18} className="text-slate-600" />}
+              <button onClick={toggleDarkMode} className="p-2.5 bg-slate-100 dark:bg-white/5 rounded-xl hover:bg-slate-200 dark:hover:bg-white/10 transition-all" aria-label="Toggle Dark Mode">
+                {darkMode ? <Sun size={18} className="text-[#a2d149]" /> : <Moon size={18} className="text-slate-600" />}
               </button>
               <div className="h-8 w-[1px] bg-slate-200 dark:bg-white/10 mx-2" />
-              <div className="flex items-center gap-4 cursor-pointer" onClick={() => setActivePanel(AppPanel.PROFILE)}>
+              <div className="flex items-center gap-4 cursor-pointer" onClick={() => setActivePanel(AppPanel.PROFILE)} aria-label="View Profile">
                 <div className="text-right hidden sm:block">
                   <p className="text-xs font-black uppercase tracking-tight leading-none mb-1.5">{user.name}</p>
                   <div className={`inline-block px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${
                     user.role === 'admin' ? 'bg-red-500 text-white' : 
-                    user.role === 'transporter' ? 'bg-amber-500 text-slate-900 shadow-sm' : 
+                    user.role === 'transporter' ? 'bg-[#a2d149] text-[#001f3f] shadow-sm' : 
                     'bg-indigo-600 text-white shadow-sm'
                   }`}>
                     {user.role}
                   </div>
                 </div>
-                <div className="w-10 h-10 rounded-xl bg-slate-950 flex items-center justify-center text-white border-2 border-amber-500 shadow-lg group">
-                  <UserIcon size={20} className="group-hover:scale-110 transition-transform" />
+                <div className="w-10 h-10 rounded-xl bg-[#001f3f] flex items-center justify-center text-white border-2 border-[#a2d149] shadow-lg group">
+                  <UserIcon size={20} className="group-hover:scale-110 transition-transform" aria-hidden="true" />
                 </div>
               </div>
             </div>
           </header>
 
-          <main className="flex-1 overflow-y-auto p-4 md:p-8 lg:p-12 scroll-smooth">
+          <main id="main-content" className="flex-1 overflow-y-auto p-4 md:p-8 lg:p-12 scroll-smooth" role="main">
             <div className="max-w-7xl mx-auto pb-24 lg:pb-0">
               {renderContent()}
             </div>
           </main>
         </div>
 
-        {/* Mobile Bottom Navigation with Tooltips */}
-        <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-20 bg-white/90 dark:bg-slate-900/95 backdrop-blur-2xl border-t border-slate-200 dark:border-white/10 flex items-center justify-around px-2 z-50 safe-area-bottom">
+        {/* Mobile Bottom Navigation */}
+        <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-20 bg-white/90 dark:bg-slate-900/95 backdrop-blur-2xl border-t border-slate-200 dark:border-white/10 flex items-center justify-around px-2 z-50 safe-area-bottom" aria-label="Mobile Bottom Navigation">
            {[
-             { id: AppPanel.DASHBOARD, icon: LayoutDashboard },
-             { id: AppPanel.GPS, icon: Navigation },
-             { id: AppPanel.BOOKING, icon: Truck },
-             { id: AppPanel.BILTY, icon: FileText },
-             { id: AppPanel.EMERGENCY, icon: ShieldAlert },
+             { id: AppPanel.DASHBOARD, icon: LayoutDashboard, label: 'Dash' },
+             { id: AppPanel.GPS, icon: Navigation, label: 'GPS' },
+             { id: AppPanel.BOOKING, icon: Truck, label: 'Book' },
+             { id: AppPanel.BILTY, icon: FileText, label: 'Bilty' },
+             { id: AppPanel.EMERGENCY, icon: ShieldAlert, label: 'RSA' },
            ].map((item) => (
              <NavTooltip key={item.id} label={translations[lang][item.id as keyof typeof translations['en']]} position="top">
                <button
                  onClick={() => setActivePanel(item.id)}
+                 aria-label={item.label}
+                 aria-current={activePanel === item.id ? 'page' : undefined}
                  className={`flex flex-col items-center justify-center gap-1.5 px-4 py-2 rounded-2xl transition-all ${
                    activePanel === item.id 
-                    ? 'text-amber-500 bg-amber-500/10' 
+                    ? 'text-[#a2d149] bg-[#a2d149]/10' 
                     : 'text-slate-400'
                  }`}
                >
-                 <item.icon size={22} strokeWidth={activePanel === item.id ? 3 : 2} />
-                 <span className="text-[8px] font-black uppercase tracking-widest">{translations[lang][item.id as keyof typeof translations['en']]}</span>
+                 <item.icon size={22} strokeWidth={activePanel === item.id ? 3 : 2} aria-hidden="true" />
+                 <span className="text-[8px] font-black uppercase tracking-widest">{item.label}</span>
                </button>
              </NavTooltip>
            ))}
