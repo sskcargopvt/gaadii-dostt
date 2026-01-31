@@ -32,8 +32,7 @@ import AuthSection from './components/AuthSection';
 import { supabase } from './services/supabaseClient';
 
 /**
- * Custom Tooltip Component
- * Handles Desktop Hover and Mobile Long-press
+ * Custom Tooltip Component for Desktop & Mobile
  */
 const NavTooltip: React.FC<{ 
   label: string; 
@@ -44,16 +43,12 @@ const NavTooltip: React.FC<{
   const timerRef = useRef<number | null>(null);
 
   const handleTouchStart = () => {
-    timerRef.current = window.setTimeout(() => {
-      setIsVisible(true);
-    }, 500); // Long press threshold
+    timerRef.current = window.setTimeout(() => setIsVisible(true), 500);
   };
 
   const handleTouchEnd = () => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-    }
-    setTimeout(() => setIsVisible(false), 1500); // Hide after a short delay on mobile
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setTimeout(() => setIsVisible(false), 1500);
   };
 
   const positionClasses = {
@@ -91,27 +86,29 @@ const App: React.FC = () => {
 
   const t = useMemo(() => translations[lang], [lang]);
 
-  // SEO: Update HTML Document Title and Metadata dynamically
+  // SEO: Update dynamic HTML Document Title and Meta Description for Search Bots
   useEffect(() => {
-    const panelTitle = t[activePanel as keyof typeof t] || 'Logistics';
-    document.title = `${panelTitle} | Gadi Dost - Indian Transport Platform`;
+    const panelKey = activePanel.toLowerCase();
+    const panelTitle = t[panelKey as keyof typeof t] || 'Logistics';
+    document.title = `${panelTitle} | Gadi Dost - Smart Fleet Management India`;
     document.documentElement.lang = lang;
     
-    // Update Meta Description
+    // Update Meta Description dynamically to target specific long-tail keywords
     const metaDesc = document.querySelector('meta[name="description"]');
     if (metaDesc) {
-      metaDesc.setAttribute('content', `Gadi Dost ${panelTitle}: The leading digital solution for Indian fleet management, truck booking, and highway safety.`);
+      const descriptions: Record<string, string> = {
+        dashboard: "Gadi Dost Dashboard: Oversee your transport operations with real-time analytics and fleet connectivity.",
+        gps: "Gadi Dost GPS Marketplace: Buy and manage high-precision GPS sensors for trucks with 99% accuracy.",
+        emergency: "Gadi Dost RSA: 24/7 Highway emergency assistance, towing, and mechanical support for Indian transporters.",
+        booking: "Gadi Dost Truck Booking: Book verified trucks and trailers for long-haul logistics across India.",
+        bilty: "Gadi Dost Bilty Book: Manage digital transport documents and bilty records securely on the cloud.",
+        calculator: "Gadi Dost AI Load Estimator: Calculate fuel, toll, and trip costs instantly using Gemini AI."
+      };
+      metaDesc.setAttribute('content', descriptions[panelKey] || "Gadi Dost: The smartest logistics platform for Indian transporters.");
     }
   }, [activePanel, lang, t]);
 
-  // URL cleanup for Google Auth tokens on localhost
   useEffect(() => {
-    const cleanHash = () => {
-      if (window.location.hash && (window.location.hash.includes('access_token') || window.location.hash.includes('id_token'))) {
-        window.history.replaceState(null, '', window.location.pathname + window.location.search);
-      }
-    };
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
         const metadata = session.user.user_metadata;
@@ -124,7 +121,6 @@ const App: React.FC = () => {
           businessName: metadata.businessName,
           address: metadata.address
         });
-        cleanHash();
       } else {
         setUser(null);
         setActivePanel(AppPanel.DASHBOARD);
@@ -132,7 +128,6 @@ const App: React.FC = () => {
       setInitializing(false);
     });
     
-    cleanHash();
     const checkInitialSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) setInitializing(false);
@@ -143,11 +138,8 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    if (darkMode) document.documentElement.classList.add('dark');
+    else document.documentElement.classList.remove('dark');
   }, [darkMode]);
 
   const toggleLang = () => setLang(prev => prev === 'en' ? 'hi' : 'en');
@@ -163,9 +155,7 @@ const App: React.FC = () => {
       { id: AppPanel.CALCULATOR, label: t.calculator, icon: Calculator },
       { id: AppPanel.PROFILE, label: t.profile, icon: Settings },
     ];
-    if (user?.role === 'admin') {
-      items.push({ id: AppPanel.ADMIN, label: t.admin, icon: Activity });
-    }
+    if (user?.role === 'admin') items.push({ id: AppPanel.ADMIN, label: t.admin, icon: Activity });
     return items;
   }, [t, user?.role]);
 
@@ -190,10 +180,10 @@ const App: React.FC = () => {
 
   if (initializing) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#001f3f]" aria-busy="true">
+      <div className="min-h-screen flex items-center justify-center bg-[#001f3f]">
         <div className="flex flex-col items-center gap-6">
           <div className="w-16 h-16 border-4 border-[#a2d149]/20 border-t-[#a2d149] rounded-full animate-spin" />
-          <p className="font-black text-[#a2d149] uppercase tracking-[0.3em] text-[10px] animate-pulse">Syncing Secure Network...</p>
+          <p className="font-black text-[#a2d149] uppercase tracking-[0.3em] text-[10px] animate-pulse">Syncing Gadi Dost Cloud...</p>
         </div>
       </div>
     );
@@ -203,11 +193,15 @@ const App: React.FC = () => {
 
   return (
     <div className={`min-h-screen flex flex-col ${darkMode ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-950'} transition-colors duration-300`}>
-      <div className="flex flex-1 overflow-hidden relative text-slate-950 dark:text-white">
-        {/* Desktop Sidebar Landmarks */}
-        <aside className="hidden lg:flex w-72 flex-col bg-[#001f3f] text-white border-r border-white/5 shadow-2xl z-40 relative" role="navigation" aria-label="Main Navigation">
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* Desktop Sidebar with SEO Landmarks */}
+        <aside className="hidden lg:flex w-72 flex-col bg-[#001f3f] text-white border-r border-white/5 shadow-2xl z-40 relative" role="navigation" aria-label="Main Navigation Sidebar">
           <div className="p-8">
-            <div className="flex items-center gap-3 mb-10 group cursor-pointer" onClick={() => setActivePanel(AppPanel.DASHBOARD)} aria-label="Gadi Dost Home">
+            <div 
+              className="flex items-center gap-3 mb-10 group cursor-pointer" 
+              onClick={() => setActivePanel(AppPanel.DASHBOARD)} 
+              aria-label="Navigate to Dashboard"
+            >
               <div className="bg-[#a2d149] p-2.5 rounded-xl shadow-lg shadow-[#a2d149]/20 group-hover:rotate-12 transition-transform">
                 <Truck size={24} strokeWidth={3} className="text-[#001f3f]" />
               </div>
@@ -219,6 +213,7 @@ const App: React.FC = () => {
                 <NavTooltip key={item.id} label={item.label} position="right">
                   <button
                     onClick={() => setActivePanel(item.id)}
+                    aria-label={`View ${item.label}`}
                     aria-current={activePanel === item.id ? 'page' : undefined}
                     className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all ${
                       activePanel === item.id 
@@ -235,7 +230,7 @@ const App: React.FC = () => {
 
           <div className="mt-auto p-8 space-y-4">
             <button onClick={toggleLang} className="w-full flex items-center gap-4 px-5 py-3 rounded-xl text-[10px] font-black uppercase text-[#a2d149] bg-white/5 border border-white/5 hover:bg-white/10 transition-all">
-              <Languages size={16} /> {lang === 'en' ? 'हिन्दी VERSION' : 'ENGLISH MODE'}
+              <Languages size={16} /> {lang === 'en' ? 'HINDI VERSION' : 'ENGLISH MODE'}
             </button>
             <button onClick={handleLogout} className="w-full flex items-center gap-4 px-5 py-3 rounded-xl text-[10px] font-black uppercase text-red-400 bg-red-500/5 border border-red-500/10 hover:bg-red-500/20 transition-all">
               <LogOut size={16} /> Sign Out
@@ -243,7 +238,7 @@ const App: React.FC = () => {
           </div>
         </aside>
 
-        {/* Main Area Landmark */}
+        {/* Main Interface Content Area */}
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
           <header className="h-20 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-white/5 px-6 lg:px-10 flex items-center justify-between z-30 shadow-sm" role="banner">
             <div className="lg:hidden flex items-center gap-3">
@@ -255,42 +250,40 @@ const App: React.FC = () => {
 
             <div className="hidden lg:block">
               <h2 className="text-sm font-black uppercase tracking-widest text-slate-400">
-                Network Status: <span className="text-emerald-500 ml-1">Operational</span>
+                Network Status: <span className="text-emerald-500 ml-1">Live Operational</span>
               </h2>
             </div>
 
             <div className="flex items-center gap-4">
-              <button onClick={toggleDarkMode} className="p-2.5 bg-slate-100 dark:bg-white/5 rounded-xl hover:bg-slate-200 dark:hover:bg-white/10 transition-all" aria-label="Toggle Dark Mode">
+              <button onClick={toggleDarkMode} className="p-2.5 bg-slate-100 dark:bg-white/5 rounded-xl hover:bg-slate-200 dark:hover:bg-white/10 transition-all" aria-label="Toggle Night Mode">
                 {darkMode ? <Sun size={18} className="text-[#a2d149]" /> : <Moon size={18} className="text-slate-600" />}
               </button>
               <div className="h-8 w-[1px] bg-slate-200 dark:bg-white/10 mx-2" />
-              <div className="flex items-center gap-4 cursor-pointer" onClick={() => setActivePanel(AppPanel.PROFILE)} aria-label="View Profile">
+              <div className="flex items-center gap-4 cursor-pointer" onClick={() => setActivePanel(AppPanel.PROFILE)} aria-label="User Settings">
                 <div className="text-right hidden sm:block">
                   <p className="text-xs font-black uppercase tracking-tight leading-none mb-1.5">{user.name}</p>
                   <div className={`inline-block px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${
-                    user.role === 'admin' ? 'bg-red-500 text-white' : 
-                    user.role === 'transporter' ? 'bg-[#a2d149] text-[#001f3f] shadow-sm' : 
-                    'bg-indigo-600 text-white shadow-sm'
+                    user.role === 'admin' ? 'bg-red-500 text-white' : 'bg-[#a2d149] text-[#001f3f]'
                   }`}>
                     {user.role}
                   </div>
                 </div>
                 <div className="w-10 h-10 rounded-xl bg-[#001f3f] flex items-center justify-center text-white border-2 border-[#a2d149] shadow-lg group">
-                  <UserIcon size={20} className="group-hover:scale-110 transition-transform" aria-hidden="true" />
+                  <UserIcon size={20} className="group-hover:scale-110 transition-transform" />
                 </div>
               </div>
             </div>
           </header>
 
-          <main id="main-content" className="flex-1 overflow-y-auto p-4 md:p-8 lg:p-12 scroll-smooth" role="main">
+          <main id="main-content" className="flex-1 overflow-y-auto p-4 md:p-8 lg:p-12 scroll-smooth" role="main" aria-label="App Main Screen">
             <div className="max-w-7xl mx-auto pb-24 lg:pb-0">
               {renderContent()}
             </div>
           </main>
         </div>
 
-        {/* Mobile Bottom Navigation */}
-        <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-20 bg-white/90 dark:bg-slate-900/95 backdrop-blur-2xl border-t border-slate-200 dark:border-white/10 flex items-center justify-around px-2 z-50 safe-area-bottom" aria-label="Mobile Bottom Navigation">
+        {/* Mobile Navigation Interface */}
+        <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-20 bg-white/90 dark:bg-slate-900/95 backdrop-blur-2xl border-t border-slate-200 dark:border-white/10 flex items-center justify-around px-2 z-50 safe-area-bottom" aria-label="Mobile Navigation Bar">
            {[
              { id: AppPanel.DASHBOARD, icon: LayoutDashboard, label: 'Dash' },
              { id: AppPanel.GPS, icon: Navigation, label: 'GPS' },
@@ -298,21 +291,18 @@ const App: React.FC = () => {
              { id: AppPanel.BILTY, icon: FileText, label: 'Bilty' },
              { id: AppPanel.EMERGENCY, icon: ShieldAlert, label: 'RSA' },
            ].map((item) => (
-             <NavTooltip key={item.id} label={translations[lang][item.id as keyof typeof translations['en']]} position="top">
-               <button
-                 onClick={() => setActivePanel(item.id)}
-                 aria-label={item.label}
-                 aria-current={activePanel === item.id ? 'page' : undefined}
-                 className={`flex flex-col items-center justify-center gap-1.5 px-4 py-2 rounded-2xl transition-all ${
-                   activePanel === item.id 
-                    ? 'text-[#a2d149] bg-[#a2d149]/10' 
-                    : 'text-slate-400'
-                 }`}
-               >
-                 <item.icon size={22} strokeWidth={activePanel === item.id ? 3 : 2} aria-hidden="true" />
-                 <span className="text-[8px] font-black uppercase tracking-widest">{item.label}</span>
-               </button>
-             </NavTooltip>
+             <button
+               key={item.id}
+               onClick={() => setActivePanel(item.id)}
+               aria-label={`Open ${item.label}`}
+               aria-current={activePanel === item.id ? 'page' : undefined}
+               className={`flex flex-col items-center justify-center gap-1.5 px-4 py-2 rounded-2xl transition-all ${
+                 activePanel === item.id ? 'text-[#a2d149] bg-[#a2d149]/10' : 'text-slate-400'
+               }`}
+             >
+               <item.icon size={22} strokeWidth={activePanel === item.id ? 3 : 2} aria-hidden="true" />
+               <span className="text-[8px] font-black uppercase tracking-widest">{item.label}</span>
+             </button>
            ))}
         </nav>
       </div>

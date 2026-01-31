@@ -11,7 +11,7 @@
     <title>Gadi Dost - India's Smartest Fleet Management & Logistics Platform</title>
     <meta name="title" content="Gadi Dost - India's Smartest Fleet Management & Logistics Platform">
     <meta name="description" content="Manage your transport business with Gadi Dost. Real-time GPS tracking, emergency highway rescue, digital bilty management, and AI-powered load estimation for Indian transporters.">
-    <meta name="keywords" content="logistics india, fleet management, truck booking, gps tracking trucks, digital bilty, highway rescue india, transport app">
+    <meta name="keywords" content="logistics india, fleet management, truck booking, gps tracking trucks, digital bilty, highway rescue india, transport app, gadi dost">
     <meta name="author" content="Gadi Dost Team">
 
     <!-- Open Graph / Facebook -->
@@ -28,7 +28,7 @@
     <meta property="twitter:description" content="Streamlining Indian logistics with technology. GPS, Booking, and RSA.">
     <meta property="twitter:image" content="https://tstboympleybwbdwicik.supabase.co/storage/v1/object/public/assets/og-image.jpg">
 
-    <!-- Structured Data for SEO -->
+    <!-- Structured Data for SEO (JSON-LD) -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -45,7 +45,8 @@
         "@type": "Offer",
         "price": "0",
         "priceCurrency": "INR"
-      }
+      },
+      "description": "India's leading digital solution for fleet management, truck booking, and highway safety."
     }
     </script>
 
@@ -67,18 +68,16 @@
             align-items: center;
             justify-content: center;
             height: 100vh;
-            background: #020617;
+            background: #001f3f;
         }
         #root:empty::after {
-            content: "";
-            width: 40px;
-            height: 40px;
-            border: 4px solid #1e293b;
-            border-top-color: #f59e0b;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
+            content: "GADI DOST";
+            font-weight: 900;
+            color: #a2d149;
+            letter-spacing: 0.2em;
+            animation: pulse 1.5s ease-in-out infinite;
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes pulse { 0%, 100% { opacity: 0.4; transform: scale(0.95); } 50% { opacity: 1; transform: scale(1.05); } }
         @keyframes fade-in { 0% { opacity: 0; } 100% { opacity: 1; } }
         @keyframes slide-in-from-bottom { 0% { transform: translateY(20px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
         .animate-in {
