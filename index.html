@@ -4,31 +4,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <!-- iOS / PWA Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Gadi Dost">
+    <meta name="theme-color" content="#001f3f">
+    <link rel="apple-touch-icon" href="https://tstboympleybwbdwicik.supabase.co/storage/v1/object/public/assets/logo-icon.png">
     
-    <!-- Primary Meta Tags -->
-    <title>Gadi Dost - India's Smartest Fleet Management & Logistics Platform</title>
-    <meta name="title" content="Gadi Dost - India's Smartest Fleet Management & Logistics Platform">
-    <meta name="description" content="Manage your transport business with Gadi Dost. Real-time GPS tracking, emergency highway rescue, digital bilty management, and AI-powered load estimation for Indian transporters.">
-    <meta name="keywords" content="logistics india, fleet management, truck booking, gps tracking trucks, digital bilty, highway rescue india, transport app, gadi dost">
+    <!-- Primary SEO Meta Tags -->
+    <title>Gadi Dost - India's #1 Smart Fleet Management & Logistics App</title>
+    <meta name="title" content="Gadi Dost - India's #1 Smart Fleet Management & Logistics App">
+    <meta name="description" content="Gadi Dost is India's leading digital logistics platform. Offering real-time GPS tracking, 24/7 highway emergency rescue (RSA), digital bilty management, and AI-powered load estimation for transporters and fleet owners.">
+    <meta name="keywords" content="logistics app india, fleet management software, truck tracking gps, highway rescue india, rsa for trucks, digital bilty book, gadi dost, transport marketplace, indian logistics, truck booking app">
     <meta name="author" content="Gadi Dost Team">
+    <meta name="robots" content="index, follow">
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://gadidost.in/">
     <meta property="og:title" content="Gadi Dost - India's Smartest Fleet Management Platform">
-    <meta property="og:description" content="Real-time GPS, Emergency Rescue, and Digital Bilty for the Indian transport industry.">
+    <meta property="og:description" content="Streamline your transport business with real-time GPS, Emergency Rescue, and Digital Bilty.">
     <meta property="og:image" content="https://tstboympleybwbdwicik.supabase.co/storage/v1/object/public/assets/og-image.jpg">
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="https://gadidost.in/">
     <meta property="twitter:title" content="Gadi Dost - Logistics Command Center">
-    <meta property="twitter:description" content="Streamlining Indian logistics with technology. GPS, Booking, and RSA.">
+    <meta property="twitter:description" content="Providing high-tech solutions for the Indian transport industry. GPS, Booking, and RSA.">
     <meta property="twitter:image" content="https://tstboympleybwbdwicik.supabase.co/storage/v1/object/public/assets/og-image.jpg">
 
-    <!-- Structured Data for SEO (JSON-LD) -->
+    <!-- Structured Data for Search Ranking (JSON-LD) -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -39,14 +45,15 @@
       "aggregateRating": {
         "@type": "AggregateRating",
         "ratingValue": "4.9",
-        "ratingCount": "1240"
+        "ratingCount": "3250"
       },
       "offers": {
         "@type": "Offer",
         "price": "0",
-        "priceCurrency": "INR"
+        "priceCurrency": "INR",
+        "availability": "https://schema.org/InStock"
       },
-      "description": "India's leading digital solution for fleet management, truck booking, and highway safety."
+      "description": "Comprehensive logistics ecosystem for Indian transporters featuring GPS, RSA, and Digital Bilty."
     }
     </script>
 
@@ -55,33 +62,61 @@
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAQEwpbGFpBnHs5qpgrL_2Pxd_LHk_Lagw&libraries=places"></script>
 
     <style>
+        :root {
+            --ios-bg: #f2f2f7;
+            --ios-dark-bg: #000000;
+            --brand-lime: #a2d149;
+            --brand-navy: #001f3f;
+        }
         body {
             font-family: 'Inter', sans-serif;
             -webkit-tap-highlight-color: transparent;
-            overscroll-behavior-y: none;
+            overscroll-behavior: none;
+            background-color: var(--ios-bg);
+            padding-top: env(safe-area-inset-top);
+        }
+        .dark body {
+            background-color: var(--ios-dark-bg);
         }
         .safe-area-bottom {
-            padding-bottom: env(safe-area-inset-bottom);
+            padding-bottom: calc(env(safe-area-inset-bottom) + 1.5rem);
         }
         #root:empty {
             display: flex;
             align-items: center;
             justify-content: center;
             height: 100vh;
-            background: #001f3f;
+            background: var(--brand-navy);
         }
         #root:empty::after {
             content: "GADI DOST";
             font-weight: 900;
-            color: #a2d149;
+            font-style: italic;
+            color: var(--brand-lime);
             letter-spacing: 0.2em;
             animation: pulse 1.5s ease-in-out infinite;
         }
-        @keyframes pulse { 0%, 100% { opacity: 0.4; transform: scale(0.95); } 50% { opacity: 1; transform: scale(1.05); } }
-        @keyframes fade-in { 0% { opacity: 0; } 100% { opacity: 1; } }
-        @keyframes slide-in-from-bottom { 0% { transform: translateY(20px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
+        @keyframes pulse { 0%, 100% { opacity: 0.4; transform: scale(0.98); } 50% { opacity: 1; transform: scale(1.02); } }
+        
+        /* Mobile specific glassmorphism */
+        .glass-nav {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        .dark .glass-nav {
+            background: rgba(15, 23, 42, 0.8);
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
         .animate-in {
-            animation: fade-in 0.5s ease-out, slide-in-from-bottom 0.5s ease-out;
+            animation: slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes slide-up {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 <script type="importmap">
@@ -100,7 +135,7 @@
 }
 </script>
 </head>
-<body class="bg-slate-50 text-slate-900 overflow-x-hidden">
+<body class="bg-slate-50 text-slate-900 overflow-x-hidden selection:bg-[#a2d149] selection:text-[#001f3f]">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
 </body>

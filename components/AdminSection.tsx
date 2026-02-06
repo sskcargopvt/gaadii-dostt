@@ -37,13 +37,13 @@ interface AdminSectionProps {
 }
 
 const data = [
-  { name: 'Mon', revenue: 45000, bookings: 12 },
-  { name: 'Tue', revenue: 52000, bookings: 19 },
-  { name: 'Wed', revenue: 38000, bookings: 15 },
-  { name: 'Thu', revenue: 65000, bookings: 22 },
-  { name: 'Fri', revenue: 48000, bookings: 18 },
-  { name: 'Sat', revenue: 72000, bookings: 28 },
-  { name: 'Sun', revenue: 55000, bookings: 20 },
+  { name: 'Mon', revenue: 0, bookings: 0 },
+  { name: 'Tue', revenue: 0, bookings: 0 },
+  { name: 'Wed', revenue: 0, bookings: 0 },
+  { name: 'Thu', revenue: 0, bookings: 0 },
+  { name: 'Fri', revenue: 0, bookings: 0 },
+  { name: 'Sat', revenue: 0, bookings: 0 },
+  { name: 'Sun', revenue: 0, bookings: 0 },
 ];
 
 const AdminSection: React.FC<AdminSectionProps> = ({ t, user }) => {
@@ -107,10 +107,10 @@ const AdminSection: React.FC<AdminSectionProps> = ({ t, user }) => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
-          { label: "Active Users", value: "2,481", icon: Users, trend: "+12%", color: "blue" },
-          { label: "Verified Drivers", value: "852", icon: ShieldCheck, trend: "+5%", color: "green" },
-          { label: "Live Trips", value: "142", icon: Truck, trend: "Stable", color: "amber" },
-          { label: "Revenue (M)", value: "₹4.8", icon: BarChart3, trend: "+18%", color: "emerald" },
+          { label: "Active Users", value: "0", icon: Users, trend: "0%", color: "blue" },
+          { label: "Verified Drivers", value: "0", icon: ShieldCheck, trend: "0%", color: "green" },
+          { label: "Live Trips", value: "0", icon: Truck, trend: "Stable", color: "amber" },
+          { label: "Revenue (M)", value: "₹0.0", icon: BarChart3, trend: "0%", color: "emerald" },
         ].map((stat, i) => (
           <div key={i} className="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm">
             <div className="flex justify-between items-start mb-4">
@@ -227,26 +227,12 @@ const AdminSection: React.FC<AdminSectionProps> = ({ t, user }) => {
                   </tr>
                 </thead>
                 <tbody className="text-sm divide-y divide-slate-100 dark:divide-slate-800">
-                  {[
-                    { id: "#TR-990", partner: "Express Logistics", type: "Heavy Load", comm: "₹1,200", status: "Processed" },
-                    { id: "#EM-442", partner: "Roadside Rescue", type: "Emergency", comm: "₹450", status: "Pending" },
-                    { id: "#TR-991", partner: "V-Trans", type: "GPS Install", comm: "₹600", status: "Processed" },
-                    { id: "#TR-992", partner: "National Carriers", type: "Truck Booking", comm: "₹2,100", status: "Processed" },
-                  ].map((log, i) => (
-                    <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-900/10 transition-colors">
-                      <td className="px-6 py-4 font-black italic">{log.id}</td>
-                      <td className="px-6 py-4 font-bold">{log.partner}</td>
-                      <td className="px-6 py-4 text-xs font-bold text-slate-500">{log.type}</td>
-                      <td className="px-6 py-4 text-emerald-600 font-black italic">{log.comm}</td>
-                      <td className="px-6 py-4">
-                         <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase ${log.status === 'Processed' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
-                           {log.status}
-                         </span>
-                      </td>
-                    </tr>
-                  ))}
+                  {/* Empty or initial logs only */}
                 </tbody>
               </table>
+              <div className="p-12 text-center text-slate-400 text-[10px] font-black uppercase tracking-widest">
+                No active audit logs detected in the current session.
+              </div>
             </div>
           </div>
         </div>
@@ -260,9 +246,9 @@ const AdminSection: React.FC<AdminSectionProps> = ({ t, user }) => {
             <div className="space-y-8">
               {[
                 { label: "Cloud Sync", val: 100 },
-                { label: "Server Load", val: 42 },
-                { label: "API Latency", val: 12 },
-                { label: "GPS Sync Rate", val: 99 },
+                { label: "Server Load", val: 0 },
+                { label: "API Latency", val: 0 },
+                { label: "GPS Sync Rate", val: 100 },
               ].map((item, i) => (
                 <div key={i} className="space-y-3">
                   <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">

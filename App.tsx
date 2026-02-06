@@ -16,7 +16,9 @@ import {
   Activity,
   LogOut,
   Settings,
-  Bell
+  Bell,
+  UserCheck,
+  Link as LinkIcon
 } from 'lucide-react';
 import { translations } from './i18n';
 import { AppPanel, Language, User } from './types';
@@ -31,52 +33,6 @@ import DashboardHome from './components/DashboardHome';
 import AuthSection from './components/AuthSection';
 import { supabase } from './services/supabaseClient';
 
-/**
- * Custom Tooltip Component for Desktop & Mobile
- */
-const NavTooltip: React.FC<{ 
-  label: string; 
-  children: React.ReactNode; 
-  position?: 'right' | 'top' 
-}> = ({ label, children, position = 'right' }) => {
-  const [isVisible, setIsVisible] = useState(false);
-  const timerRef = useRef<number | null>(null);
-
-  const handleTouchStart = () => {
-    timerRef.current = window.setTimeout(() => setIsVisible(true), 500);
-  };
-
-  const handleTouchEnd = () => {
-    if (timerRef.current) clearTimeout(timerRef.current);
-    setTimeout(() => setIsVisible(false), 1500);
-  };
-
-  const positionClasses = {
-    right: 'left-full ml-4 top-1/2 -translate-y-1/2',
-    top: 'bottom-full mb-3 left-1/2 -translate-x-1/2'
-  };
-
-  return (
-    <div 
-      className="relative flex items-center group w-full"
-      onMouseEnter={() => setIsVisible(true)}
-      onMouseLeave={() => setIsVisible(false)}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-    >
-      {children}
-      {isVisible && (
-        <div className={`absolute z-[100] px-3 py-1.5 bg-slate-950 text-white text-[10px] font-black uppercase tracking-widest rounded-lg shadow-2xl border border-white/10 pointer-events-none whitespace-nowrap animate-in fade-in zoom-in duration-200 ${positionClasses[position]}`}>
-          {label}
-          <div className={`absolute w-2 h-2 bg-slate-950 border-white/10 rotate-45 ${
-            position === 'right' ? '-left-1 top-1/2 -translate-y-1/2 border-l border-b' : '-bottom-1 left-1/2 -translate-x-1/2 border-r border-b'
-          }`} />
-        </div>
-      )}
-    </div>
-  );
-};
-
 const App: React.FC = () => {
   const [activePanel, setActivePanel] = useState<AppPanel>(AppPanel.DASHBOARD);
   const [lang, setLang] = useState<Language>('en');
@@ -86,29 +42,29 @@ const App: React.FC = () => {
 
   const t = useMemo(() => translations[lang], [lang]);
 
-  // SEO: Update dynamic HTML Document Title and Meta Description for Search Bots
+  // SEO: Dynamic Document Title & Meta Management
   useEffect(() => {
     const panelKey = activePanel.toLowerCase();
     const panelTitle = t[panelKey as keyof typeof t] || 'Logistics';
-    document.title = `${panelTitle} | Gadi Dost - Smart Fleet Management India`;
+    document.title = `${panelTitle} | Gadi Dost - India's Premier Fleet Platform`;
     document.documentElement.lang = lang;
     
-    // Update Meta Description dynamically to target specific long-tail keywords
     const metaDesc = document.querySelector('meta[name="description"]');
     if (metaDesc) {
       const descriptions: Record<string, string> = {
-        dashboard: "Gadi Dost Dashboard: Oversee your transport operations with real-time analytics and fleet connectivity.",
-        gps: "Gadi Dost GPS Marketplace: Buy and manage high-precision GPS sensors for trucks with 99% accuracy.",
-        emergency: "Gadi Dost RSA: 24/7 Highway emergency assistance, towing, and mechanical support for Indian transporters.",
-        booking: "Gadi Dost Truck Booking: Book verified trucks and trailers for long-haul logistics across India.",
-        bilty: "Gadi Dost Bilty Book: Manage digital transport documents and bilty records securely on the cloud.",
-        calculator: "Gadi Dost AI Load Estimator: Calculate fuel, toll, and trip costs instantly using Gemini AI."
+        dashboard: "Gadi Dost Command Center: Manage logistics business with real-time analytics and fleet connectivity.",
+        gps: "Gadi Dost GPS: High-precision fleet tracking sensors for Indian transporters.",
+        emergency: "Gadi Dost RSA: 24/7 Highway emergency assistance for trucks across India.",
+        booking: "Gadi Dost Booking: Find and book verified trucks and trailers across India.",
+        bilty: "Gadi Dost Bilty: Secure digital document management for transport bilty.",
+        calculator: "Gadi Dost AI Calculator: Instant load estimation and trip cost forecasting."
       };
-      metaDesc.setAttribute('content', descriptions[panelKey] || "Gadi Dost: The smartest logistics platform for Indian transporters.");
+      metaDesc.setAttribute('content', descriptions[panelKey] || "Gadi Dost: India's premier logistics tech platform.");
     }
   }, [activePanel, lang, t]);
 
   useEffect(() => {
+    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
         const metadata = session.user.user_metadata;
@@ -119,7 +75,9 @@ const App: React.FC = () => {
           name: metadata.full_name || metadata.name || session.user.email!.split('@')[0],
           phone: metadata.phone,
           businessName: metadata.businessName,
-          address: metadata.address
+          address: metadata.address,
+          bilty_linked: metadata.bilty_linked || false,
+          bilty_token: metadata.bilty_token
         });
       } else {
         setUser(null);
@@ -128,9 +86,24 @@ const App: React.FC = () => {
       setInitializing(false);
     });
     
+    // Initial session check
     const checkInitialSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) setInitializing(false);
+      if (session?.user) {
+        const metadata = session.user.user_metadata;
+        setUser({
+          id: session.user.id,
+          email: session.user.email!,
+          role: metadata.role || 'customer',
+          name: metadata.full_name || metadata.name || session.user.email!.split('@')[0],
+          phone: metadata.phone,
+          businessName: metadata.businessName,
+          address: metadata.address,
+          bilty_linked: metadata.bilty_linked || false,
+          bilty_token: metadata.bilty_token
+        });
+      }
+      setInitializing(false);
     };
     checkInitialSession();
 
@@ -170,7 +143,7 @@ const App: React.FC = () => {
       case AppPanel.GPS: return <GPSSection t={t} />;
       case AppPanel.EMERGENCY: return <EmergencySection t={t} />;
       case AppPanel.BOOKING: return <BookingSection t={t} />;
-      case AppPanel.BILTY: return <BiltySection t={t} />;
+      case AppPanel.BILTY: return <BiltySection t={t} user={user} onUpdate={setUser} />;
       case AppPanel.CALCULATOR: return <CalculatorSection t={t} />;
       case AppPanel.PROFILE: return <ProfileSection t={t} user={user} onUpdate={setUser} onLogout={handleLogout} />;
       case AppPanel.ADMIN: return <AdminSection t={t} user={user} />;
@@ -183,7 +156,7 @@ const App: React.FC = () => {
       <div className="min-h-screen flex items-center justify-center bg-[#001f3f]">
         <div className="flex flex-col items-center gap-6">
           <div className="w-16 h-16 border-4 border-[#a2d149]/20 border-t-[#a2d149] rounded-full animate-spin" />
-          <p className="font-black text-[#a2d149] uppercase tracking-[0.3em] text-[10px] animate-pulse">Syncing Gadi Dost Cloud...</p>
+          <p className="font-black text-[#a2d149] uppercase tracking-[0.3em] text-[10px] animate-pulse">Syncing Cloud Network...</p>
         </div>
       </div>
     );
@@ -192,17 +165,13 @@ const App: React.FC = () => {
   if (!user) return <AuthSection t={t} />;
 
   return (
-    <div className={`min-h-screen flex flex-col ${darkMode ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-950'} transition-colors duration-300`}>
+    <div className={`min-h-screen flex flex-col ${darkMode ? 'bg-black text-slate-100' : 'bg-[#f2f2f7] text-slate-950'} transition-colors duration-300`}>
       <div className="flex flex-1 overflow-hidden relative">
-        {/* Desktop Sidebar with SEO Landmarks */}
-        <aside className="hidden lg:flex w-72 flex-col bg-[#001f3f] text-white border-r border-white/5 shadow-2xl z-40 relative" role="navigation" aria-label="Main Navigation Sidebar">
+        {/* Desktop Sidebar */}
+        <aside className="hidden lg:flex w-72 flex-col bg-[#001f3f] text-white border-r border-white/5 shadow-2xl z-40 relative">
           <div className="p-8">
-            <div 
-              className="flex items-center gap-3 mb-10 group cursor-pointer" 
-              onClick={() => setActivePanel(AppPanel.DASHBOARD)} 
-              aria-label="Navigate to Dashboard"
-            >
-              <div className="bg-[#a2d149] p-2.5 rounded-xl shadow-lg shadow-[#a2d149]/20 group-hover:rotate-12 transition-transform">
+            <div className="flex items-center gap-3 mb-10 cursor-pointer" onClick={() => setActivePanel(AppPanel.DASHBOARD)}>
+              <div className="bg-[#a2d149] p-2.5 rounded-xl">
                 <Truck size={24} strokeWidth={3} className="text-[#001f3f]" />
               </div>
               <h1 className="font-black text-2xl tracking-tighter uppercase italic">GADI <span className="text-[#a2d149]">DOST</span></h1>
@@ -210,60 +179,68 @@ const App: React.FC = () => {
 
             <nav className="space-y-2">
               {navItems.map((item) => (
-                <NavTooltip key={item.id} label={item.label} position="right">
-                  <button
-                    onClick={() => setActivePanel(item.id)}
-                    aria-label={`View ${item.label}`}
-                    aria-current={activePanel === item.id ? 'page' : undefined}
-                    className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all ${
-                      activePanel === item.id 
-                        ? 'bg-[#a2d149] text-[#001f3f] shadow-xl shadow-[#a2d149]/20' 
-                        : 'text-slate-400 hover:text-white hover:bg-white/5'
-                    }`}
-                  >
-                    <item.icon size={18} strokeWidth={2.5} aria-hidden="true" /> {item.label}
-                  </button>
-                </NavTooltip>
+                <button
+                  key={item.id}
+                  onClick={() => setActivePanel(item.id)}
+                  className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all ${
+                    activePanel === item.id 
+                      ? 'bg-[#a2d149] text-[#001f3f] shadow-xl' 
+                      : 'text-slate-400 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <item.icon size={18} strokeWidth={2.5} /> {item.label}
+                </button>
               ))}
             </nav>
           </div>
 
           <div className="mt-auto p-8 space-y-4">
-            <button onClick={toggleLang} className="w-full flex items-center gap-4 px-5 py-3 rounded-xl text-[10px] font-black uppercase text-[#a2d149] bg-white/5 border border-white/5 hover:bg-white/10 transition-all">
+            {user.bilty_linked && (
+              <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-2xl flex items-center gap-3 mb-2 animate-in slide-in-from-left duration-700">
+                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                <span className="text-[9px] font-black uppercase text-emerald-500 tracking-widest">Bilty Book Connected</span>
+              </div>
+            )}
+            <button onClick={toggleLang} className="w-full flex items-center justify-center gap-3 px-5 py-3 rounded-xl text-[10px] font-black uppercase text-[#a2d149] bg-white/5 border border-white/5">
               <Languages size={16} /> {lang === 'en' ? 'HINDI VERSION' : 'ENGLISH MODE'}
             </button>
-            <button onClick={handleLogout} className="w-full flex items-center gap-4 px-5 py-3 rounded-xl text-[10px] font-black uppercase text-red-400 bg-red-500/5 border border-red-500/10 hover:bg-red-500/20 transition-all">
-              <LogOut size={16} /> Sign Out
+            <button onClick={handleLogout} className="w-full flex items-center justify-center gap-3 px-5 py-3 rounded-xl text-[10px] font-black uppercase text-red-400 bg-red-500/5 border border-red-500/10 hover:bg-red-500/20 transition-all">
+              <LogOut size={16} /> SIGN OUT
             </button>
           </div>
         </aside>
 
-        {/* Main Interface Content Area */}
+        {/* Content Viewport */}
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-          <header className="h-20 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-white/5 px-6 lg:px-10 flex items-center justify-between z-30 shadow-sm" role="banner">
-            <div className="lg:hidden flex items-center gap-3">
+          <header className="h-20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200 dark:border-white/5 px-6 lg:px-10 flex items-center justify-between z-30 shadow-sm safe-area-top" role="banner">
+            <div className="lg:hidden flex items-center gap-2">
                <div className="bg-[#a2d149] p-1.5 rounded-lg">
                 <Truck size={18} strokeWidth={3} className="text-[#001f3f]" />
               </div>
-              <h1 className="font-black text-lg uppercase italic">GADI <span className="text-[#a2d149]">DOST</span></h1>
+              <h1 className="font-black text-lg uppercase italic tracking-tighter">GADI <span className="text-[#a2d149]">DOST</span></h1>
             </div>
 
             <div className="hidden lg:block">
-              <h2 className="text-sm font-black uppercase tracking-widest text-slate-400">
-                Network Status: <span className="text-emerald-500 ml-1">Live Operational</span>
+              <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2">
+                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                Network: <span className="text-emerald-500">Live & Encrypted</span>
               </h2>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <button onClick={toggleDarkMode} className="p-2.5 bg-slate-100 dark:bg-white/5 rounded-xl hover:bg-slate-200 dark:hover:bg-white/10 transition-all" aria-label="Toggle Night Mode">
                 {darkMode ? <Sun size={18} className="text-[#a2d149]" /> : <Moon size={18} className="text-slate-600" />}
               </button>
-              <div className="h-8 w-[1px] bg-slate-200 dark:bg-white/10 mx-2" />
-              <div className="flex items-center gap-4 cursor-pointer" onClick={() => setActivePanel(AppPanel.PROFILE)} aria-label="User Settings">
+              <div className="h-8 w-[1px] bg-slate-200 dark:bg-white/10 mx-1 hidden sm:block" />
+              <div className="flex items-center gap-3 cursor-pointer p-1 rounded-2xl hover:bg-slate-50 dark:hover:bg-white/5 transition-all" onClick={() => setActivePanel(AppPanel.PROFILE)}>
                 <div className="text-right hidden sm:block">
                   <p className="text-xs font-black uppercase tracking-tight leading-none mb-1.5">{user.name}</p>
-                  <div className={`inline-block px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${
-                    user.role === 'admin' ? 'bg-red-500 text-white' : 'bg-[#a2d149] text-[#001f3f]'
+                  <div className={`inline-block px-2 py-0.5 rounded-[4px] text-[8px] font-black uppercase tracking-[0.1em] border ${
+                    user.role === 'admin' 
+                      ? 'bg-red-500 text-white border-red-400' 
+                      : user.role === 'transporter'
+                      ? 'bg-[#001f3f] text-[#a2d149] border-[#a2d149]/20'
+                      : 'bg-[#a2d149] text-[#001f3f] border-[#001f3f]/10'
                   }`}>
                     {user.role}
                   </div>
@@ -275,33 +252,31 @@ const App: React.FC = () => {
             </div>
           </header>
 
-          <main id="main-content" className="flex-1 overflow-y-auto p-4 md:p-8 lg:p-12 scroll-smooth" role="main" aria-label="App Main Screen">
-            <div className="max-w-7xl mx-auto pb-24 lg:pb-0">
+          <main id="main-content" className="flex-1 overflow-y-auto p-4 md:p-8 lg:p-12 scroll-smooth no-scrollbar" role="main">
+            <div className="max-w-7xl mx-auto pb-32 lg:pb-0">
               {renderContent()}
             </div>
           </main>
         </div>
 
         {/* Mobile Navigation Interface */}
-        <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-20 bg-white/90 dark:bg-slate-900/95 backdrop-blur-2xl border-t border-slate-200 dark:border-white/10 flex items-center justify-around px-2 z-50 safe-area-bottom" aria-label="Mobile Navigation Bar">
+        <nav className="lg:hidden fixed bottom-6 left-6 right-6 h-18 glass-nav border border-white/20 dark:border-white/10 flex items-center justify-around px-2 z-50 rounded-[28px] shadow-[0_20px_40px_rgba(0,0,0,0.1)] safe-area-bottom">
            {[
-             { id: AppPanel.DASHBOARD, icon: LayoutDashboard, label: 'Dash' },
+             { id: AppPanel.DASHBOARD, icon: LayoutDashboard, label: 'Home' },
              { id: AppPanel.GPS, icon: Navigation, label: 'GPS' },
              { id: AppPanel.BOOKING, icon: Truck, label: 'Book' },
              { id: AppPanel.BILTY, icon: FileText, label: 'Bilty' },
-             { id: AppPanel.EMERGENCY, icon: ShieldAlert, label: 'RSA' },
+             { id: AppPanel.EMERGENCY, icon: ShieldAlert, label: 'SOS' },
            ].map((item) => (
              <button
                key={item.id}
                onClick={() => setActivePanel(item.id)}
-               aria-label={`Open ${item.label}`}
-               aria-current={activePanel === item.id ? 'page' : undefined}
-               className={`flex flex-col items-center justify-center gap-1.5 px-4 py-2 rounded-2xl transition-all ${
-                 activePanel === item.id ? 'text-[#a2d149] bg-[#a2d149]/10' : 'text-slate-400'
+               className={`flex flex-col items-center justify-center gap-1.5 px-3 py-2 rounded-2xl transition-all active:scale-90 ${
+                 activePanel === item.id ? 'text-[#a2d149]' : 'text-slate-400'
                }`}
              >
-               <item.icon size={22} strokeWidth={activePanel === item.id ? 3 : 2} aria-hidden="true" />
-               <span className="text-[8px] font-black uppercase tracking-widest">{item.label}</span>
+               <item.icon size={22} strokeWidth={activePanel === item.id ? 3 : 2} />
+               <span className="text-[9px] font-black uppercase tracking-widest">{item.label}</span>
              </button>
            ))}
         </nav>

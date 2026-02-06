@@ -22,6 +22,8 @@ export interface User {
   phone?: string;
   businessName?: string;
   address?: string;
+  bilty_linked?: boolean;
+  bilty_token?: string;
 }
 
 export interface Vehicle {
@@ -32,6 +34,7 @@ export interface Vehicle {
   status: 'Running' | 'Stopped' | 'Offline';
   speed: number;
   fuel_level: number;
+  battery_level: number;
   ignition: boolean;
   lat: number;
   lng: number;
