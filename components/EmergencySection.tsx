@@ -1,20 +1,20 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Truck, 
-  Fuel, 
-  Wrench, 
-  CircleDashed, 
-  Phone, 
-  MapPin, 
-  Navigation, 
-  Receipt, 
-  CheckCircle2, 
-  ChevronRight, 
-  Search, 
-  Info, 
-  ShieldCheck, 
-  Clock, 
+import {
+  Truck,
+  Fuel,
+  Wrench,
+  CircleDashed,
+  Phone,
+  MapPin,
+  Navigation,
+  Receipt,
+  CheckCircle2,
+  ChevronRight,
+  Search,
+  Info,
+  ShieldCheck,
+  Clock,
   AlertTriangle,
   Zap,
   Star,
@@ -55,10 +55,10 @@ const EmergencySection: React.FC<{ t: any }> = ({ t }) => {
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [selectedService, setSelectedService] = useState<ServiceDetail | null>(null);
   const [userLocation, setUserLocation] = useState<string>("Detecting...");
-  const [coords, setCoords] = useState<{lat: number, lng: number} | null>(null);
+  const [coords, setCoords] = useState<{ lat: number, lng: number } | null>(null);
   const [loading, setLoading] = useState(false);
   const [eta, setEta] = useState(15);
-  
+
   // Chat States
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
@@ -90,12 +90,90 @@ const EmergencySection: React.FC<{ t: any }> = ({ t }) => {
     },
     {
       id: 'repair',
-      label: 'Mechanic Help',
+      label: 'Mechanic Services',
       icon: Wrench,
       color: 'bg-red-500',
       services: [
-        { id: 'rep-1', name: 'Brake Jam Fix', price: 950, time: '40 mins', description: 'On-site brake release and check.', includes: ['Brake Cleaning', 'Spring Check', 'Technician Visit'] },
-        { id: 'rep-2', name: 'Clutch Adjustment', price: 450, time: '20 mins', description: 'Pedal play and wire check.', includes: ['Pedal Balancing', 'Wire Lubrication'] }
+        {
+          id: 'rep-1',
+          name: 'Brake System Repair',
+          price: 1200,
+          time: '45-60 mins',
+          description: 'Complete brake inspection, cleaning, and adjustment for all wheels.',
+          includes: ['Brake Pad Inspection', 'Drum/Disc Cleaning', 'Spring & Wire Check', 'Brake Fluid Top-up', 'Road Test']
+        },
+        {
+          id: 'rep-2',
+          name: 'Clutch Adjustment & Repair',
+          price: 850,
+          time: '30-40 mins',
+          description: 'Full clutch system diagnosis and adjustment.',
+          includes: ['Pedal Play Adjustment', 'Wire Lubrication', 'Pressure Plate Check', 'Free Play Setting']
+        },
+        {
+          id: 'rep-3',
+          name: 'Engine Diagnosis',
+          price: 1500,
+          time: '60-90 mins',
+          description: 'Comprehensive engine health check and minor repairs.',
+          includes: ['OBD Scanning', 'Compression Test', 'Oil Leak Check', 'Sensor Inspection', 'Diagnostic Report']
+        },
+        {
+          id: 'rep-4',
+          name: 'Electrical System Fix',
+          price: 950,
+          time: '40-50 mins',
+          description: 'Battery, alternator, and wiring diagnostics.',
+          includes: ['Battery Load Test', 'Alternator Check', 'Wiring Inspection', 'Fuse Replacement', 'Voltage Test']
+        },
+        {
+          id: 'rep-5',
+          name: 'Suspension & Steering',
+          price: 1350,
+          time: '50-70 mins',
+          description: 'Complete suspension and steering system check.',
+          includes: ['Shock Absorber Test', 'Steering Play Check', 'Ball Joint Inspection', 'Alignment Check', 'Bushing Inspection']
+        },
+        {
+          id: 'rep-6',
+          name: 'Transmission Service',
+          price: 1800,
+          time: '60-90 mins',
+          description: 'Gearbox inspection and minor transmission repairs.',
+          includes: ['Gear Shifting Test', 'Oil Level Check', 'Linkage Adjustment', 'Clutch Plate Inspection', 'Seal Check']
+        },
+        {
+          id: 'rep-7',
+          name: 'Cooling System Service',
+          price: 750,
+          time: '30-45 mins',
+          description: 'Radiator and cooling system maintenance.',
+          includes: ['Radiator Flush', 'Coolant Refill', 'Hose Inspection', 'Thermostat Check', 'Fan Belt Check']
+        },
+        {
+          id: 'rep-8',
+          name: 'Air Brake System',
+          price: 1650,
+          time: '60-75 mins',
+          description: 'Air brake compressor and line maintenance.',
+          includes: ['Compressor Check', 'Air Line Inspection', 'Valve Testing', 'Moisture Drain', 'Pressure Test']
+        },
+        {
+          id: 'rep-9',
+          name: 'Exhaust System Repair',
+          price: 900,
+          time: '35-50 mins',
+          description: 'Exhaust pipe, muffler, and emission system check.',
+          includes: ['Leak Detection', 'Muffler Inspection', 'Clamp Tightening', 'Emission Test', 'Gasket Check']
+        },
+        {
+          id: 'rep-10',
+          name: 'Full Vehicle Inspection',
+          price: 2500,
+          time: '90-120 mins',
+          description: 'Comprehensive 50-point vehicle health check.',
+          includes: ['Engine Check', 'Brake System', 'Suspension', 'Electrical', 'Transmission', 'Detailed Report', 'Recommendations']
+        }
       ]
     },
     {
@@ -200,9 +278,9 @@ const EmergencySection: React.FC<{ t: any }> = ({ t }) => {
         </div>
         <div className="relative w-full md:w-64">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-          <input 
-            type="text" 
-            placeholder="Search for repair..." 
+          <input
+            type="text"
+            placeholder="Search for repair..."
             className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm"
           />
         </div>
@@ -262,13 +340,13 @@ const EmergencySection: React.FC<{ t: any }> = ({ t }) => {
       {step === 'services' && selectedCategory && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in slide-in-from-right-4">
           <div className="lg:col-span-2 space-y-4">
-            <button 
+            <button
               onClick={() => setStep('category')}
               className="flex items-center gap-2 text-slate-500 font-bold text-sm mb-4 hover:text-red-600 transition-colors"
             >
               <X size={16} /> Back to Categories
             </button>
-            
+
             <h3 className="text-2xl font-bold flex items-center gap-3">
               <selectedCategory.icon className="text-red-500" />
               {selectedCategory.label} Services
@@ -276,12 +354,11 @@ const EmergencySection: React.FC<{ t: any }> = ({ t }) => {
 
             <div className="space-y-4 pt-4">
               {selectedCategory.services.map((service) => (
-                <div 
+                <div
                   key={service.id}
                   onClick={() => setSelectedService(service)}
-                  className={`bg-white dark:bg-slate-800 p-6 rounded-3xl border-2 transition-all cursor-pointer ${
-                    selectedService?.id === service.id ? 'border-red-500 shadow-xl' : 'border-slate-100 dark:border-slate-700 shadow-sm'
-                  }`}
+                  className={`bg-white dark:bg-slate-800 p-6 rounded-3xl border-2 transition-all cursor-pointer ${selectedService?.id === service.id ? 'border-red-500 shadow-xl' : 'border-slate-100 dark:border-slate-700 shadow-sm'
+                    }`}
                 >
                   <div className="flex justify-between items-start mb-4">
                     <div>
@@ -302,7 +379,7 @@ const EmergencySection: React.FC<{ t: any }> = ({ t }) => {
                   </div>
 
                   <p className="text-sm text-slate-500 mb-6">{service.description}</p>
-                  
+
                   <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl">
                     <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-3">What's Included</p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -325,7 +402,7 @@ const EmergencySection: React.FC<{ t: any }> = ({ t }) => {
                 <Receipt size={20} className="text-red-500" />
                 Booking Summary
               </h4>
-              
+
               {!selectedService ? (
                 <div className="text-center py-10 border-2 border-dashed border-slate-800 rounded-2xl">
                   <Info className="mx-auto text-slate-700 mb-2" />
@@ -347,7 +424,7 @@ const EmergencySection: React.FC<{ t: any }> = ({ t }) => {
                       <span className="font-bold text-green-400">Free</span>
                     </div>
                   </div>
-                  
+
                   <div className="pt-4 border-t border-slate-800 flex justify-between items-center">
                     <span className="font-bold">Total Payable</span>
                     <span className="text-3xl font-black text-red-500">₹{selectedService.price}</span>
@@ -362,7 +439,7 @@ const EmergencySection: React.FC<{ t: any }> = ({ t }) => {
                     </p>
                   </div>
 
-                  <button 
+                  <button
                     onClick={handleBooking}
                     disabled={loading}
                     className="w-full bg-red-600 hover:bg-red-700 text-white py-4 rounded-2xl font-bold text-lg transition-all active:scale-95 flex items-center justify-center gap-3 shadow-xl shadow-red-600/20"
@@ -379,17 +456,17 @@ const EmergencySection: React.FC<{ t: any }> = ({ t }) => {
                 </div>
               )}
             </div>
-            
+
             <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-100 dark:border-slate-700">
-               <div className="flex items-center gap-4 mb-4">
-                 <div className="bg-amber-100 dark:bg-amber-900/30 p-2 rounded-lg text-amber-600">
-                   <Phone size={20} />
-                 </div>
-                 <div>
-                   <h5 className="font-bold text-sm">Emergency Hotline</h5>
-                   <p className="text-xs text-slate-500">Call if app fails: 1800-GADI-HELP</p>
-                 </div>
-               </div>
+              <div className="flex items-center gap-4 mb-4">
+                <div className="bg-amber-100 dark:bg-amber-900/30 p-2 rounded-lg text-amber-600">
+                  <Phone size={20} />
+                </div>
+                <div>
+                  <h5 className="font-bold text-sm">Emergency Hotline</h5>
+                  <p className="text-xs text-slate-500">Call if app fails: 1800-GADI-HELP</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -397,126 +474,125 @@ const EmergencySection: React.FC<{ t: any }> = ({ t }) => {
 
       {step === 'tracking' && (
         <div className="max-w-6xl mx-auto space-y-8 animate-in zoom-in duration-500">
-           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Map and Info */}
-              <div className="lg:col-span-2 space-y-6">
-                <div className="bg-white dark:bg-slate-800 rounded-[40px] overflow-hidden shadow-2xl border border-slate-100 dark:border-white/5">
-                  <div className="h-[400px] bg-slate-100 relative">
-                    <div className="absolute inset-0 opacity-60 bg-[url('https://www.google.com/maps/vt/pb=!1m4!1m3!1i14!2i9375!3i6000!2m3!1e0!2sm!3i420120488!3m8!2sen!3sus!5e1105!12m4!1e68!2m2!1sset!2sRoadmap!4e0!5m1!5f2!23i1301875')] bg-cover" />
-                    <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="relative">
-                          <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center text-white border-4 border-white shadow-2xl animate-bounce">
-                            <Wrench size={32} />
-                          </div>
-                          <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-4 py-1.5 rounded-full text-[10px] font-black shadow-lg">MOVING TO YOU</div>
-                        </div>
-                    </div>
-                  </div>
-                  
-                  <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-10">
-                    <div className="space-y-6">
-                      <div>
-                        <div className="flex items-center gap-2 text-green-600 font-bold text-xs uppercase tracking-widest mb-1">
-                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                          Technician Dispatched
-                        </div>
-                        <h3 className="text-3xl font-black">{selectedService?.name}</h3>
-                        <p className="text-slate-500">Order ID: #EM-221990</p>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Map and Info */}
+            <div className="lg:col-span-2 space-y-6">
+              <div className="bg-white dark:bg-slate-800 rounded-[40px] overflow-hidden shadow-2xl border border-slate-100 dark:border-white/5">
+                <div className="h-[400px] bg-slate-100 relative">
+                  <div className="absolute inset-0 opacity-60 bg-[url('https://www.google.com/maps/vt/pb=!1m4!1m3!1i14!2i9375!3i6000!2m3!1e0!2sm!3i420120488!3m8!2sen!3sus!5e1105!12m4!1e68!2m2!1sset!2sRoadmap!4e0!5m1!5f2!23i1301875')] bg-cover" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="relative">
+                      <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center text-white border-4 border-white shadow-2xl animate-bounce">
+                        <Wrench size={32} />
                       </div>
-
-                      <div className="flex items-center gap-5 p-4 bg-slate-50 dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-700">
-                        <div className="w-16 h-16 rounded-2xl bg-white overflow-hidden border border-slate-100">
-                          <img src="https://ui-avatars.com/api/?name=Arun+Technician&background=f59e0b&color=fff" alt="Technician" />
-                        </div>
-                        <div className="flex-1">
-                          <h5 className="font-bold text-lg">Arun Mishra</h5>
-                          <div className="flex items-center gap-1 text-amber-500 font-bold text-xs">
-                            4.9 <Star size={10} fill="currentColor" /> (120+ jobs)
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <button 
-                            onClick={() => setIsChatOpen(!isChatOpen)}
-                            className={`p-4 rounded-2xl transition-all shadow-lg ${isChatOpen ? 'bg-amber-500 text-slate-900' : 'bg-slate-900 text-white'}`}
-                          >
-                            <MessageSquare size={24} />
-                          </button>
-                          <button className="p-4 bg-red-600 text-white rounded-2xl hover:bg-red-700 transition-colors shadow-lg">
-                            <Phone size={24} />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col justify-center text-center md:text-left bg-red-50 dark:bg-red-950/20 p-8 rounded-3xl border border-red-100 dark:border-red-900/30">
-                      <p className="text-sm font-black text-red-600 uppercase tracking-widest mb-1">Expected Arrival</p>
-                      <p className="text-6xl font-black text-slate-900 dark:text-red-500 mb-4">{eta} <span className="text-2xl">Mins</span></p>
-                      <p className="text-slate-500 text-sm">Vehicle: MH 01 AB 1234 (Tow Unit 4)</p>
+                      <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-4 py-1.5 rounded-full text-[10px] font-black shadow-lg">MOVING TO YOU</div>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex gap-4">
-                  <button onClick={() => setStep('completed')} className="flex-1 bg-slate-900 text-white py-5 rounded-[24px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-xl">
-                    ARRIVED & WORKING
-                  </button>
-                  <button onClick={() => setStep('category')} className="px-8 py-5 border-2 border-slate-200 dark:border-slate-800 rounded-[24px] font-black uppercase tracking-widest text-slate-500 hover:text-red-500 transition-all">
-                    CANCEL
-                  </button>
-                </div>
-              </div>
-
-              {/* Real-time Chat Section */}
-              <div className={`lg:col-span-1 flex flex-col bg-white dark:bg-slate-800 rounded-[40px] shadow-2xl border border-slate-100 dark:border-white/5 overflow-hidden transition-all duration-500 h-[600px] lg:h-auto ${isChatOpen ? 'opacity-100 translate-y-0' : 'opacity-60 lg:opacity-100 pointer-events-none lg:pointer-events-auto'}`}>
-                <div className="p-6 border-b border-slate-100 dark:border-white/5 bg-slate-50 dark:bg-slate-900/50 flex items-center justify-between">
-                   <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-amber-500 flex items-center justify-center text-slate-950 font-black">AM</div>
-                      <div>
-                        <h4 className="font-black text-sm uppercase tracking-tight leading-none">Chat with Arun</h4>
-                        <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">Technician • Online</span>
+                <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-10">
+                  <div className="space-y-6">
+                    <div>
+                      <div className="flex items-center gap-2 text-green-600 font-bold text-xs uppercase tracking-widest mb-1">
+                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                        Technician Dispatched
                       </div>
-                   </div>
-                   <div className="flex gap-2">
-                      <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                   </div>
-                </div>
-
-                <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
-                  {messages.map((msg) => (
-                    <div key={msg.id} className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}>
-                       <div className={`max-w-[85%] px-4 py-3 rounded-[20px] text-sm font-medium shadow-sm ${
-                         msg.sender === 'user' 
-                          ? 'bg-amber-500 text-slate-950 rounded-tr-none' 
-                          : 'bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 rounded-tl-none border border-slate-200 dark:border-slate-800'
-                       }`}>
-                         {msg.text}
-                       </div>
-                       <span className="text-[8px] font-black uppercase text-slate-400 mt-1 px-1">{msg.time}</span>
+                      <h3 className="text-3xl font-black">{selectedService?.name}</h3>
+                      <p className="text-slate-500">Order ID: #EM-221990</p>
                     </div>
-                  ))}
-                  <div ref={chatEndRef} />
-                </div>
 
-                <div className="p-4 border-t border-slate-100 dark:border-white/5 bg-white dark:bg-slate-800">
-                  <div className="relative flex items-center gap-2">
-                    <input 
-                      type="text" 
-                      value={inputMessage}
-                      onChange={(e) => setInputMessage(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                      placeholder="Type a message..." 
-                      className="flex-1 bg-slate-50 dark:bg-slate-900 border-0 rounded-2xl py-3 px-5 text-sm font-bold focus:ring-2 focus:ring-amber-500 transition-all outline-none"
-                    />
-                    <button 
-                      onClick={sendMessage}
-                      className="p-3.5 bg-slate-950 dark:bg-amber-500 text-white dark:text-slate-950 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-lg"
-                    >
-                      <Send size={18} strokeWidth={3} />
-                    </button>
+                    <div className="flex items-center gap-5 p-4 bg-slate-50 dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-700">
+                      <div className="w-16 h-16 rounded-2xl bg-white overflow-hidden border border-slate-100">
+                        <img src="https://ui-avatars.com/api/?name=Arun+Technician&background=f59e0b&color=fff" alt="Technician" />
+                      </div>
+                      <div className="flex-1">
+                        <h5 className="font-bold text-lg">Arun Mishra</h5>
+                        <div className="flex items-center gap-1 text-amber-500 font-bold text-xs">
+                          4.9 <Star size={10} fill="currentColor" /> (120+ jobs)
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setIsChatOpen(!isChatOpen)}
+                          className={`p-4 rounded-2xl transition-all shadow-lg ${isChatOpen ? 'bg-amber-500 text-slate-900' : 'bg-slate-900 text-white'}`}
+                        >
+                          <MessageSquare size={24} />
+                        </button>
+                        <button className="p-4 bg-red-600 text-white rounded-2xl hover:bg-red-700 transition-colors shadow-lg">
+                          <Phone size={24} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col justify-center text-center md:text-left bg-red-50 dark:bg-red-950/20 p-8 rounded-3xl border border-red-100 dark:border-red-900/30">
+                    <p className="text-sm font-black text-red-600 uppercase tracking-widest mb-1">Expected Arrival</p>
+                    <p className="text-6xl font-black text-slate-900 dark:text-red-500 mb-4">{eta} <span className="text-2xl">Mins</span></p>
+                    <p className="text-slate-500 text-sm">Vehicle: MH 01 AB 1234 (Tow Unit 4)</p>
                   </div>
                 </div>
               </div>
-           </div>
+
+              <div className="flex gap-4">
+                <button onClick={() => setStep('completed')} className="flex-1 bg-slate-900 text-white py-5 rounded-[24px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-xl">
+                  ARRIVED & WORKING
+                </button>
+                <button onClick={() => setStep('category')} className="px-8 py-5 border-2 border-slate-200 dark:border-slate-800 rounded-[24px] font-black uppercase tracking-widest text-slate-500 hover:text-red-500 transition-all">
+                  CANCEL
+                </button>
+              </div>
+            </div>
+
+            {/* Real-time Chat Section */}
+            <div className={`lg:col-span-1 flex flex-col bg-white dark:bg-slate-800 rounded-[40px] shadow-2xl border border-slate-100 dark:border-white/5 overflow-hidden transition-all duration-500 h-[600px] lg:h-auto ${isChatOpen ? 'opacity-100 translate-y-0' : 'opacity-60 lg:opacity-100 pointer-events-none lg:pointer-events-auto'}`}>
+              <div className="p-6 border-b border-slate-100 dark:border-white/5 bg-slate-50 dark:bg-slate-900/50 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-amber-500 flex items-center justify-center text-slate-950 font-black">AM</div>
+                  <div>
+                    <h4 className="font-black text-sm uppercase tracking-tight leading-none">Chat with Arun</h4>
+                    <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">Technician • Online</span>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
+                {messages.map((msg) => (
+                  <div key={msg.id} className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}>
+                    <div className={`max-w-[85%] px-4 py-3 rounded-[20px] text-sm font-medium shadow-sm ${msg.sender === 'user'
+                        ? 'bg-amber-500 text-slate-950 rounded-tr-none'
+                        : 'bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 rounded-tl-none border border-slate-200 dark:border-slate-800'
+                      }`}>
+                      {msg.text}
+                    </div>
+                    <span className="text-[8px] font-black uppercase text-slate-400 mt-1 px-1">{msg.time}</span>
+                  </div>
+                ))}
+                <div ref={chatEndRef} />
+              </div>
+
+              <div className="p-4 border-t border-slate-100 dark:border-white/5 bg-white dark:bg-slate-800">
+                <div className="relative flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={inputMessage}
+                    onChange={(e) => setInputMessage(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                    placeholder="Type a message..."
+                    className="flex-1 bg-slate-50 dark:bg-slate-900 border-0 rounded-2xl py-3 px-5 text-sm font-bold focus:ring-2 focus:ring-amber-500 transition-all outline-none"
+                  />
+                  <button
+                    onClick={sendMessage}
+                    className="p-3.5 bg-slate-950 dark:bg-amber-500 text-white dark:text-slate-950 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-lg"
+                  >
+                    <Send size={18} strokeWidth={3} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -552,7 +628,7 @@ const EmergencySection: React.FC<{ t: any }> = ({ t }) => {
           </div>
 
           <div className="space-y-4">
-            <button 
+            <button
               onClick={() => {
                 setStep('category');
                 setIsChatOpen(false);
