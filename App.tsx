@@ -2,8 +2,8 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Truck, 
-  Navigation, 
-  ShieldAlert, 
+  MapPin, 
+  Shield, 
   FileText, 
   Calculator, 
   LayoutDashboard, 
@@ -18,7 +18,9 @@ import {
   Settings,
   Bell,
   UserCheck,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Sparkles,
+  Zap
 } from 'lucide-react';
 import { translations } from './i18n';
 import { AppPanel, Language, User } from './types';
@@ -121,14 +123,14 @@ const App: React.FC = () => {
   const navItems = useMemo(() => {
     const items = [
       { id: AppPanel.DASHBOARD, label: t.dashboard, icon: LayoutDashboard },
-      { id: AppPanel.GPS, label: t.gps, icon: Navigation },
-      { id: AppPanel.EMERGENCY, label: t.emergency, icon: ShieldAlert },
+      { id: AppPanel.GPS, label: t.gps, icon: MapPin },
+      { id: AppPanel.EMERGENCY, label: t.emergency, icon: Shield },
       { id: AppPanel.BOOKING, label: t.booking, icon: Truck },
       { id: AppPanel.BILTY, label: t.bilty, icon: FileText },
-      { id: AppPanel.CALCULATOR, label: t.calculator, icon: Calculator },
+      { id: AppPanel.CALCULATOR, label: t.calculator, icon: Sparkles },
       { id: AppPanel.PROFILE, label: t.profile, icon: Settings },
     ];
-    if (user?.role === 'admin') items.push({ id: AppPanel.ADMIN, label: t.admin, icon: Activity });
+    if (user?.role === 'admin') items.push({ id: AppPanel.ADMIN, label: t.admin, icon: Zap });
     return items;
   }, [t, user?.role]);
 
@@ -153,10 +155,10 @@ const App: React.FC = () => {
 
   if (initializing) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#001f3f]">
+      <div className="min-h-screen flex items-center justify-center" style={{background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'}}>
         <div className="flex flex-col items-center gap-6">
-          <div className="w-16 h-16 border-4 border-[#a2d149]/20 border-t-[#a2d149] rounded-full animate-spin" />
-          <p className="font-black text-[#a2d149] uppercase tracking-[0.3em] text-[10px] animate-pulse">Syncing Cloud Network...</p>
+          <div className="w-16 h-16 border-4 border-white/20 border-t-white rounded-full animate-spin" />
+          <p className="font-black text-white uppercase tracking-[0.3em] text-[10px] animate-pulse drop-shadow-lg">Syncing Cloud Network...</p>
         </div>
       </div>
     );
@@ -165,16 +167,16 @@ const App: React.FC = () => {
   if (!user) return <AuthSection t={t} />;
 
   return (
-    <div className={`min-h-screen flex flex-col ${darkMode ? 'bg-black text-slate-100' : 'bg-[#f2f2f7] text-slate-950'} transition-colors duration-300`}>
+    <div className={`min-h-screen flex flex-col ${darkMode ? 'bg-[#0a0a0f] text-slate-100' : 'bg-[#f8f9ff] text-slate-950'} transition-colors duration-300`}>
       <div className="flex flex-1 overflow-hidden relative">
         {/* Desktop Sidebar */}
-        <aside className="hidden lg:flex w-72 flex-col bg-[#001f3f] text-white border-r border-white/5 shadow-2xl z-40 relative">
+        <aside className="hidden lg:flex w-72 flex-col text-white border-r border-white/10 shadow-2xl z-40 relative" style={{background: 'linear-gradient(180deg, #667eea 0%, #764ba2 100%)'}}>
           <div className="p-8">
-            <div className="flex items-center gap-3 mb-10 cursor-pointer" onClick={() => setActivePanel(AppPanel.DASHBOARD)}>
-              <div className="bg-[#a2d149] p-2.5 rounded-xl">
-                <Truck size={24} strokeWidth={3} className="text-[#001f3f]" />
+            <div className="flex items-center gap-3 mb-10 cursor-pointer group" onClick={() => setActivePanel(AppPanel.DASHBOARD)}>
+              <div className="bg-white/20 backdrop-blur-sm p-2.5 rounded-2xl group-hover:bg-white/30 transition-all shadow-lg">
+                <Truck size={24} strokeWidth={3} className="text-white" />
               </div>
-              <h1 className="font-black text-2xl tracking-tighter uppercase italic">GADI <span className="text-[#a2d149]">DOST</span></h1>
+              <h1 className="font-black text-2xl tracking-tighter uppercase">GADI <span className="text-white drop-shadow-lg">DOST</span></h1>
             </div>
 
             <nav className="space-y-2">
@@ -184,8 +186,8 @@ const App: React.FC = () => {
                   onClick={() => setActivePanel(item.id)}
                   className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all ${
                     activePanel === item.id 
-                      ? 'bg-[#a2d149] text-[#001f3f] shadow-xl' 
-                      : 'text-slate-400 hover:text-white hover:bg-white/5'
+                      ? 'bg-white text-indigo-600 shadow-xl shadow-black/20' 
+                      : 'text-white/70 hover:text-white hover:bg-white/10'
                   }`}
                 >
                   <item.icon size={18} strokeWidth={2.5} /> {item.label}
@@ -196,15 +198,15 @@ const App: React.FC = () => {
 
           <div className="mt-auto p-8 space-y-4">
             {user.bilty_linked && (
-              <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-2xl flex items-center gap-3 mb-2 animate-in slide-in-from-left duration-700">
-                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                <span className="text-[9px] font-black uppercase text-emerald-500 tracking-widest">Bilty Book Connected</span>
+              <div className="bg-white/10 backdrop-blur-sm border border-white/20 p-4 rounded-2xl flex items-center gap-3 mb-2 animate-in">
+                <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse shadow-lg shadow-cyan-400/50" />
+                <span className="text-[9px] font-black uppercase text-white tracking-widest">Bilty Book Connected</span>
               </div>
             )}
-            <button onClick={toggleLang} className="w-full flex items-center justify-center gap-3 px-5 py-3 rounded-xl text-[10px] font-black uppercase text-[#a2d149] bg-white/5 border border-white/5">
+            <button onClick={toggleLang} className="w-full flex items-center justify-center gap-3 px-5 py-3 rounded-xl text-[10px] font-black uppercase text-white bg-white/10 border border-white/20 hover:bg-white/20 transition-all backdrop-blur-sm">
               <Languages size={16} /> {lang === 'en' ? 'HINDI VERSION' : 'ENGLISH MODE'}
             </button>
-            <button onClick={handleLogout} className="w-full flex items-center justify-center gap-3 px-5 py-3 rounded-xl text-[10px] font-black uppercase text-red-400 bg-red-500/5 border border-red-500/10 hover:bg-red-500/20 transition-all">
+            <button onClick={handleLogout} className="w-full flex items-center justify-center gap-3 px-5 py-3 rounded-xl text-[10px] font-black uppercase text-white bg-red-500/20 border border-red-400/30 hover:bg-red-500/30 transition-all backdrop-blur-sm">
               <LogOut size={16} /> SIGN OUT
             </button>
           </div>
@@ -212,24 +214,24 @@ const App: React.FC = () => {
 
         {/* Content Viewport */}
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-          <header className="h-20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200 dark:border-white/5 px-6 lg:px-10 flex items-center justify-between z-30 shadow-sm safe-area-top" role="banner">
+          <header className="h-20 bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl border-b border-slate-200/50 dark:border-white/5 px-6 lg:px-10 flex items-center justify-between z-30 shadow-sm safe-area-top" role="banner">
             <div className="lg:hidden flex items-center gap-2">
-               <div className="bg-[#a2d149] p-1.5 rounded-lg">
-                <Truck size={18} strokeWidth={3} className="text-[#001f3f]" />
+               <div className="p-1.5 rounded-xl" style={{background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'}}>
+                <Truck size={18} strokeWidth={3} className="text-white" />
               </div>
-              <h1 className="font-black text-lg uppercase italic tracking-tighter">GADI <span className="text-[#a2d149]">DOST</span></h1>
+              <h1 className="font-black text-lg uppercase tracking-tighter">GADI <span className="gradient-text">DOST</span></h1>
             </div>
 
             <div className="hidden lg:block">
               <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2">
-                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                Network: <span className="text-emerald-500">Live & Encrypted</span>
+                <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-pulse shadow-lg shadow-cyan-500/50" />
+                Network: <span className="text-cyan-500">Live & Encrypted</span>
               </h2>
             </div>
 
             <div className="flex items-center gap-3">
               <button onClick={toggleDarkMode} className="p-2.5 bg-slate-100 dark:bg-white/5 rounded-xl hover:bg-slate-200 dark:hover:bg-white/10 transition-all" aria-label="Toggle Night Mode">
-                {darkMode ? <Sun size={18} className="text-[#a2d149]" /> : <Moon size={18} className="text-slate-600" />}
+                {darkMode ? <Sun size={18} className="text-amber-500" /> : <Moon size={18} className="text-indigo-600" />}
               </button>
               <div className="h-8 w-[1px] bg-slate-200 dark:bg-white/10 mx-1 hidden sm:block" />
               <div className="flex items-center gap-3 cursor-pointer p-1 rounded-2xl hover:bg-slate-50 dark:hover:bg-white/5 transition-all" onClick={() => setActivePanel(AppPanel.PROFILE)}>
@@ -237,15 +239,15 @@ const App: React.FC = () => {
                   <p className="text-xs font-black uppercase tracking-tight leading-none mb-1.5">{user.name}</p>
                   <div className={`inline-block px-2 py-0.5 rounded-[4px] text-[8px] font-black uppercase tracking-[0.1em] border ${
                     user.role === 'admin' 
-                      ? 'bg-red-500 text-white border-red-400' 
+                      ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white border-pink-400' 
                       : user.role === 'transporter'
-                      ? 'bg-[#001f3f] text-[#a2d149] border-[#a2d149]/20'
-                      : 'bg-[#a2d149] text-[#001f3f] border-[#001f3f]/10'
+                      ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white border-indigo-400'
+                      : 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white border-cyan-400'
                   }`}>
                     {user.role}
                   </div>
                 </div>
-                <div className="w-10 h-10 rounded-xl bg-[#001f3f] flex items-center justify-center text-white border-2 border-[#a2d149] shadow-lg group">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white border-2 border-indigo-400 shadow-lg group" style={{background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'}}>
                   <UserIcon size={20} className="group-hover:scale-110 transition-transform" />
                 </div>
               </div>
@@ -260,19 +262,19 @@ const App: React.FC = () => {
         </div>
 
         {/* Mobile Navigation Interface */}
-        <nav className="lg:hidden fixed bottom-6 left-6 right-6 h-18 glass-nav border border-white/20 dark:border-white/10 flex items-center justify-around px-2 z-50 rounded-[28px] shadow-[0_20px_40px_rgba(0,0,0,0.1)] safe-area-bottom">
+        <nav className="lg:hidden fixed bottom-6 left-6 right-6 h-18 glass-nav border border-white/20 dark:border-white/10 flex items-center justify-around px-2 z-50 rounded-[28px] shadow-[0_20px_40px_rgba(0,0,0,0.15)] safe-area-bottom">
            {[
              { id: AppPanel.DASHBOARD, icon: LayoutDashboard, label: 'Home' },
-             { id: AppPanel.GPS, icon: Navigation, label: 'GPS' },
+             { id: AppPanel.GPS, icon: MapPin, label: 'GPS' },
              { id: AppPanel.BOOKING, icon: Truck, label: 'Book' },
              { id: AppPanel.BILTY, icon: FileText, label: 'Bilty' },
-             { id: AppPanel.EMERGENCY, icon: ShieldAlert, label: 'SOS' },
+             { id: AppPanel.EMERGENCY, icon: Shield, label: 'SOS' },
            ].map((item) => (
              <button
                key={item.id}
                onClick={() => setActivePanel(item.id)}
                className={`flex flex-col items-center justify-center gap-1.5 px-3 py-2 rounded-2xl transition-all active:scale-90 ${
-                 activePanel === item.id ? 'text-[#a2d149]' : 'text-slate-400'
+                 activePanel === item.id ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500'
                }`}
              >
                <item.icon size={22} strokeWidth={activePanel === item.id ? 3 : 2} />

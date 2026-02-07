@@ -1,22 +1,26 @@
-
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+
     <!-- iOS / PWA Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Gadi Dost">
-    <meta name="theme-color" content="#001f3f">
-    <link rel="apple-touch-icon" href="https://tstboympleybwbdwicik.supabase.co/storage/v1/object/public/assets/logo-icon.png">
-    
+    <meta name="theme-color" content="#667eea">
+    <link rel="apple-touch-icon"
+        href="https://tstboympleybwbdwicik.supabase.co/storage/v1/object/public/assets/logo-icon.png">
+
     <!-- Primary SEO Meta Tags -->
     <title>Gadi Dost - India's #1 Smart Fleet Management & Logistics App</title>
     <meta name="title" content="Gadi Dost - India's #1 Smart Fleet Management & Logistics App">
-    <meta name="description" content="Gadi Dost is India's leading digital logistics platform. Offering real-time GPS tracking, 24/7 highway emergency rescue (RSA), digital bilty management, and AI-powered load estimation for transporters and fleet owners.">
-    <meta name="keywords" content="logistics app india, fleet management software, truck tracking gps, highway rescue india, rsa for trucks, digital bilty book, gadi dost, transport marketplace, indian logistics, truck booking app">
+    <meta name="description"
+        content="Gadi Dost is India's leading digital logistics platform. Offering real-time GPS tracking, 24/7 highway emergency rescue (RSA), digital bilty management, and AI-powered load estimation for transporters and fleet owners.">
+    <meta name="keywords"
+        content="logistics app india, fleet management software, truck tracking gps, highway rescue india, rsa for trucks, digital bilty book, gadi dost, transport marketplace, indian logistics, truck booking app">
     <meta name="author" content="Gadi Dost Team">
     <meta name="robots" content="index, follow">
 
@@ -24,15 +28,19 @@
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://gadidost.in/">
     <meta property="og:title" content="Gadi Dost - India's Smartest Fleet Management Platform">
-    <meta property="og:description" content="Streamline your transport business with real-time GPS, Emergency Rescue, and Digital Bilty.">
-    <meta property="og:image" content="https://tstboympleybwbdwicik.supabase.co/storage/v1/object/public/assets/og-image.jpg">
+    <meta property="og:description"
+        content="Streamline your transport business with real-time GPS, Emergency Rescue, and Digital Bilty.">
+    <meta property="og:image"
+        content="https://tstboympleybwbdwicik.supabase.co/storage/v1/object/public/assets/og-image.jpg">
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="https://gadidost.in/">
     <meta property="twitter:title" content="Gadi Dost - Logistics Command Center">
-    <meta property="twitter:description" content="Providing high-tech solutions for the Indian transport industry. GPS, Booking, and RSA.">
-    <meta property="twitter:image" content="https://tstboympleybwbdwicik.supabase.co/storage/v1/object/public/assets/og-image.jpg">
+    <meta property="twitter:description"
+        content="Providing high-tech solutions for the Indian transport industry. GPS, Booking, and RSA.">
+    <meta property="twitter:image"
+        content="https://tstboympleybwbdwicik.supabase.co/storage/v1/object/public/assets/og-image.jpg">
 
     <!-- Structured Data for Search Ranking (JSON-LD) -->
     <script type="application/ld+json">
@@ -57,69 +65,115 @@
     }
     </script>
 
-    <script src="https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio,line-clamp,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAQEwpbGFpBnHs5qpgrL_2Pxd_LHk_Lagw&libraries=places"></script>
+    <script
+        src="https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio,line-clamp,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <script
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAQEwpbGFpBnHs5qpgrL_2Pxd_LHk_Lagw&libraries=places"></script>
 
     <style>
         :root {
-            --ios-bg: #f2f2f7;
-            --ios-dark-bg: #000000;
-            --brand-lime: #a2d149;
-            --brand-navy: #001f3f;
+            --ios-bg: #f8f9ff;
+            --ios-dark-bg: #0a0a0f;
+            --brand-primary: #6366f1;
+            --brand-secondary: #8b5cf6;
+            --brand-accent: #06b6d4;
+            --brand-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --brand-gradient-alt: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --brand-gradient-success: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
         }
+
         body {
             font-family: 'Inter', sans-serif;
             -webkit-tap-highlight-color: transparent;
             overscroll-behavior: none;
-            background-color: var(--ios-bg);
+            background: var(--ios-bg);
             padding-top: env(safe-area-inset-top);
         }
+
         .dark body {
-            background-color: var(--ios-dark-bg);
+            background: var(--ios-dark-bg);
         }
+
         .safe-area-bottom {
             padding-bottom: calc(env(safe-area-inset-bottom) + 1.5rem);
         }
+
         #root:empty {
             display: flex;
             align-items: center;
             justify-content: center;
             height: 100vh;
-            background: var(--brand-navy);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
+
         #root:empty::after {
             content: "GADI DOST";
             font-weight: 900;
             font-style: italic;
-            color: var(--brand-lime);
+            color: white;
             letter-spacing: 0.2em;
             animation: pulse 1.5s ease-in-out infinite;
+            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
         }
-        @keyframes pulse { 0%, 100% { opacity: 0.4; transform: scale(0.98); } 50% { opacity: 1; transform: scale(1.02); } }
-        
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 0.6;
+                transform: scale(0.98);
+            }
+
+            50% {
+                opacity: 1;
+                transform: scale(1.02);
+            }
+        }
+
         /* Mobile specific glassmorphism */
         .glass-nav {
-            background: rgba(255, 255, 255, 0.75);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
         }
+
         .dark .glass-nav {
-            background: rgba(15, 23, 42, 0.8);
+            background: rgba(20, 20, 30, 0.85);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
         }
 
         .no-scrollbar::-webkit-scrollbar {
             display: none;
         }
+
         .animate-in {
-            animation: slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            animation: slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1);
         }
+
         @keyframes slide-up {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Gradient text utilities */
+        .gradient-text {
+            background: var(--brand-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
     </style>
-<script type="importmap">
+    <script type="importmap">
 {
   "imports": {
     "react": "https://esm.sh/react@^19.2.3",
@@ -135,8 +189,10 @@
 }
 </script>
 </head>
+
 <body class="bg-slate-50 text-slate-900 overflow-x-hidden selection:bg-[#a2d149] selection:text-[#001f3f]">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
 </body>
+
 </html>
