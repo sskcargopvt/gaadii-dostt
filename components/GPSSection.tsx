@@ -40,7 +40,8 @@ import {
   Mail,
   FileText,
   Zap,
-  Fuel
+  Fuel,
+  X
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, BarChart, Bar } from 'recharts';
 import { Vehicle } from '../types';
@@ -504,8 +505,8 @@ const GPSSection: React.FC<{ t: any }> = ({ t }) => {
             key={filter.id}
             onClick={() => setVehicleFilter(filter.id)}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs transition-all ${vehicleFilter === filter.id
-                ? 'bg-indigo-600 text-white shadow-lg'
-                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/10'
+              ? 'bg-indigo-600 text-white shadow-lg'
+              : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/10'
               }`}
           >
             <filter.icon size={16} />
@@ -527,8 +528,8 @@ const GPSSection: React.FC<{ t: any }> = ({ t }) => {
                 key={vehicle.id}
                 onClick={() => setSelectedVehicleId(vehicle.id)}
                 className={`p-6 rounded-2xl border-2 transition-all cursor-pointer ${selectedVehicle?.id === vehicle.id
-                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white border-indigo-500'
-                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-white/10 hover:border-indigo-300'
+                  ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white border-indigo-500'
+                  : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-white/10 hover:border-indigo-300'
                   }`}
               >
                 <div className="flex items-start justify-between mb-4">
@@ -572,8 +573,8 @@ const GPSSection: React.FC<{ t: any }> = ({ t }) => {
                   <button
                     onClick={(e) => { e.stopPropagation(); toggleIgnition(vehicle); }}
                     className={`p-2 rounded-lg transition-all ${vehicle.ignition
-                        ? 'bg-emerald-500 text-white'
-                        : selectedVehicle?.id === vehicle.id ? 'bg-white/20' : 'bg-slate-100 dark:bg-slate-700'
+                      ? 'bg-emerald-500 text-white'
+                      : selectedVehicle?.id === vehicle.id ? 'bg-white/20' : 'bg-slate-100 dark:bg-slate-700'
                       }`}
                   >
                     <Power size={16} />
@@ -804,7 +805,7 @@ const GPSSection: React.FC<{ t: any }> = ({ t }) => {
                   <td className="px-4 py-4 text-sm">5754230017244</td>
                   <td className="px-4 py-4 text-sm">{vehicle.type}</td>
                   <td className="px-4 py-4 text-sm">2025-07-31</td>
-                  <td className="px-4 py-4 text-sm">{new Date(vehicle.created_at).toLocaleDateString()}</td>
+                  <td className="px-4 py-4 text-sm">{vehicle.created_at ? new Date(vehicle.created_at).toLocaleDateString() : 'N/A'}</td>
                   <td className="px-4 py-4 text-sm text-emerald-600">2025-07-31</td>
                   <td className="px-4 py-4 text-sm">{new Date(vehicle.last_updated).toLocaleDateString()}</td>
                   <td className="px-4 py-4">
@@ -907,8 +908,8 @@ const GPSSection: React.FC<{ t: any }> = ({ t }) => {
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
             className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-all whitespace-nowrap ${activeTab === tab.id
-                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg'
-                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/10 hover:border-indigo-300'
+              ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg'
+              : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/10 hover:border-indigo-300'
               }`}
           >
             <tab.icon size={18} />

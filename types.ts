@@ -31,7 +31,7 @@ export interface Vehicle {
   registration_number: string;
   owner_id: string;
   type: string;
-  status: 'Running' | 'Stopped' | 'Offline';
+  status: 'Running' | 'Idle' | 'Stopped' | 'Offline';
   speed: number;
   fuel_level: number;
   battery_level: number;
