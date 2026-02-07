@@ -1,11 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Navigation, 
-  ShieldAlert, 
-  Truck, 
-  FileText, 
-  Calculator, 
+import {
+  Navigation,
+  ShieldAlert,
+  Truck,
+  FileText,
+  Calculator,
   ArrowRight,
   TrendingUp,
   Clock,
@@ -17,7 +17,8 @@ import {
   Zap,
   ShieldCheck,
   Smartphone,
-  LogOut
+  LogOut,
+  Wrench
 } from 'lucide-react';
 import { AppPanel, User } from '../types';
 import { supabase } from '../services/supabaseClient';
@@ -63,6 +64,7 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ onNavigate, t, user, onLo
 
   const mainTools = [
     { id: AppPanel.GPS, title: t.gps, icon: Navigation, color: "bg-blue-600", border: "border-blue-500/10" },
+    { id: AppPanel.EMERGENCY, title: "Mechanics", icon: Wrench, color: "bg-red-600", border: "border-red-500/10" },
     { id: AppPanel.BOOKING, title: t.booking, icon: Truck, color: "bg-[#a2d149]", border: "border-[#a2d149]/10", iconColor: "text-[#001f3f]" },
     { id: AppPanel.BILTY, title: t.bilty, icon: FileText, color: "bg-emerald-600", border: "border-emerald-500/10" },
     { id: AppPanel.CALCULATOR, title: t.calculator, icon: Calculator, color: "bg-indigo-600", border: "border-indigo-500/10" },
@@ -130,7 +132,7 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ onNavigate, t, user, onLo
       {/* Main Service Matrix */}
       <section className="space-y-4">
         <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 ml-5">Business Services</h2>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           {mainTools.map((tool) => (
             <button
               key={tool.id}
@@ -157,7 +159,7 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ onNavigate, t, user, onLo
               <div className="bg-red-600 w-14 h-14 rounded-2xl flex items-center justify-center text-white mb-6 shadow-xl shadow-red-600/30">
                 <ShieldAlert size={32} strokeWidth={3} />
               </div>
-              <h2 className="text-3xl font-black text-white italic tracking-tighter uppercase leading-none mb-3">HIGHWAY<br/>RESCUE</h2>
+              <h2 className="text-3xl font-black text-white italic tracking-tighter uppercase leading-none mb-3">HIGHWAY<br />RESCUE</h2>
               <p className="text-slate-400 text-[11px] font-bold uppercase tracking-widest leading-relaxed">24/7 Roadside Assistance & Recovery</p>
             </div>
             <div className="mt-8 flex items-center gap-2 text-red-500 font-black text-[10px] uppercase tracking-widest pt-4 border-t border-white/5">
@@ -167,25 +169,29 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ onNavigate, t, user, onLo
           <ShieldAlert size={200} className="absolute -right-12 -bottom-12 opacity-5 rotate-12 pointer-events-none" />
         </button>
 
-        <div className="bg-white dark:bg-slate-900 rounded-[40px] p-8 border border-slate-100 dark:border-white/5 flex flex-col justify-between active:scale-[0.98] transition-all overflow-hidden relative">
+        <button
+          onClick={() => onNavigate(AppPanel.EMERGENCY)}
+          className="bg-gradient-to-br from-red-600 to-orange-600 rounded-[40px] p-8 border border-red-500/20 flex flex-col justify-between active:scale-[0.98] transition-all overflow-hidden relative shadow-2xl shadow-red-600/20 text-left"
+        >
           <div>
-            <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/30 rounded-2xl flex items-center justify-center text-indigo-600 mb-6">
-              <Activity size={24} />
+            <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center text-white mb-6 shadow-xl border border-white/30">
+              <Wrench size={28} strokeWidth={2.5} />
             </div>
-            <h2 className="text-2xl font-black uppercase italic tracking-tighter mb-2">System Analytics</h2>
-            <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest leading-relaxed">Enterprise-grade fleet audit tools active.</p>
+            <h2 className="text-3xl font-black uppercase italic tracking-tighter mb-2 text-white leading-none">MECHANIC<br />SERVICES</h2>
+            <p className="text-red-100 text-[11px] font-black uppercase tracking-widest leading-relaxed">10 Professional Services • On-Site Repairs</p>
           </div>
-          <div className="mt-8 flex items-center gap-2 text-[#a2d149] font-black text-[10px] uppercase tracking-widest pt-4 border-t border-slate-50 dark:border-white/5">
-            GENERATE REPORT <ArrowRight size={14} />
+          <div className="mt-8 flex items-center gap-2 text-white font-black text-[10px] uppercase tracking-widest pt-4 border-t border-white/20">
+            BOOK NOW <ArrowRight size={14} strokeWidth={3} />
           </div>
-        </div>
+          <Wrench size={180} className="absolute -right-10 -bottom-10 opacity-10 rotate-12 pointer-events-none" />
+        </button>
       </section>
 
       {/* Cloud Status Footer */}
       <footer className="bg-white/50 dark:bg-white/5 backdrop-blur-md rounded-[24px] p-3 flex items-center justify-between border border-white/20 dark:border-white/5">
         <div className="flex items-center gap-3 ml-2">
-           <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-           <span className="text-[9px] font-black uppercase text-slate-400 tracking-[0.2em]">Secure Cloud Sync Active</span>
+          <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+          <span className="text-[9px] font-black uppercase text-slate-400 tracking-[0.2em]">Secure Cloud Sync Active</span>
         </div>
         <button onClick={() => onNavigate(AppPanel.GPS)} className="px-5 py-2.5 bg-[#a2d149] text-[#001f3f] rounded-xl text-[9px] font-black uppercase tracking-widest shadow-sm active:scale-95 transition-all">Live Tracking</button>
       </footer>
