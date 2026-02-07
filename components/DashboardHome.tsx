@@ -18,7 +18,8 @@ import {
   ShieldCheck,
   Smartphone,
   LogOut,
-  Wrench
+  Wrench,
+  Sparkles
 } from 'lucide-react';
 import { AppPanel, User } from '../types';
 import { supabase } from '../services/supabaseClient';
@@ -63,137 +64,232 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ onNavigate, t, user, onLo
   }, []);
 
   const mainTools = [
-    { id: AppPanel.GPS, title: t.gps, icon: Navigation, color: "bg-blue-600", border: "border-blue-500/10" },
-    { id: AppPanel.EMERGENCY, title: "Mechanics", icon: Wrench, color: "bg-red-600", border: "border-red-500/10" },
-    { id: AppPanel.BOOKING, title: t.booking, icon: Truck, color: "bg-[#a2d149]", border: "border-[#a2d149]/10", iconColor: "text-[#001f3f]" },
-    { id: AppPanel.BILTY, title: t.bilty, icon: FileText, color: "bg-emerald-600", border: "border-emerald-500/10" },
-    { id: AppPanel.CALCULATOR, title: t.calculator, icon: Calculator, color: "bg-indigo-600", border: "border-indigo-500/10" },
-    { id: AppPanel.PROFILE, title: t.profile, icon: Settings, color: "bg-slate-700", border: "border-slate-500/10" },
+    { id: AppPanel.GPS, title: t.gps, icon: Navigation, gradient: "from-blue-500 via-blue-600 to-cyan-500", glow: "shadow-blue-500/50" },
+    { id: AppPanel.EMERGENCY, title: "Mechanics", icon: Wrench, gradient: "from-red-500 via-red-600 to-orange-500", glow: "shadow-red-500/50" },
+    { id: AppPanel.BOOKING, title: t.booking, icon: Truck, gradient: "from-[#a2d149] via-[#8bc34a] to-[#9ccc65]", glow: "shadow-[#a2d149]/50" },
+    { id: AppPanel.BILTY, title: t.bilty, icon: FileText, gradient: "from-emerald-500 via-emerald-600 to-teal-500", glow: "shadow-emerald-500/50" },
+    { id: AppPanel.CALCULATOR, title: t.calculator, icon: Calculator, gradient: "from-indigo-500 via-purple-600 to-pink-500", glow: "shadow-indigo-500/50" },
+    { id: AppPanel.PROFILE, title: t.profile, icon: Settings, gradient: "from-slate-600 via-slate-700 to-slate-800", glow: "shadow-slate-500/50" },
   ];
 
   return (
     <div className="space-y-6 animate-in duration-500">
-      {/* Dynamic SEO Welcome Header */}
-      <section className="bg-white dark:bg-slate-900/60 backdrop-blur-xl p-5 rounded-[32px] border border-slate-100 dark:border-white/5 shadow-sm">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-[#a2d149] flex items-center justify-center text-[#001f3f] shadow-lg shadow-[#a2d149]/20">
-              <UserIcon size={24} strokeWidth={2.5} />
-            </div>
-            <div>
-              <h1 className="text-xl font-black tracking-tighter uppercase italic leading-none text-slate-950 dark:text-white">
-                {user.name.split(' ')[0]} <span className="text-[#a2d149]">Dost</span>
-              </h1>
-              <div className="flex items-center gap-2 mt-1.5">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Status: Operational</span>
-                <span className="w-1 h-1 bg-slate-300 dark:bg-slate-700 rounded-full" />
-                <span className="text-[10px] font-black text-[#a2d149] uppercase tracking-widest leading-none">{user.role} Account</span>
+      {/* 3D Welcome Header with Glassmorphism */}
+      <section className="relative group">
+        <div className="absolute inset-0 bg-gradient-to-r from-[#a2d149]/20 via-blue-500/20 to-purple-500/20 rounded-[32px] blur-xl group-hover:blur-2xl transition-all duration-500" />
+        <div className="relative bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl p-6 rounded-[32px] border border-white/20 dark:border-white/10 shadow-2xl transform hover:scale-[1.01] transition-all duration-300">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-4">
+              <div className="relative group/avatar">
+                <div className="absolute inset-0 bg-gradient-to-br from-[#a2d149] to-[#7cb342] rounded-2xl blur-md group-hover/avatar:blur-lg transition-all" />
+                <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-[#a2d149] to-[#7cb342] flex items-center justify-center text-[#001f3f] shadow-2xl shadow-[#a2d149]/50 transform group-hover/avatar:scale-110 group-hover/avatar:rotate-3 transition-all duration-300">
+                  <UserIcon size={28} strokeWidth={2.5} className="drop-shadow-lg" />
+                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white animate-pulse" />
+                </div>
+              </div>
+              <div>
+                <h1 className="text-2xl font-black tracking-tighter uppercase italic leading-none text-transparent bg-clip-text bg-gradient-to-r from-slate-900 via-[#a2d149] to-slate-900 dark:from-white dark:via-[#a2d149] dark:to-white">
+                  {user.name.split(' ')[0]} <span className="text-[#a2d149]">Dost</span>
+                </h1>
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none flex items-center gap-1">
+                    <Sparkles size={10} className="text-emerald-500 animate-pulse" />
+                    Status: Operational
+                  </span>
+                  <span className="w-1 h-1 bg-slate-300 dark:bg-slate-700 rounded-full" />
+                  <span className="text-[10px] font-black text-[#a2d149] uppercase tracking-widest leading-none">{user.role} Account</span>
+                </div>
               </div>
             </div>
-          </div>
-          <div className="flex gap-2">
-            <button onClick={onLogout} className="w-11 h-11 bg-red-50 dark:bg-red-500/10 rounded-xl flex items-center justify-center border border-red-100 dark:border-red-500/20 text-red-500 active:scale-90 transition-all">
-              <LogOut size={20} />
-            </button>
+            <div className="flex gap-2">
+              <button onClick={onLogout} className="relative group/btn w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-red-500/30 hover:shadow-xl hover:shadow-red-500/50 active:scale-90 transition-all duration-300">
+                <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-xl opacity-0 group-hover/btn:opacity-100 transition-opacity" />
+                <LogOut size={20} className="relative z-10" />
+              </button>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* KPI Stats Layer */}
+      {/* 3D KPI Stats with Shining Effects */}
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div onClick={() => onNavigate(AppPanel.GPS)} className="bg-slate-950 p-6 rounded-[32px] text-white shadow-xl cursor-pointer group relative overflow-hidden active:scale-95 transition-all">
-          <TrendingUp size={20} className="text-orange-500 mb-4 relative z-10" />
-          <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-1 relative z-10">Fleet Pulse</p>
-          <p className="text-3xl font-black italic relative z-10 leading-none">{fleetStats.running}<span className="text-sm text-slate-500 ml-1 font-medium italic">/ {fleetStats.total}</span></p>
-          <Activity size={80} className="absolute -right-6 -bottom-6 opacity-10 rotate-12" />
+        {/* Fleet Pulse - 3D Card */}
+        <div onClick={() => onNavigate(AppPanel.GPS)} className="relative group cursor-pointer">
+          <div className="absolute inset-0 bg-gradient-to-br from-orange-500 to-red-600 rounded-[32px] blur-lg group-hover:blur-xl transition-all opacity-50" />
+          <div className="relative bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6 rounded-[32px] text-white shadow-2xl overflow-hidden transform hover:scale-105 hover:-translate-y-1 active:scale-95 transition-all duration-300 border border-white/10">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-orange-500/20 to-transparent rounded-full blur-2xl" />
+            <div className="relative z-10">
+              <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-orange-500/50 transform group-hover:rotate-12 transition-transform">
+                <TrendingUp size={24} className="drop-shadow-lg" />
+              </div>
+              <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-2">Fleet Pulse</p>
+              <p className="text-4xl font-black italic leading-none">{fleetStats.running}<span className="text-sm text-slate-500 ml-1 font-medium italic">/ {fleetStats.total}</span></p>
+            </div>
+            <Activity size={100} className="absolute -right-8 -bottom-8 opacity-5 rotate-12" />
+          </div>
         </div>
 
-        <div onClick={() => onNavigate(AppPanel.BILTY)} className="bg-white dark:bg-slate-900 p-6 rounded-[32px] border border-slate-100 dark:border-white/5 shadow-sm cursor-pointer active:scale-95 transition-all relative overflow-hidden">
-          <Clock size={20} className="text-indigo-500 mb-4" />
-          <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">In-Transit</p>
-          <p className="text-3xl font-black dark:text-white leading-none">0</p>
-          <FileText size={80} className="absolute -right-6 -bottom-6 opacity-5 rotate-12" />
+        {/* In-Transit - 3D Card */}
+        <div onClick={() => onNavigate(AppPanel.BILTY)} className="relative group cursor-pointer">
+          <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-[32px] blur-lg group-hover:blur-xl transition-all opacity-30" />
+          <div className="relative bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-6 rounded-[32px] border border-white/20 dark:border-white/10 shadow-2xl overflow-hidden transform hover:scale-105 hover:-translate-y-1 active:scale-95 transition-all duration-300">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-indigo-500/10 to-transparent rounded-full blur-2xl" />
+            <div className="relative z-10">
+              <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-indigo-500/50 transform group-hover:rotate-12 transition-transform">
+                <Clock size={24} className="text-white drop-shadow-lg" />
+              </div>
+              <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">In-Transit</p>
+              <p className="text-4xl font-black dark:text-white leading-none">0</p>
+            </div>
+            <FileText size={100} className="absolute -right-8 -bottom-8 opacity-5 rotate-12" />
+          </div>
         </div>
 
-        <div className="bg-[#a2d149] p-6 rounded-[32px] shadow-lg shadow-[#a2d149]/20 cursor-pointer active:scale-95 transition-all relative overflow-hidden" onClick={() => onNavigate(AppPanel.CALCULATOR)}>
-          <Calculator size={20} className="text-[#001f3f] mb-4" />
-          <p className="text-[10px] font-black uppercase text-slate-700 tracking-widest mb-1">Ledger Balance</p>
-          <p className="text-3xl font-black text-[#001f3f] leading-none">₹0.0</p>
-          <TrendingUp size={80} className="absolute -right-6 -bottom-6 opacity-10 rotate-12" />
+        {/* Ledger Balance - 3D Card */}
+        <div className="relative group cursor-pointer" onClick={() => onNavigate(AppPanel.CALCULATOR)}>
+          <div className="absolute inset-0 bg-gradient-to-br from-[#a2d149] to-[#7cb342] rounded-[32px] blur-lg group-hover:blur-xl transition-all opacity-60" />
+          <div className="relative bg-gradient-to-br from-[#a2d149] via-[#8bc34a] to-[#9ccc65] p-6 rounded-[32px] shadow-2xl shadow-[#a2d149]/40 overflow-hidden transform hover:scale-105 hover:-translate-y-1 active:scale-95 transition-all duration-300 border border-white/30">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-white/20 to-transparent rounded-full blur-2xl" />
+            <div className="relative z-10">
+              <div className="w-12 h-12 bg-white/30 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-4 shadow-lg border border-white/40 transform group-hover:rotate-12 transition-transform">
+                <Calculator size={24} className="text-[#001f3f] drop-shadow-lg" />
+              </div>
+              <p className="text-[10px] font-black uppercase text-slate-700 tracking-widest mb-2">Ledger Balance</p>
+              <p className="text-4xl font-black text-[#001f3f] leading-none">₹0.0</p>
+            </div>
+            <TrendingUp size={100} className="absolute -right-8 -bottom-8 opacity-10 rotate-12" />
+          </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-[32px] border border-slate-100 dark:border-white/5 shadow-sm hidden lg:block relative overflow-hidden">
-          <Zap size={20} className="text-[#a2d149] mb-4" />
-          <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Network Reliability</p>
-          <p className="text-3xl font-black dark:text-white leading-none">100.0%</p>
+        {/* Network Reliability - 3D Card */}
+        <div className="relative group hidden lg:block">
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-[32px] blur-lg group-hover:blur-xl transition-all opacity-30" />
+          <div className="relative bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-6 rounded-[32px] border border-white/20 dark:border-white/10 shadow-2xl overflow-hidden transform hover:scale-105 hover:-translate-y-1 transition-all duration-300">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-500/10 to-transparent rounded-full blur-2xl" />
+            <div className="relative z-10">
+              <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-emerald-500/50 transform group-hover:rotate-12 transition-transform">
+                <Zap size={24} className="text-white drop-shadow-lg" />
+              </div>
+              <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Network Reliability</p>
+              <p className="text-4xl font-black dark:text-white leading-none">100.0%</p>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Main Service Matrix */}
+      {/* 3D Service Icons with Shining Effects */}
       <section className="space-y-4">
-        <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 ml-5">Business Services</h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 ml-5 flex items-center gap-2">
+          <Sparkles size={12} className="text-[#a2d149] animate-pulse" />
+          Business Services
+        </h2>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           {mainTools.map((tool) => (
             <button
               key={tool.id}
               onClick={() => onNavigate(tool.id)}
-              className="flex flex-col items-center justify-center p-5 rounded-[28px] bg-white dark:bg-slate-900 border border-slate-100 dark:border-white/10 shadow-sm active:scale-95 transition-all"
+              className="relative group"
             >
-              <div className={`${tool.color} w-14 h-14 rounded-2xl flex items-center justify-center ${tool.iconColor || 'text-white'} mb-3 shadow-md`}>
-                <tool.icon size={24} strokeWidth={2.5} />
+              {/* Glow Effect */}
+              <div className={`absolute inset-0 bg-gradient-to-br ${tool.gradient} rounded-[28px] blur-xl opacity-0 group-hover:opacity-60 transition-all duration-500`} />
+
+              {/* Card */}
+              <div className="relative flex flex-col items-center justify-center p-6 rounded-[28px] bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-xl transform hover:scale-110 hover:-translate-y-2 active:scale-95 transition-all duration-300">
+                {/* Shimmer Effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 rounded-[28px]" />
+
+                {/* 3D Icon Container */}
+                <div className="relative mb-4">
+                  <div className={`absolute inset-0 bg-gradient-to-br ${tool.gradient} rounded-2xl blur-md ${tool.glow}`} />
+                  <div className={`relative w-16 h-16 bg-gradient-to-br ${tool.gradient} rounded-2xl flex items-center justify-center text-white shadow-2xl ${tool.glow} transform group-hover:rotate-12 group-hover:scale-110 transition-all duration-300`}>
+                    <tool.icon size={28} strokeWidth={2.5} className="drop-shadow-2xl" />
+                    {/* Shine overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/40 via-transparent to-transparent rounded-2xl" />
+                  </div>
+                </div>
+
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-800 dark:text-white relative z-10">{tool.title}</h3>
               </div>
-              <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-800 dark:text-white">{tool.title}</h3>
             </button>
           ))}
         </div>
       </section>
 
-      {/* SOS / Rescue Highlight */}
+      {/* 3D Emergency Cards */}
       <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Highway Rescue - 3D */}
         <button
           onClick={() => onNavigate(AppPanel.EMERGENCY)}
-          className="w-full bg-[#001f3f] rounded-[40px] p-8 text-left relative overflow-hidden shadow-2xl active:scale-[0.98] transition-all"
+          className="relative group"
         >
-          <div className="relative z-10 flex flex-col h-full justify-between">
-            <div>
-              <div className="bg-red-600 w-14 h-14 rounded-2xl flex items-center justify-center text-white mb-6 shadow-xl shadow-red-600/30">
-                <ShieldAlert size={32} strokeWidth={3} />
+          <div className="absolute inset-0 bg-gradient-to-br from-red-600 to-orange-600 rounded-[40px] blur-2xl opacity-50 group-hover:opacity-70 transition-all" />
+          <div className="relative w-full bg-gradient-to-br from-[#001f3f] via-slate-900 to-[#001f3f] rounded-[40px] p-8 text-left overflow-hidden shadow-2xl transform hover:scale-[1.02] hover:-translate-y-1 active:scale-[0.98] transition-all duration-300 border border-white/10">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-red-600/20 to-transparent rounded-full blur-3xl" />
+            <div className="relative z-10 flex flex-col h-full justify-between">
+              <div>
+                <div className="relative w-16 h-16 mb-6">
+                  <div className="absolute inset-0 bg-gradient-to-br from-red-600 to-orange-600 rounded-2xl blur-lg" />
+                  <div className="relative bg-gradient-to-br from-red-600 to-orange-600 w-16 h-16 rounded-2xl flex items-center justify-center text-white shadow-2xl shadow-red-600/50 transform group-hover:rotate-12 group-hover:scale-110 transition-all duration-300">
+                    <ShieldAlert size={36} strokeWidth={3} className="drop-shadow-2xl" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/30 to-transparent rounded-2xl" />
+                  </div>
+                </div>
+                <h2 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-red-400 to-white italic tracking-tighter uppercase leading-none mb-3">HIGHWAY<br />RESCUE</h2>
+                <p className="text-slate-400 text-[11px] font-bold uppercase tracking-widest leading-relaxed">24/7 Roadside Assistance & Recovery</p>
               </div>
-              <h2 className="text-3xl font-black text-white italic tracking-tighter uppercase leading-none mb-3">HIGHWAY<br />RESCUE</h2>
-              <p className="text-slate-400 text-[11px] font-bold uppercase tracking-widest leading-relaxed">24/7 Roadside Assistance & Recovery</p>
+              <div className="mt-8 flex items-center gap-2 text-red-500 font-black text-[10px] uppercase tracking-widest pt-4 border-t border-white/5">
+                EMERGENCY SOS <ArrowRight size={14} strokeWidth={3} className="group-hover:translate-x-2 transition-transform" />
+              </div>
             </div>
-            <div className="mt-8 flex items-center gap-2 text-red-500 font-black text-[10px] uppercase tracking-widest pt-4 border-t border-white/5">
-              EMERGENCY SOS <ArrowRight size={14} strokeWidth={3} />
-            </div>
+            <ShieldAlert size={220} className="absolute -right-12 -bottom-12 opacity-5 rotate-12 pointer-events-none" />
           </div>
-          <ShieldAlert size={200} className="absolute -right-12 -bottom-12 opacity-5 rotate-12 pointer-events-none" />
         </button>
 
+        {/* Mechanic Services - 3D */}
         <button
           onClick={() => onNavigate(AppPanel.EMERGENCY)}
-          className="bg-gradient-to-br from-red-600 to-orange-600 rounded-[40px] p-8 border border-red-500/20 flex flex-col justify-between active:scale-[0.98] transition-all overflow-hidden relative shadow-2xl shadow-red-600/20 text-left"
+          className="relative group"
         >
-          <div>
-            <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center text-white mb-6 shadow-xl border border-white/30">
-              <Wrench size={28} strokeWidth={2.5} />
+          <div className="absolute inset-0 bg-gradient-to-br from-red-600 via-orange-600 to-yellow-500 rounded-[40px] blur-2xl opacity-60 group-hover:opacity-80 transition-all" />
+          <div className="relative bg-gradient-to-br from-red-600 via-orange-600 to-red-700 rounded-[40px] p-8 border border-red-400/30 flex flex-col justify-between overflow-hidden shadow-2xl shadow-red-600/40 text-left transform hover:scale-[1.02] hover:-translate-y-1 active:scale-[0.98] transition-all duration-300">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-yellow-500/20 to-transparent rounded-full blur-3xl" />
+            <div className="relative z-10">
+              <div className="relative w-16 h-16 mb-6">
+                <div className="absolute inset-0 bg-white/30 rounded-2xl blur-lg" />
+                <div className="relative w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center text-white shadow-2xl border border-white/40 transform group-hover:rotate-12 group-hover:scale-110 transition-all duration-300">
+                  <Wrench size={32} strokeWidth={2.5} className="drop-shadow-2xl" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/30 to-transparent rounded-2xl" />
+                </div>
+              </div>
+              <h2 className="text-4xl font-black uppercase italic tracking-tighter mb-2 text-white leading-none drop-shadow-lg">MECHANIC<br />SERVICES</h2>
+              <p className="text-red-100 text-[11px] font-black uppercase tracking-widest leading-relaxed">10 Professional Services • On-Site Repairs</p>
             </div>
-            <h2 className="text-3xl font-black uppercase italic tracking-tighter mb-2 text-white leading-none">MECHANIC<br />SERVICES</h2>
-            <p className="text-red-100 text-[11px] font-black uppercase tracking-widest leading-relaxed">10 Professional Services • On-Site Repairs</p>
+            <div className="relative z-10 mt-8 flex items-center gap-2 text-white font-black text-[10px] uppercase tracking-widest pt-4 border-t border-white/20">
+              BOOK NOW <ArrowRight size={14} strokeWidth={3} className="group-hover:translate-x-2 transition-transform" />
+            </div>
+            <Wrench size={200} className="absolute -right-10 -bottom-10 opacity-10 rotate-12 pointer-events-none" />
           </div>
-          <div className="mt-8 flex items-center gap-2 text-white font-black text-[10px] uppercase tracking-widest pt-4 border-t border-white/20">
-            BOOK NOW <ArrowRight size={14} strokeWidth={3} />
-          </div>
-          <Wrench size={180} className="absolute -right-10 -bottom-10 opacity-10 rotate-12 pointer-events-none" />
         </button>
       </section>
 
-      {/* Cloud Status Footer */}
-      <footer className="bg-white/50 dark:bg-white/5 backdrop-blur-md rounded-[24px] p-3 flex items-center justify-between border border-white/20 dark:border-white/5">
-        <div className="flex items-center gap-3 ml-2">
-          <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-          <span className="text-[9px] font-black uppercase text-slate-400 tracking-[0.2em]">Secure Cloud Sync Active</span>
+      {/* 3D Footer */}
+      <footer className="relative group">
+        <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 via-blue-500/20 to-purple-500/20 rounded-[24px] blur-lg group-hover:blur-xl transition-all" />
+        <div className="relative bg-white/60 dark:bg-white/5 backdrop-blur-2xl rounded-[24px] p-4 flex items-center justify-between border border-white/30 dark:border-white/10 shadow-xl">
+          <div className="flex items-center gap-3 ml-2">
+            <div className="relative">
+              <div className="absolute inset-0 bg-emerald-500 rounded-full blur-md animate-pulse" />
+              <div className="relative w-2 h-2 bg-emerald-500 rounded-full" />
+            </div>
+            <span className="text-[9px] font-black uppercase text-slate-600 dark:text-slate-400 tracking-[0.2em]">Secure Cloud Sync Active</span>
+          </div>
+          <button onClick={() => onNavigate(AppPanel.GPS)} className="relative group/track">
+            <div className="absolute inset-0 bg-gradient-to-r from-[#a2d149] to-[#7cb342] rounded-xl blur-md group-hover/track:blur-lg transition-all" />
+            <div className="relative px-6 py-3 bg-gradient-to-r from-[#a2d149] to-[#7cb342] text-[#001f3f] rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg shadow-[#a2d149]/30 transform hover:scale-105 active:scale-95 transition-all">
+              Live Tracking
+            </div>
+          </button>
         </div>
-        <button onClick={() => onNavigate(AppPanel.GPS)} className="px-5 py-2.5 bg-[#a2d149] text-[#001f3f] rounded-xl text-[9px] font-black uppercase tracking-widest shadow-sm active:scale-95 transition-all">Live Tracking</button>
       </footer>
     </div>
   );
