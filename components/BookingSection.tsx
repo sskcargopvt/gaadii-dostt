@@ -19,9 +19,26 @@ import {
   ChevronDown,
   Info,
   X,
-  Target
+  Target,
+  Send,
+  MessageSquare
 } from 'lucide-react';
 import MapComponent from './MapComponent';
+import { supabase } from '../services/supabaseClient';
+
+// Helper function to calculate distance between two coordinates in km (Haversine formula)
+const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+  const R = 6371; // Radius of the earth in km
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const d = R * c; // Distance in km
+  return d;
+};
 
 const routeCheckpoints = [
   "Noida Sector 62",
@@ -43,6 +60,8 @@ const BookingSection: React.FC<{ t: any }> = ({ t }) => {
   const [foundTrucks, setFoundTrucks] = useState<any[]>([]);
   const [activeBooking, setActiveBooking] = useState<any>(null);
   const [podUploaded, setPodUploaded] = useState(false);
+  const [pendingRequests, setPendingRequests] = useState<any[]>([]); // Track all sent requests
+  const [bookingStatus, setBookingStatus] = useState<string>(''); // 'pending', 'accepted', 'rejected', 'bargaining'
 
   // Form State
   const [pickupAddress, setPickupAddress] = useState('');
@@ -153,22 +172,222 @@ const BookingSection: React.FC<{ t: any }> = ({ t }) => {
     };
   }, [view, activeBooking, pickupCoords, dropoffCoords]);
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     setSearching(true);
-    setTimeout(() => {
-      setFoundTrucks([
-        { id: 1, driver: "Arun Kumar", rating: 4.9, truck: "Tata Prima 4028", dist: "1.2 km away", price: "₹24,500" },
-        { id: 2, driver: "Suresh Patil", rating: 4.7, truck: "Ashok Leyland 2823", dist: "3.5 km away", price: "₹23,800" },
-        { id: 3, driver: "Vikram Raj", rating: 4.5, truck: "Eicher Pro 6028", dist: "4.8 km away", price: "₹25,100" },
-      ]);
+    setFoundTrucks([]);
+
+    // 1. Get current pickup coordinates (already in pickupCoords state)
+
+    try {
+      // 2. Fetch all active vehicles from Supabase
+      const { data: vehicles, error } = await supabase
+        .from('vehicles')
+        .select('*');
+
+      if (error) {
+        console.error("Error fetching vehicles:", error);
+        setSearching(false);
+        return;
+      }
+
+      if (vehicles) {
+        // 3. Filter vehicles within 50km radius and sort by distance
+        const nearbyTrucks = vehicles
+          .map((vehicle: any) => {
+            const dist = calculateDistance(
+              pickupCoords.lat,
+              pickupCoords.lng,
+              vehicle.lat || 0,
+              vehicle.lng || 0
+            );
+            return { ...vehicle, distNum: dist };
+          })
+          .filter((v: any) => v.distNum <= 50)
+          .sort((a: any, b: any) => a.distNum - b.distNum)
+          .map((vehicle: any) => {
+            return {
+              id: vehicle.id,
+              driver: `Driver ${vehicle.registration_number.slice(-4)}`, // Placeholder
+              rating: (4.0 + Math.random()).toFixed(1),
+              truck: `${vehicle.type} (${vehicle.registration_number})`,
+              dist: `${vehicle.distNum.toFixed(1)} km away`,
+              price: `₹${(Math.floor(Math.random() * (30000 - 20000 + 1)) + 20000).toLocaleString()}`, // Random price for demo
+              lat: vehicle.lat,
+              lng: vehicle.lng
+            };
+          })
+          .slice(0, 5); // Limit to top 5 closest matches
+
+        // Artificial delay for "Scanning" effect
+        setTimeout(() => {
+          setFoundTrucks(nearbyTrucks);
+          setSearching(false);
+        }, 2500);
+      } else {
+        setSearching(false);
+      }
+    } catch (err) {
+      console.error("Unexpected error:", err);
       setSearching(false);
-    }, 2500);
+    }
   };
 
-  const handleBook = (truck: any) => {
-    setActiveBooking(truck);
-    setView('active');
+  // Real-time subscription for booking status updates
+  useEffect(() => {
+    if (!activeBooking?.bookingId) return;
+
+    const channel = supabase
+      .channel('booking-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'booking_requests',
+          filter: `id=eq.${activeBooking.bookingId}`
+        },
+        (payload) => {
+          console.log('Booking updated:', payload);
+          const updated = payload.new;
+
+          // Update booking status
+          setBookingStatus(updated.status || '');
+
+          // Update active booking with new data
+          setActiveBooking((prev: any) => ({
+            ...prev,
+            status: updated.status,
+            counter_offer: updated.counter_offer,
+            driver_response: updated.driver_response
+          }));
+
+          // Update chat history if messages changed
+          if (updated.messages) {
+            setChatHistory(updated.messages);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [activeBooking?.bookingId]);
+
+  const handleBook = async (truck: any) => {
+    try {
+      // 1. Get Session for User Details
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
+
+      const priceValue = truck.price.replace(/[^\d]/g, '');
+
+      // 2. Insert into Supabase - This will automatically notify admin app via realtime
+      const { data, error } = await supabase
+        .from('booking_requests')
+        .insert([{
+          customer_name: user?.user_metadata?.name || 'Guest User',
+          customer_phone: user?.phone || '9999999999',
+          pickup_location: pickupAddress,
+          drop_location: dropoffAddress,
+          pickup_lat: pickupCoords.lat,
+          pickup_lng: pickupCoords.lng,
+          drop_lat: dropoffCoords.lat,
+          drop_lng: dropoffCoords.lng,
+          goods_type: goodsType,
+          weight: weight || '0',
+          offered_price: priceValue,
+          status: 'pending',
+          vehicle_id: truck.id,
+          created_at: new Date().toISOString()
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // 3. Set Active State
+      setActiveBooking({ ...truck, bookingId: data.id, status: 'pending' });
+      setBookingStatus('pending');
+      setView('active');
+    } catch (err) {
+      console.error("Booking Error:", err);
+      // Fallback for demo if table doesn't exist
+      setActiveBooking(truck);
+      setView('active');
+    }
+  };
+
+  // Send request to ALL nearby trucks (broadcast to admin)
+  const sendRequestToAllTrucks = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
+
+      // Create requests for all found trucks
+      const requests = foundTrucks.map(truck => ({
+        customer_name: user?.user_metadata?.name || 'Guest User',
+        customer_phone: user?.phone || '9999999999',
+        pickup_location: pickupAddress,
+        drop_location: dropoffAddress,
+        pickup_lat: pickupCoords.lat,
+        pickup_lng: pickupCoords.lng,
+        drop_lat: dropoffCoords.lat,
+        drop_lng: dropoffCoords.lng,
+        goods_type: goodsType,
+        weight: weight || '0',
+        offered_price: truck.price.replace(/[^\d]/g, ''),
+        status: 'pending',
+        vehicle_id: truck.id,
+        created_at: new Date().toISOString()
+      }));
+
+      const { data, error } = await supabase
+        .from('booking_requests')
+        .insert(requests)
+        .select();
+
+      if (error) throw error;
+
+      setPendingRequests(data || []);
+      alert(`Sent booking request to ${foundTrucks.length} nearby drivers!`);
+    } catch (err) {
+      console.error('Broadcast Error:', err);
+    }
+  };
+
+  const [chatMessage, setChatMessage] = useState("");
+  const [chatHistory, setChatHistory] = useState<any[]>([]);
+
+  const sendMessage = async () => {
+    if (!chatMessage.trim() || !activeBooking?.bookingId) return;
+
+    const newMsg = { sender: 'customer', text: chatMessage, time: new Date().toISOString() };
+    const updated = [...chatHistory, newMsg];
+
+    setChatHistory(updated); // Optimistic update
+    setChatMessage("");
+
+    try {
+      // Fetch current to append securely
+      const { data } = await supabase
+        .from('booking_requests')
+        .select('messages')
+        .eq('id', activeBooking.bookingId)
+        .single();
+
+      const currentMessages = data?.messages || [];
+      const toSave = [...currentMessages, newMsg];
+
+      await supabase
+        .from('booking_requests')
+        .update({ messages: toSave })
+        .eq('id', activeBooking.bookingId);
+
+    } catch (err) {
+      console.error("Chat Error:", err);
+    }
   };
 
   const handleMapPositionChange = (positions: { start: { lat: number; lng: number }; end: { lat: number; lng: number } }) => {
@@ -390,7 +609,15 @@ const BookingSection: React.FC<{ t: any }> = ({ t }) => {
 
             {!searching && foundTrucks.length > 0 && (
               <div className="space-y-4 animate-in fade-in slide-in-from-right duration-700">
-                <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 ml-4 mb-2">3 TRUCKS READY FOR DISPATCH</h4>
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 ml-4">{foundTrucks.length} TRUCKS READY FOR DISPATCH</h4>
+                  <button
+                    onClick={sendRequestToAllTrucks}
+                    className="bg-orange-500 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-105 transition-transform shadow-xl flex items-center gap-2"
+                  >
+                    <Truck size={16} /> SEND TO ALL DRIVERS
+                  </button>
+                </div>
                 {foundTrucks.map((truck) => (
                   <div key={truck.id} className="bg-white dark:bg-slate-800 p-5 md:p-8 rounded-[32px] md:rounded-[40px] border border-slate-100 dark:border-slate-700 shadow-xl hover:border-orange-500 transition-all flex flex-col items-center justify-between gap-6 md:gap-8 group">
                     <div className="flex flex-col md:flex-row gap-6 md:gap-8 w-full items-center md:items-start text-center md:text-left">
@@ -446,6 +673,29 @@ const BookingSection: React.FC<{ t: any }> = ({ t }) => {
                       {tripProgress < 100 ? 'GPS ACTIVE: IN TRANSIT' : 'TRIP COMPLETED'}
                     </div>
                     <h3 className="text-3xl md:text-6xl font-black tracking-tighter leading-none">{activeBooking.truck}</h3>
+
+                    {/* Real-time Booking Status */}
+                    {bookingStatus && (
+                      <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl font-black text-sm ${bookingStatus === 'accepted' ? 'bg-emerald-100 text-emerald-700' :
+                          bookingStatus === 'rejected' ? 'bg-red-100 text-red-700' :
+                            bookingStatus === 'bargaining' ? 'bg-amber-100 text-amber-700' :
+                              'bg-blue-100 text-blue-700'
+                        }`}>
+                        <div className={`w-2 h-2 rounded-full animate-pulse ${bookingStatus === 'accepted' ? 'bg-emerald-500' :
+                            bookingStatus === 'rejected' ? 'bg-red-500' :
+                              bookingStatus === 'bargaining' ? 'bg-amber-500' :
+                                'bg-blue-500'
+                          }`} />
+                        {bookingStatus === 'accepted' ? '✓ DRIVER ACCEPTED' :
+                          bookingStatus === 'rejected' ? '✗ DRIVER DECLINED' :
+                            bookingStatus === 'bargaining' ? '💬 NEGOTIATING PRICE' :
+                              '⏳ WAITING FOR DRIVER'}
+                        {activeBooking.counter_offer && (
+                          <span className="ml-2 text-xs">Counter: ₹{activeBooking.counter_offer}</span>
+                        )}
+                      </div>
+                    )}
+
                     <div className="flex items-center gap-4 text-slate-500 font-bold text-sm md:text-base">
                       <span className="flex items-center gap-2"><UserIcon size={18} className="text-orange-500" /> {activeBooking.driver}</span>
                       <span className="text-slate-300">|</span>
@@ -525,6 +775,40 @@ const BookingSection: React.FC<{ t: any }> = ({ t }) => {
                     <div>
                       <p className="text-[10px] font-black uppercase text-slate-400">Next Hub</p>
                       <p className="text-sm font-black">{currentCheckpoint}</p>
+                    </div>
+                  </div>
+
+                  <div className="bg-white dark:bg-slate-900 p-6 rounded-[32px] border border-slate-100 dark:border-slate-800">
+                    <h4 className="font-black text-sm uppercase mb-4 flex items-center gap-2">
+                      <MessageSquare size={18} className="text-orange-500" /> Driver Chat
+                    </h4>
+
+                    <div className="h-48 overflow-y-auto mb-4 space-y-3 bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl">
+                      {chatHistory.length === 0 ? (
+                        <p className="text-xs text-slate-400 text-center italic mt-16">Start conversation with driver...</p>
+                      ) : (
+                        chatHistory.map((msg, idx) => (
+                          <div key={idx} className={`flex ${msg.sender === 'customer' ? 'justify-end' : 'justify-start'}`}>
+                            <div className={`max-w-[80%] p-3 rounded-2xl text-xs font-bold ${msg.sender === 'customer' ? 'bg-orange-500 text-white rounded-br-none' : 'bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-bl-none'}`}>
+                              {msg.text}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={chatMessage}
+                        onChange={(e) => setChatMessage(e.target.value)}
+                        placeholder="Type message..."
+                        className="flex-1 bg-slate-50 dark:bg-slate-950 border-0 rounded-xl px-4 text-xs font-bold focus:ring-2 focus:ring-orange-500"
+                        onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+                      />
+                      <button onClick={sendMessage} className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 p-3 rounded-xl hover:scale-105 transition-transform">
+                        <Send size={16} />
+                      </button>
                     </div>
                   </div>
 

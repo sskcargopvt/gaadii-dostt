@@ -40,6 +40,9 @@ export interface Vehicle {
   lng: number;
   last_updated: string;
   created_at?: string;
+  total_distance?: number;
+  fuel_consumed?: number;
+  engine_hours?: number;
 }
 
 export interface VehicleActivity {

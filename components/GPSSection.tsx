@@ -188,6 +188,11 @@ const GPSSection: React.FC<{ t: any }> = ({ t }) => {
         lat: newLat,
         lng: newLng,
         battery_level: newBattery,
+        // Approximate distance based on speed (km/h) over 5 seconds: (speed * 5) / 3600
+        total_distance: (v.total_distance || 0) + (newSpeed * 5 / 3600),
+        // Approximate fuel: 0.1L per 5s if running, 0.01 if idle
+        fuel_consumed: (v.fuel_consumed || 0) + (newSpeed > 0 ? 0.005 : 0.001),
+        engine_hours: (v.engine_hours || 0) + (5 / 3600),
         last_updated: new Date().toISOString()
       }).eq('id', v.id);
     }, 5000);
@@ -213,6 +218,9 @@ const GPSSection: React.FC<{ t: any }> = ({ t }) => {
         ignition: false,
         lat: 28.5355,
         lng: 77.3910,
+        total_distance: 0,
+        fuel_consumed: 0,
+        engine_hours: 0,
         last_updated: new Date().toISOString()
       };
 
@@ -287,6 +295,15 @@ const GPSSection: React.FC<{ t: any }> = ({ t }) => {
     { date: '06 Feb', kms: 100 },
     { date: '07 Feb', kms: 90 },
   ];
+
+  // Calculate aggregated stats for Reports tab
+  const totalStats = useMemo(() => {
+    return vehicles.reduce((acc, v) => ({
+      totalDistance: acc.totalDistance + (v.total_distance || 0),
+      totalFuel: acc.totalFuel + (v.fuel_consumed || 0),
+      activeHours: acc.activeHours + (v.engine_hours || 0)
+    }), { totalDistance: 0, totalFuel: 0, activeHours: 0 });
+  }, [vehicles]);
 
   // Filtered vehicles
   const filteredVehicles = useMemo(() => {
@@ -842,13 +859,15 @@ const GPSSection: React.FC<{ t: any }> = ({ t }) => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-white/10">
           <div className="flex items-center justify-between mb-4">
             <h4 className="text-sm font-black uppercase text-slate-600 dark:text-slate-400">Total Distance</h4>
             <Navigation className="text-indigo-600" size={24} />
           </div>
-          <p className="text-3xl font-black">12,450 km</p>
-          <p className="text-xs text-emerald-600 font-bold mt-2">+12% from last month</p>
+          <p className="text-3xl font-black">{totalStats.totalDistance.toFixed(1)} km</p>
+          <p className="text-xs text-emerald-600 font-bold mt-2">Real-time update</p>
         </div>
 
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-white/10">
@@ -856,8 +875,8 @@ const GPSSection: React.FC<{ t: any }> = ({ t }) => {
             <h4 className="text-sm font-black uppercase text-slate-600 dark:text-slate-400">Fuel Consumed</h4>
             <Fuel className="text-indigo-600" size={24} />
           </div>
-          <p className="text-3xl font-black">3,240 L</p>
-          <p className="text-xs text-red-600 font-bold mt-2">-5% from last month</p>
+          <p className="text-3xl font-black">{totalStats.totalFuel.toFixed(1)} L</p>
+          <p className="text-xs text-emerald-600 font-bold mt-2">Calculated live</p>
         </div>
 
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-white/10">
@@ -865,8 +884,8 @@ const GPSSection: React.FC<{ t: any }> = ({ t }) => {
             <h4 className="text-sm font-black uppercase text-slate-600 dark:text-slate-400">Active Hours</h4>
             <Clock className="text-indigo-600" size={24} />
           </div>
-          <p className="text-3xl font-black">840 hrs</p>
-          <p className="text-xs text-emerald-600 font-bold mt-2">+8% from last month</p>
+          <p className="text-3xl font-black">{Math.floor(totalStats.activeHours)}h {(totalStats.activeHours % 1 * 60).toFixed(0)}m</p>
+          <p className="text-xs text-emerald-600 font-bold mt-2">Engine runtime</p>
         </div>
       </div>
 
