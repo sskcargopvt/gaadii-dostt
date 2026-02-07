@@ -15,7 +15,7 @@ const ProfileSection: React.FC<ProfileSectionProps> = ({ t, user, onUpdate, onLo
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   const [formData, setFormData] = useState({
     name: user.name,
     email: user.email,
@@ -32,7 +32,7 @@ const ProfileSection: React.FC<ProfileSectionProps> = ({ t, user, onUpdate, onLo
 
     try {
       const { data, error } = await supabase.auth.updateUser({
-        data: { 
+        data: {
           name: formData.name,
           phone: formData.phone,
           businessName: formData.businessName,
@@ -62,14 +62,14 @@ const ProfileSection: React.FC<ProfileSectionProps> = ({ t, user, onUpdate, onLo
 
   return (
     <div className="max-w-4xl mx-auto animate-in fade-in duration-500 pb-20">
-      <div className="mb-10 flex justify-between items-end">
+      <div className="mb-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-6 md:gap-0">
         <div>
           <h2 className="text-4xl font-black tracking-tight uppercase italic mb-2">{t.profile}</h2>
           <p className="text-slate-500 font-semibold">Manage your personal and business identity on Gadi Dost.</p>
         </div>
-        <button 
+        <button
           onClick={onLogout}
-          className="bg-red-50 dark:bg-red-500/10 text-red-600 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-3 border border-red-100 dark:border-red-500/20 hover:bg-red-100 transition-all shadow-sm"
+          className="bg-red-50 dark:bg-red-500/10 text-red-600 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-3 border border-red-100 dark:border-red-500/20 hover:bg-red-100 transition-all shadow-sm w-full md:w-auto justification-center"
         >
           <LogOut size={16} strokeWidth={3} /> Sign Out
         </button>
@@ -88,7 +88,7 @@ const ProfileSection: React.FC<ProfileSectionProps> = ({ t, user, onUpdate, onLo
             </div>
             <h3 className="text-2xl font-bold italic uppercase leading-none">{user.name}</h3>
             <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mt-2 mb-6">{user.role}</p>
-            
+
             <div className="pt-6 border-t border-slate-50 dark:border-slate-700 space-y-4">
               <div className="flex items-center justify-center gap-2 text-emerald-500 font-black text-[10px] uppercase tracking-widest">
                 <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
@@ -113,7 +113,7 @@ const ProfileSection: React.FC<ProfileSectionProps> = ({ t, user, onUpdate, onLo
                 <p className="text-sm font-bold uppercase italic">Identity Updated Successfully!</p>
               </div>
             )}
-            
+
             {error && (
               <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-2xl flex items-center gap-3 text-red-500 animate-in shake">
                 <AlertCircle size={20} />
@@ -126,10 +126,10 @@ const ProfileSection: React.FC<ProfileSectionProps> = ({ t, user, onUpdate, onLo
                 <label className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] ml-1">Full Legal Name</label>
                 <div className="relative group">
                   <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-amber-500 transition-colors" size={18} />
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="Enter full name"
                     className="w-full bg-slate-50 dark:bg-slate-950 border-0 rounded-2xl py-4.5 pl-12 pr-4 text-sm font-bold focus:ring-4 focus:ring-amber-500/10 outline-none transition-all shadow-inner"
                   />
@@ -140,8 +140,8 @@ const ProfileSection: React.FC<ProfileSectionProps> = ({ t, user, onUpdate, onLo
                 <label className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] ml-1">Email Identifier (Locked)</label>
                 <div className="relative group opacity-50 cursor-not-allowed">
                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                  <input 
-                    type="email" 
+                  <input
+                    type="email"
                     value={formData.email}
                     disabled
                     className="w-full bg-slate-50 dark:bg-slate-950 border-0 rounded-2xl py-4.5 pl-12 pr-4 text-sm font-bold outline-none cursor-not-allowed"
@@ -153,10 +153,10 @@ const ProfileSection: React.FC<ProfileSectionProps> = ({ t, user, onUpdate, onLo
                 <label className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] ml-1">Primary Phone</label>
                 <div className="relative group">
                   <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-amber-500 transition-colors" size={18} />
-                  <input 
-                    type="tel" 
+                  <input
+                    type="tel"
                     value={formData.phone}
-                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     placeholder="+91 00000 00000"
                     className="w-full bg-slate-50 dark:bg-slate-950 border-0 rounded-2xl py-4.5 pl-12 pr-4 text-sm font-bold focus:ring-4 focus:ring-amber-500/10 outline-none transition-all shadow-inner"
                   />
@@ -167,10 +167,10 @@ const ProfileSection: React.FC<ProfileSectionProps> = ({ t, user, onUpdate, onLo
                 <label className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] ml-1">Business Identity</label>
                 <div className="relative group">
                   <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-amber-500 transition-colors" size={18} />
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     value={formData.businessName}
-                    onChange={(e) => setFormData({...formData, businessName: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
                     placeholder="Registered Logistics Co."
                     className="w-full bg-slate-50 dark:bg-slate-950 border-0 rounded-2xl py-4.5 pl-12 pr-4 text-sm font-bold focus:ring-4 focus:ring-amber-500/10 outline-none transition-all shadow-inner"
                   />
@@ -182,10 +182,10 @@ const ProfileSection: React.FC<ProfileSectionProps> = ({ t, user, onUpdate, onLo
               <label className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] ml-1">Head Office Address</label>
               <div className="relative group">
                 <MapPin className="absolute left-4 top-5 text-slate-400 group-focus-within:text-amber-500 transition-colors" size={18} />
-                <textarea 
+                <textarea
                   rows={3}
                   value={formData.address}
-                  onChange={(e) => setFormData({...formData, address: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                   placeholder="Full office location for billing..."
                   className="w-full bg-slate-50 dark:bg-slate-950 border-0 rounded-2xl py-4.5 pl-12 pr-4 text-sm font-bold focus:ring-4 focus:ring-amber-500/10 outline-none transition-all resize-none shadow-inner"
                 />
@@ -193,7 +193,7 @@ const ProfileSection: React.FC<ProfileSectionProps> = ({ t, user, onUpdate, onLo
             </div>
 
             <div className="pt-6 border-t border-slate-50 dark:border-slate-800">
-              <button 
+              <button
                 type="submit"
                 disabled={loading}
                 className="w-full lg:w-auto px-16 py-5 bg-slate-950 dark:bg-amber-500 text-white dark:text-slate-900 rounded-[24px] font-black text-lg hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-4 disabled:opacity-50 shadow-2xl italic uppercase"

@@ -112,7 +112,7 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ onNavigate, t, user, onLo
       </section>
 
       {/* 3D KPI Stats with Shining Effects */}
-      <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Fleet Pulse - 3D Card */}
         <div onClick={() => onNavigate(AppPanel.GPS)} className="relative group cursor-pointer">
           <div className="absolute inset-0 bg-gradient-to-br from-orange-500 to-red-600 rounded-[32px] blur-lg group-hover:blur-xl transition-all opacity-50" />
@@ -162,7 +162,7 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ onNavigate, t, user, onLo
         </div>
 
         {/* Network Reliability - 3D Card */}
-        <div className="relative group hidden lg:block">
+        <div className="relative group hidden sm:block">
           <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-[32px] blur-lg group-hover:blur-xl transition-all opacity-30" />
           <div className="relative bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-6 rounded-[32px] border border-white/20 dark:border-white/10 shadow-2xl overflow-hidden transform hover:scale-105 hover:-translate-y-1 transition-all duration-300">
             <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-500/10 to-transparent rounded-full blur-2xl" />
@@ -220,10 +220,10 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ onNavigate, t, user, onLo
         {/* Highway Rescue - 3D */}
         <button
           onClick={() => onNavigate(AppPanel.EMERGENCY)}
-          className="relative group"
+          className="relative group w-full"
         >
           <div className="absolute inset-0 bg-gradient-to-br from-red-600 to-orange-600 rounded-[40px] blur-2xl opacity-50 group-hover:opacity-70 transition-all" />
-          <div className="relative w-full bg-gradient-to-br from-[#001f3f] via-slate-900 to-[#001f3f] rounded-[40px] p-8 text-left overflow-hidden shadow-2xl transform hover:scale-[1.02] hover:-translate-y-1 active:scale-[0.98] transition-all duration-300 border border-white/10">
+          <div className="relative w-full bg-gradient-to-br from-[#001f3f] via-slate-900 to-[#001f3f] rounded-[40px] p-8 text-left overflow-hidden shadow-2xl transform hover:scale-[1.02] hover:-translate-y-1 active:scale-[0.98] transition-all duration-300 border border-white/10 h-full min-h-[280px] flex flex-col justify-between">
             <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-red-600/20 to-transparent rounded-full blur-3xl" />
             <div className="relative z-10 flex flex-col h-full justify-between">
               <div>
@@ -234,7 +234,7 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ onNavigate, t, user, onLo
                     <div className="absolute inset-0 bg-gradient-to-br from-white/30 to-transparent rounded-2xl" />
                   </div>
                 </div>
-                <h2 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-red-400 to-white italic tracking-tighter uppercase leading-none mb-3">HIGHWAY<br />RESCUE</h2>
+                <h2 className="text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-red-400 to-white italic tracking-tighter uppercase leading-none mb-3">HIGHWAY<br />RESCUE</h2>
                 <p className="text-slate-400 text-[11px] font-bold uppercase tracking-widest leading-relaxed">24/7 Roadside Assistance & Recovery</p>
               </div>
               <div className="mt-8 flex items-center gap-2 text-red-500 font-black text-[10px] uppercase tracking-widest pt-4 border-t border-white/5">
@@ -248,10 +248,10 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ onNavigate, t, user, onLo
         {/* Mechanic Services - 3D */}
         <button
           onClick={() => onNavigate(AppPanel.EMERGENCY)}
-          className="relative group"
+          className="relative group w-full"
         >
           <div className="absolute inset-0 bg-gradient-to-br from-red-600 via-orange-600 to-yellow-500 rounded-[40px] blur-2xl opacity-60 group-hover:opacity-80 transition-all" />
-          <div className="relative bg-gradient-to-br from-red-600 via-orange-600 to-red-700 rounded-[40px] p-8 border border-red-400/30 flex flex-col justify-between overflow-hidden shadow-2xl shadow-red-600/40 text-left transform hover:scale-[1.02] hover:-translate-y-1 active:scale-[0.98] transition-all duration-300">
+          <div className="relative bg-gradient-to-br from-red-600 via-orange-600 to-red-700 rounded-[40px] p-8 border border-red-400/30 flex flex-col justify-between overflow-hidden shadow-2xl shadow-red-600/40 text-left transform hover:scale-[1.02] hover:-translate-y-1 active:scale-[0.98] transition-all duration-300 h-full min-h-[280px]">
             <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-yellow-500/20 to-transparent rounded-full blur-3xl" />
             <div className="relative z-10">
               <div className="relative w-16 h-16 mb-6">
@@ -261,7 +261,7 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ onNavigate, t, user, onLo
                   <div className="absolute inset-0 bg-gradient-to-br from-white/30 to-transparent rounded-2xl" />
                 </div>
               </div>
-              <h2 className="text-4xl font-black uppercase italic tracking-tighter mb-2 text-white leading-none drop-shadow-lg">MECHANIC<br />SERVICES</h2>
+              <h2 className="text-3xl md:text-4xl font-black uppercase italic tracking-tighter mb-2 text-white leading-none drop-shadow-lg">MECHANIC<br />SERVICES</h2>
               <p className="text-red-100 text-[11px] font-black uppercase tracking-widest leading-relaxed">10 Professional Services • On-Site Repairs</p>
             </div>
             <div className="relative z-10 mt-8 flex items-center gap-2 text-white font-black text-[10px] uppercase tracking-widest pt-4 border-t border-white/20">

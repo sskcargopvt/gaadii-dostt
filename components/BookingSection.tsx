@@ -1,18 +1,18 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Search, 
-  MapPin, 
-  Package, 
-  Weight, 
-  ArrowRight, 
-  ShieldCheck, 
-  Star, 
-  Clock, 
-  Upload, 
-  CheckCircle2, 
-  FileText, 
-  Truck, 
+import {
+  Search,
+  MapPin,
+  Package,
+  Weight,
+  ArrowRight,
+  ShieldCheck,
+  Star,
+  Clock,
+  Upload,
+  CheckCircle2,
+  FileText,
+  Truck,
   Move,
   Navigation,
   Calendar,
@@ -53,8 +53,8 @@ const BookingSection: React.FC<{ t: any }> = ({ t }) => {
   const [bookingDate, setBookingDate] = useState(new Date().toISOString().split('T')[0]);
 
   // Coordinates
-  const [pickupCoords, setPickupCoords] = useState({ lat: 28.6274, lng: 77.3725 }); 
-  const [dropoffCoords, setDropoffCoords] = useState({ lat: 28.4744, lng: 77.5030 }); 
+  const [pickupCoords, setPickupCoords] = useState({ lat: 28.6274, lng: 77.3725 });
+  const [dropoffCoords, setDropoffCoords] = useState({ lat: 28.4744, lng: 77.5030 });
   const [truckPosition, setTruckPosition] = useState({ lat: 28.6274, lng: 77.3725 });
   const [tripProgress, setTripProgress] = useState(0);
 
@@ -170,7 +170,7 @@ const BookingSection: React.FC<{ t: any }> = ({ t }) => {
     setActiveBooking(truck);
     setView('active');
   };
-  
+
   const handleMapPositionChange = (positions: { start: { lat: number; lng: number }; end: { lat: number; lng: number } }) => {
     setPickupCoords(positions.start);
     setDropoffCoords(positions.end);
@@ -186,19 +186,19 @@ const BookingSection: React.FC<{ t: any }> = ({ t }) => {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-4xl font-black tracking-tight uppercase">{t.booking}</h2>
-          <p className="text-slate-500 font-bold">Instantly connect with India's largest verified fleet.</p>
+          <h2 className="text-3xl md:text-4xl font-black tracking-tight uppercase">{t.booking}</h2>
+          <p className="text-slate-500 font-bold text-sm md:text-base">Instantly connect with India's largest verified fleet.</p>
         </div>
-        <div className="flex bg-slate-100 dark:bg-slate-800 p-2 rounded-[24px] w-fit border border-slate-200 dark:border-slate-700">
-          <button 
+        <div className="flex bg-slate-100 dark:bg-slate-800 p-1.5 md:p-2 rounded-[24px] w-full sm:w-fit border border-slate-200 dark:border-slate-700">
+          <button
             onClick={() => setView('marketplace')}
-            className={`px-8 py-3 rounded-[18px] text-sm font-black transition-all uppercase tracking-tighter ${view === 'marketplace' ? 'bg-white dark:bg-slate-700 shadow-xl text-orange-600' : 'text-slate-500'}`}
+            className={`flex-1 sm:flex-none px-4 md:px-8 py-2 md:py-3 rounded-[18px] text-xs md:text-sm font-black transition-all uppercase tracking-tighter ${view === 'marketplace' ? 'bg-white dark:bg-slate-700 shadow-xl text-orange-600' : 'text-slate-500'}`}
           >
             New Booking
           </button>
-          <button 
+          <button
             onClick={() => setView('active')}
-            className={`px-8 py-3 rounded-[18px] text-sm font-black transition-all uppercase tracking-tighter ${view === 'active' ? 'bg-white dark:bg-slate-700 shadow-xl text-orange-600' : 'text-slate-500'}`}
+            className={`flex-1 sm:flex-none px-4 md:px-8 py-2 md:py-3 rounded-[18px] text-xs md:text-sm font-black transition-all uppercase tracking-tighter ${view === 'active' ? 'bg-white dark:bg-slate-700 shadow-xl text-orange-600' : 'text-slate-500'}`}
           >
             My Trips
           </button>
@@ -208,29 +208,29 @@ const BookingSection: React.FC<{ t: any }> = ({ t }) => {
       {view === 'marketplace' ? (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           <div className="lg:col-span-5 space-y-6">
-            <form onSubmit={handleSearch} className="bg-white dark:bg-slate-800 p-10 rounded-[48px] border-4 border-slate-950 dark:border-slate-700 shadow-2xl space-y-8 relative overflow-hidden">
+            <form onSubmit={handleSearch} className="bg-white dark:bg-slate-800 p-6 md:p-10 rounded-[32px] md:rounded-[48px] border-4 border-slate-950 dark:border-slate-700 shadow-2xl space-y-6 md:space-y-8 relative overflow-hidden">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="bg-orange-500 p-3 rounded-2xl text-white shadow-xl shadow-orange-500/20">
+                <div className="flex items-center gap-3 md:gap-4">
+                  <div className="bg-orange-500 p-2 md:p-3 rounded-2xl text-white shadow-xl shadow-orange-500/20">
                     <Package size={24} strokeWidth={2.5} />
                   </div>
-                  <h3 className="text-2xl font-black uppercase tracking-tight">Shipment Details</h3>
+                  <h3 className="text-xl md:text-2xl font-black uppercase tracking-tight">Shipment Details</h3>
                 </div>
                 <button type="button" onClick={detectLocation} className="flex items-center gap-2 text-[10px] font-black uppercase bg-slate-100 dark:bg-slate-900 px-3 py-2 rounded-xl text-slate-500 hover:text-orange-500 transition-colors">
-                  <Target size={14} /> Detect Location
+                  <Target size={14} /> Detect Sales
                 </button>
               </div>
 
-              <div className="space-y-6">
+              <div className="space-y-4 md:space-y-6">
                 {/* Pickup with Suggestions */}
                 <div className="relative">
                   <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Pickup Address</label>
                   <div className="relative mt-2">
                     <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-orange-500" size={20} />
-                    <input 
-                      type="text" 
-                      placeholder="Search pickup location..." 
-                      className="w-full bg-slate-50 dark:bg-slate-900 border-0 rounded-2xl py-5 pl-12 pr-4 focus:ring-4 focus:ring-orange-500/10 font-bold" 
+                    <input
+                      type="text"
+                      placeholder="Search pickup location..."
+                      className="w-full bg-slate-50 dark:bg-slate-900 border-0 rounded-2xl py-3 md:py-5 pl-12 pr-4 focus:ring-4 focus:ring-orange-500/10 font-bold text-sm md:text-base"
                       value={pickupAddress}
                       onChange={(e) => handleAddressSearch(e.target.value, 'pickup')}
                     />
@@ -252,10 +252,10 @@ const BookingSection: React.FC<{ t: any }> = ({ t }) => {
                   <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Drop-off Address</label>
                   <div className="relative mt-2">
                     <Navigation className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-500" size={20} />
-                    <input 
-                      type="text" 
-                      placeholder="Search delivery location..." 
-                      className="w-full bg-slate-50 dark:bg-slate-900 border-0 rounded-2xl py-5 pl-12 pr-4 focus:ring-4 focus:ring-orange-500/10 font-bold" 
+                    <input
+                      type="text"
+                      placeholder="Search delivery location..."
+                      className="w-full bg-slate-50 dark:bg-slate-900 border-0 rounded-2xl py-5 pl-12 pr-4 focus:ring-4 focus:ring-orange-500/10 font-bold"
                       value={dropoffAddress}
                       onChange={(e) => handleAddressSearch(e.target.value, 'dropoff')}
                     />
@@ -277,7 +277,7 @@ const BookingSection: React.FC<{ t: any }> = ({ t }) => {
                     <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Goods Type</label>
                     <div className="relative">
                       <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
-                      <select 
+                      <select
                         className="w-full bg-slate-50 dark:bg-slate-900 border-0 rounded-2xl py-5 px-6 focus:ring-4 focus:ring-orange-500/10 font-bold appearance-none cursor-pointer"
                         value={goodsType}
                         onChange={(e) => setGoodsType(e.target.value)}
@@ -294,10 +294,10 @@ const BookingSection: React.FC<{ t: any }> = ({ t }) => {
                     <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Approx Weight (Tons)</label>
                     <div className="relative">
                       <Weight className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                      <input 
-                        type="number" 
-                        placeholder="e.g. 15" 
-                        className="w-full bg-slate-50 dark:bg-slate-900 border-0 rounded-2xl py-5 pl-12 focus:ring-4 focus:ring-orange-500/10 font-bold" 
+                      <input
+                        type="number"
+                        placeholder="e.g. 15"
+                        className="w-full bg-slate-50 dark:bg-slate-900 border-0 rounded-2xl py-5 pl-12 focus:ring-4 focus:ring-orange-500/10 font-bold"
                         value={weight}
                         onChange={(e) => setWeight(e.target.value)}
                       />
@@ -310,7 +310,7 @@ const BookingSection: React.FC<{ t: any }> = ({ t }) => {
                     <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Vehicle Category</label>
                     <div className="relative">
                       <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
-                      <select 
+                      <select
                         className="w-full bg-slate-50 dark:bg-slate-900 border-0 rounded-2xl py-5 px-6 focus:ring-4 focus:ring-orange-500/10 font-bold appearance-none cursor-pointer"
                         value={vehicleType}
                         onChange={(e) => setVehicleType(e.target.value)}
@@ -327,9 +327,9 @@ const BookingSection: React.FC<{ t: any }> = ({ t }) => {
                     <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Date of Dispatch</label>
                     <div className="relative">
                       <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                      <input 
-                        type="date" 
-                        className="w-full bg-slate-50 dark:bg-slate-900 border-0 rounded-2xl py-5 pl-12 focus:ring-4 focus:ring-orange-500/10 font-bold" 
+                      <input
+                        type="date"
+                        className="w-full bg-slate-50 dark:bg-slate-900 border-0 rounded-2xl py-5 pl-12 focus:ring-4 focus:ring-orange-500/10 font-bold"
                         value={bookingDate}
                         onChange={(e) => setBookingDate(e.target.value)}
                       />
@@ -338,8 +338,8 @@ const BookingSection: React.FC<{ t: any }> = ({ t }) => {
                 </div>
               </div>
 
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 className="w-full bg-slate-950 dark:bg-orange-500 text-white py-6 rounded-[28px] font-black text-xl hover:bg-black dark:hover:bg-orange-600 shadow-2xl transition-all flex items-center justify-center gap-3 group active:scale-[0.98]"
                 disabled={searching}
               >
@@ -361,18 +361,18 @@ const BookingSection: React.FC<{ t: any }> = ({ t }) => {
           </div>
 
           <div className="lg:col-span-7 space-y-6">
-             <div className="relative group">
-                <MapComponent
-                  isDraggable={true}
-                  startPos={pickupCoords}
-                  endPos={dropoffCoords}
-                  onPositionsChange={handleMapPositionChange}
-                />
-                <div className="absolute top-6 left-6 bg-slate-950/90 backdrop-blur-md text-white px-5 py-3 rounded-2xl text-xs font-black shadow-2xl flex items-center gap-3 border border-white/10 pointer-events-none">
-                  <Move size={16} className="text-orange-500" />
-                  DRAG MARKERS TO REFINE ROUTE
-                </div>
-             </div>
+            <div className="relative group">
+              <MapComponent
+                isDraggable={true}
+                startPos={pickupCoords}
+                endPos={dropoffCoords}
+                onPositionsChange={handleMapPositionChange}
+              />
+              <div className="absolute top-6 left-6 bg-slate-950/90 backdrop-blur-md text-white px-5 py-3 rounded-2xl text-xs font-black shadow-2xl flex items-center gap-3 border border-white/10 pointer-events-none">
+                <Move size={16} className="text-orange-500" />
+                DRAG MARKERS TO REFINE ROUTE
+              </div>
+            </div>
 
             {searching && (
               <div className="bg-white dark:bg-slate-900 rounded-[48px] p-24 flex flex-col items-center justify-center text-center space-y-8 border-4 border-dashed border-slate-200 dark:border-slate-800 animate-pulse">
@@ -392,20 +392,20 @@ const BookingSection: React.FC<{ t: any }> = ({ t }) => {
               <div className="space-y-4 animate-in fade-in slide-in-from-right duration-700">
                 <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 ml-4 mb-2">3 TRUCKS READY FOR DISPATCH</h4>
                 {foundTrucks.map((truck) => (
-                  <div key={truck.id} className="bg-white dark:bg-slate-800 p-8 rounded-[40px] border border-slate-100 dark:border-slate-700 shadow-xl hover:border-orange-500 transition-all flex flex-col sm:flex-row items-center justify-between gap-8 group">
-                    <div className="flex gap-8 w-full">
-                      <div className="w-24 h-24 bg-slate-100 dark:bg-slate-900 rounded-[32px] flex items-center justify-center text-slate-400 group-hover:bg-orange-500 group-hover:text-white transition-all duration-500 shadow-lg">
-                        <Truck size={48} strokeWidth={2} />
+                  <div key={truck.id} className="bg-white dark:bg-slate-800 p-5 md:p-8 rounded-[32px] md:rounded-[40px] border border-slate-100 dark:border-slate-700 shadow-xl hover:border-orange-500 transition-all flex flex-col items-center justify-between gap-6 md:gap-8 group">
+                    <div className="flex flex-col md:flex-row gap-6 md:gap-8 w-full items-center md:items-start text-center md:text-left">
+                      <div className="w-20 h-20 md:w-24 md:h-24 bg-slate-100 dark:bg-slate-900 rounded-[24px] md:rounded-[32px] flex items-center justify-center text-slate-400 group-hover:bg-orange-500 group-hover:text-white transition-all duration-500 shadow-lg shrink-0">
+                        <Truck size={36} className="md:w-12 md:h-12" strokeWidth={2} />
                       </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                           <h4 className="text-2xl font-black tracking-tight">{truck.truck}</h4>
-                           <div className="bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
-                             <ShieldCheck size={12} /> Verified
-                           </div>
+                      <div className="flex-1 w-full">
+                        <div className="flex flex-col md:flex-row items-center md:items-center gap-2 md:gap-3 mb-2 justify-center md:justify-start">
+                          <h4 className="text-xl md:text-2xl font-black tracking-tight">{truck.truck}</h4>
+                          <div className="bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
+                            <ShieldCheck size={12} /> Verified
+                          </div>
                         </div>
-                        <div className="flex items-center gap-4">
-                          <span className="text-lg font-bold text-slate-600 dark:text-slate-400">{truck.driver}</span>
+                        <div className="flex flex-col md:flex-row items-center gap-2 md:gap-4 justify-center md:justify-start">
+                          <span className="text-base md:text-lg font-bold text-slate-600 dark:text-slate-400">{truck.driver}</span>
                           <div className="flex items-center gap-1 bg-amber-50 dark:bg-amber-900/30 text-amber-600 px-3 py-1 rounded-xl text-sm font-black">
                             {truck.rating} <Star size={14} fill="currentColor" />
                           </div>
@@ -413,10 +413,10 @@ const BookingSection: React.FC<{ t: any }> = ({ t }) => {
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between w-full sm:w-auto sm:flex-col sm:items-end gap-3">
-                      <p className="text-4xl font-black text-orange-600">{truck.price}</p>
-                      <button onClick={() => handleBook(truck)} className="bg-slate-950 dark:bg-white dark:text-slate-950 text-white px-10 py-4 rounded-2xl font-black text-sm uppercase tracking-widest hover:scale-[1.05] transition-transform shadow-2xl flex items-center gap-3">
-                        DISPATCH NOW <ArrowRight size={20} strokeWidth={3} />
+                    <div className="flex flex-row md:flex-col items-center justify-between w-full md:w-auto md:items-end gap-3 border-t md:border-t-0 border-slate-100 pt-4 md:pt-0">
+                      <p className="text-2xl md:text-4xl font-black text-orange-600">{truck.price}</p>
+                      <button onClick={() => handleBook(truck)} className="bg-slate-950 dark:bg-white dark:text-slate-950 text-white px-6 md:px-10 py-3 md:py-4 rounded-2xl font-black text-xs md:text-sm uppercase tracking-widest hover:scale-[1.05] transition-transform shadow-2xl flex items-center gap-2 md:gap-3">
+                        DISPATCH <ArrowRight size={20} strokeWidth={3} className="hidden md:block" />
                       </button>
                     </div>
                   </div>
@@ -445,35 +445,35 @@ const BookingSection: React.FC<{ t: any }> = ({ t }) => {
                       <div className="w-3 h-3 bg-emerald-500 rounded-full animate-[pulse_1s_infinite]" />
                       {tripProgress < 100 ? 'GPS ACTIVE: IN TRANSIT' : 'TRIP COMPLETED'}
                     </div>
-                    <h3 className="text-6xl font-black tracking-tighter leading-none">{activeBooking.truck}</h3>
-                    <div className="flex items-center gap-4 text-slate-500 font-bold">
-                       <span className="flex items-center gap-2"><UserIcon size={18} className="text-orange-500" /> {activeBooking.driver}</span>
-                       <span className="text-slate-300">|</span>
-                       <span>ID: GD-98211</span>
+                    <h3 className="text-3xl md:text-6xl font-black tracking-tighter leading-none">{activeBooking.truck}</h3>
+                    <div className="flex items-center gap-4 text-slate-500 font-bold text-sm md:text-base">
+                      <span className="flex items-center gap-2"><UserIcon size={18} className="text-orange-500" /> {activeBooking.driver}</span>
+                      <span className="text-slate-300">|</span>
+                      <span>ID: GD-98211</span>
                     </div>
                   </div>
 
                   <div className="relative pl-10 space-y-16">
                     <div className="absolute left-[15px] top-3 bottom-3 w-1 bg-gradient-to-b from-orange-500 via-blue-500 to-emerald-500 rounded-full" />
-                    
+
                     <div className="relative">
                       <div className="absolute -left-12 top-0 w-8 h-8 rounded-full bg-orange-500 border-4 border-white dark:border-slate-800 shadow-xl" />
                       <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 leading-none mb-2">Pickup Point</p>
                       <p className="text-xl font-black">{pickupAddress.split(',')[0]}</p>
                       <p className="text-xs text-slate-500 font-medium truncate max-w-xs">{pickupAddress}</p>
                     </div>
-                    
+
                     {tripProgress < 100 ? (
                       <div className="relative">
                         <div className="absolute -left-12 top-0 w-8 h-8 rounded-full bg-blue-500 border-4 border-white dark:border-slate-800 shadow-xl animate-bounce" />
                         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-500 leading-none mb-2">Live Location</p>
                         <p className="text-xl font-black">{currentCheckpoint}</p>
                         <p className="text-sm font-black text-blue-600 mt-2 flex items-center gap-2">
-                           <Navigation size={14} className="animate-pulse" /> {remainingKm.toFixed(1)} KM UNTIL DROP
+                          <Navigation size={14} className="animate-pulse" /> {remainingKm.toFixed(1)} KM UNTIL DROP
                         </p>
                       </div>
                     ) : (
-                       <div className="relative">
+                      <div className="relative">
                         <div className="absolute -left-12 top-0 w-8 h-8 rounded-full bg-emerald-500 border-4 border-white dark:border-slate-800 shadow-xl" />
                         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500 leading-none mb-2">Current Location</p>
                         <p className="text-xl font-black">Destination Reached</p>
@@ -482,7 +482,7 @@ const BookingSection: React.FC<{ t: any }> = ({ t }) => {
                     )}
 
                     <div className="relative">
-                       <div className={`absolute -left-12 top-0 w-8 h-8 rounded-full border-4 border-white dark:border-slate-800 shadow-xl ${tripProgress === 100 ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-slate-700'}`} />
+                      <div className={`absolute -left-12 top-0 w-8 h-8 rounded-full border-4 border-white dark:border-slate-800 shadow-xl ${tripProgress === 100 ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-slate-700'}`} />
                       <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 leading-none mb-2">Delivery Point</p>
                       <p className="text-xl font-black">{dropoffAddress.split(',')[0]}</p>
                       <p className="text-xs text-slate-500 font-medium truncate max-w-xs">{dropoffAddress}</p>
@@ -496,7 +496,7 @@ const BookingSection: React.FC<{ t: any }> = ({ t }) => {
                     {podUploaded ? (
                       <div className="text-center py-6 animate-in zoom-in">
                         <div className="bg-emerald-100 dark:bg-emerald-900/30 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 text-emerald-600">
-                           <CheckCircle2 size={40} strokeWidth={3} />
+                          <CheckCircle2 size={40} strokeWidth={3} />
                         </div>
                         <p className="font-black text-lg uppercase tracking-tight">Receipt Verified</p>
                         <p className="text-[10px] uppercase text-slate-400 font-black mt-1">Synced to Cloud Bilty</p>
@@ -504,7 +504,7 @@ const BookingSection: React.FC<{ t: any }> = ({ t }) => {
                     ) : (
                       <div className="space-y-6">
                         <p className="text-sm text-slate-500 font-bold leading-relaxed">Capture the signed LR/Bilty once the truck reaches the destination to release payment.</p>
-                        <button 
+                        <button
                           onClick={() => setPodUploaded(true)}
                           disabled={tripProgress < 100}
                           className="w-full bg-white dark:bg-slate-800 border-4 border-dashed border-slate-200 dark:border-slate-700 p-12 rounded-[32px] flex flex-col items-center gap-4 hover:border-orange-500 transition-all group disabled:opacity-40 disabled:cursor-not-allowed hover:bg-orange-50 dark:hover:bg-orange-950/20"
@@ -517,21 +517,21 @@ const BookingSection: React.FC<{ t: any }> = ({ t }) => {
                       </div>
                     )}
                   </div>
-                  
+
                   <div className="bg-white dark:bg-slate-900 p-6 rounded-[32px] border border-slate-100 dark:border-slate-800 flex items-center gap-4">
-                     <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-2xl text-blue-600">
-                        <Navigation size={24} />
-                     </div>
-                     <div>
-                        <p className="text-[10px] font-black uppercase text-slate-400">Next Hub</p>
-                        <p className="text-sm font-black">{currentCheckpoint}</p>
-                     </div>
+                    <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-2xl text-blue-600">
+                      <Navigation size={24} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black uppercase text-slate-400">Next Hub</p>
+                      <p className="text-sm font-black">{currentCheckpoint}</p>
+                    </div>
                   </div>
 
                   <button onClick={() => setActiveBooking(null)} className="w-full py-4 text-slate-400 text-sm font-black uppercase tracking-widest hover:text-red-600 transition-colors border-2 border-transparent hover:border-red-600/20 rounded-2xl">Abort Booking</button>
                 </div>
               </div>
-              
+
               <div className="space-y-6 pt-6 border-t-2 border-slate-50 dark:border-slate-800">
                 <div className="flex items-center justify-between">
                   <h4 className="font-black text-2xl uppercase tracking-tighter">Live Google Maps Fleet Track</h4>
@@ -556,16 +556,16 @@ const BookingSection: React.FC<{ t: any }> = ({ t }) => {
 
 // Internal icon fix for missing User import
 const UserIcon = ({ size, className }: { size: number, className?: string }) => (
-  <svg 
-    xmlns="http://www.w3.org/2000/svg" 
-    width={size} 
-    height={size} 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2.5" 
-    strokeLinecap="round" 
-    strokeLinejoin="round" 
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
     className={className}
   >
     <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />

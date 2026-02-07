@@ -308,7 +308,7 @@ const EmergencySection: React.FC<{ t: any }> = ({ t }) => {
           </div>
 
           {/* Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             {categories.map((cat) => (
               <button
                 key={cat.id}
@@ -357,12 +357,12 @@ const EmergencySection: React.FC<{ t: any }> = ({ t }) => {
                 <div
                   key={service.id}
                   onClick={() => setSelectedService(service)}
-                  className={`bg-white dark:bg-slate-800 p-6 rounded-3xl border-2 transition-all cursor-pointer ${selectedService?.id === service.id ? 'border-red-500 shadow-xl' : 'border-slate-100 dark:border-slate-700 shadow-sm'
+                  className={`bg-white dark:bg-slate-800 p-4 md:p-6 rounded-3xl border-2 transition-all cursor-pointer ${selectedService?.id === service.id ? 'border-red-500 shadow-xl' : 'border-slate-100 dark:border-slate-700 shadow-sm'
                     }`}
                 >
-                  <div className="flex justify-between items-start mb-4">
+                  <div className="flex flex-col md:flex-row justify-between items-start mb-4 gap-2 md:gap-0">
                     <div>
-                      <h4 className="text-xl font-bold mb-1">{service.name}</h4>
+                      <h4 className="text-lg md:text-xl font-bold mb-1">{service.name}</h4>
                       <div className="flex items-center gap-3">
                         <span className="flex items-center gap-1 text-xs font-bold text-slate-500">
                           <Clock size={12} /> {service.time}
@@ -372,7 +372,7 @@ const EmergencySection: React.FC<{ t: any }> = ({ t }) => {
                         </span>
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className="text-left md:text-right w-full md:w-auto flex flex-row md:flex-col justify-between md:justify-start items-center md:items-end">
                       <p className="text-2xl font-black text-red-600">₹{service.price}</p>
                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Base Fare</p>
                     </div>
@@ -396,8 +396,8 @@ const EmergencySection: React.FC<{ t: any }> = ({ t }) => {
             </div>
           </div>
 
-          <div className="space-y-6">
-            <div className="bg-slate-900 text-white p-8 rounded-3xl shadow-2xl sticky top-24">
+          <div className="space-y-6 mt-8 lg:mt-0">
+            <div className="bg-slate-900 text-white p-6 md:p-8 rounded-3xl shadow-2xl relative lg:sticky lg:top-24">
               <h4 className="text-xl font-bold mb-6 flex items-center gap-2">
                 <Receipt size={20} className="text-red-500" />
                 Booking Summary
@@ -413,7 +413,7 @@ const EmergencySection: React.FC<{ t: any }> = ({ t }) => {
                   <div className="space-y-3">
                     <div className="flex justify-between text-sm">
                       <span className="text-slate-400">Service</span>
-                      <span className="font-bold">{selectedService.name}</span>
+                      <span className="font-bold text-right">{selectedService.name}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-slate-400">Dispatch Fee</span>
@@ -431,7 +431,7 @@ const EmergencySection: React.FC<{ t: any }> = ({ t }) => {
                   </div>
 
                   <div className="bg-white/5 p-4 rounded-2xl flex items-center gap-3">
-                    <div className="bg-red-500/20 p-2 rounded-lg">
+                    <div className="bg-red-500/20 p-2 rounded-lg shrink-0">
                       <Zap size={18} className="text-red-500" />
                     </div>
                     <p className="text-[10px] text-slate-400 leading-tight">
@@ -562,8 +562,8 @@ const EmergencySection: React.FC<{ t: any }> = ({ t }) => {
                 {messages.map((msg) => (
                   <div key={msg.id} className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}>
                     <div className={`max-w-[85%] px-4 py-3 rounded-[20px] text-sm font-medium shadow-sm ${msg.sender === 'user'
-                        ? 'bg-amber-500 text-slate-950 rounded-tr-none'
-                        : 'bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 rounded-tl-none border border-slate-200 dark:border-slate-800'
+                      ? 'bg-amber-500 text-slate-950 rounded-tr-none'
+                      : 'bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 rounded-tl-none border border-slate-200 dark:border-slate-800'
                       }`}>
                       {msg.text}
                     </div>

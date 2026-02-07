@@ -43,11 +43,11 @@ const MapComponent: React.FC<MapComponentProps> = ({
         disableDefaultUI: false,
         zoomControl: true,
         styles: [
-            {
-                "featureType": "all",
-                "elementType": "labels.text.fill",
-                "stylers": [{"color": "#7c93a3"}]
-            }
+          {
+            "featureType": "all",
+            "elementType": "labels.text.fill",
+            "stylers": [{ "color": "#7c93a3" }]
+          }
         ]
       });
 
@@ -155,9 +155,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
   }, [startPos, endPos, currentPosition, isDraggable, onPositionsChange]);
 
   return (
-    <div 
-      ref={mapRef} 
-      className="w-full h-[400px] rounded-3xl overflow-hidden border-4 border-white dark:border-slate-800 shadow-xl"
+    <div
+      ref={mapRef}
+      className="w-full h-[300px] md:h-[400px] rounded-3xl overflow-hidden border-4 border-white dark:border-slate-800 shadow-xl"
     />
   );
 };

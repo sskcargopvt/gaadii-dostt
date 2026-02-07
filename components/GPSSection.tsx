@@ -894,8 +894,8 @@ const GPSSection: React.FC<{ t: any }> = ({ t }) => {
         </div>
       </div>
 
-      {/* Navigation Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2">
+      {/* Navigation Tabs - Scrollable on Mobile */}
+      <div className="flex items-center gap-2 mb-8 overflow-x-auto pb-2 scrollbar-hide">
         {[
           { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
           { id: 'vehicles', label: 'Vehicle List', icon: Truck },
@@ -907,7 +907,7 @@ const GPSSection: React.FC<{ t: any }> = ({ t }) => {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
-            className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-all whitespace-nowrap ${activeTab === tab.id
+            className={`flex items-center gap-2 px-4 md:px-6 py-3 rounded-2xl font-bold text-xs md:text-sm transition-all whitespace-nowrap flex-shrink-0 ${activeTab === tab.id
               ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg'
               : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/10 hover:border-indigo-300'
               }`}
@@ -915,7 +915,8 @@ const GPSSection: React.FC<{ t: any }> = ({ t }) => {
             <tab.icon size={18} />
             {tab.label}
           </button>
-        ))}
+        ))
+        }
       </div>
 
       {/* Tab Content */}
@@ -931,9 +932,9 @@ const GPSSection: React.FC<{ t: any }> = ({ t }) => {
       {/* Add Vehicle Modal */}
       {isAddModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-slate-800 rounded-3xl p-8 max-w-md w-full shadow-2xl">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-black uppercase">Add New Vehicle</h3>
+              <h3 className="text-xl md:text-2xl font-black uppercase">Add New Vehicle</h3>
               <button onClick={() => setIsAddModalOpen(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl">
                 <X size={20} />
               </button>
@@ -991,9 +992,9 @@ const GPSSection: React.FC<{ t: any }> = ({ t }) => {
       {/* Add Driver Modal */}
       {isAddDriverModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-slate-800 rounded-3xl p-8 max-w-md w-full shadow-2xl">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-black uppercase">Add New Driver</h3>
+              <h3 className="text-xl md:text-2xl font-black uppercase">Add New Driver</h3>
               <button onClick={() => setIsAddDriverModalOpen(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl">
                 <X size={20} />
               </button>

@@ -1,12 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Users, 
-  ShieldCheck, 
-  Activity, 
-  BarChart3, 
-  Settings, 
-  Truck, 
+import {
+  Users,
+  ShieldCheck,
+  Activity,
+  BarChart3,
+  Settings,
+  Truck,
   Bell,
   Search,
   Database,
@@ -14,13 +14,13 @@ import {
   CheckCircle2,
   Lock
 } from 'lucide-react';
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer,
   LineChart,
   Line,
@@ -85,9 +85,8 @@ const AdminSection: React.FC<AdminSectionProps> = ({ t, user }) => {
         <div>
           <div className="flex items-center gap-3 mb-1">
             <h2 className="text-3xl font-bold italic uppercase tracking-tighter">{t.admin}</h2>
-            <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
-              dbStatus === 'connected' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'
-            }`}>
+            <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${dbStatus === 'connected' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'
+              }`}>
               {dbStatus === 'connected' ? <CheckCircle2 size={12} /> : <Cloud size={12} />}
               Supabase {dbStatus}
             </div>
@@ -114,12 +113,11 @@ const AdminSection: React.FC<AdminSectionProps> = ({ t, user }) => {
         ].map((stat, i) => (
           <div key={i} className="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm">
             <div className="flex justify-between items-start mb-4">
-              <div className={`p-3 rounded-2xl ${
-                stat.color === 'blue' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600' :
-                stat.color === 'green' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600' :
-                stat.color === 'amber' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600' :
-                'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600'
-              }`}>
+              <div className={`p-3 rounded-2xl ${stat.color === 'blue' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600' :
+                  stat.color === 'green' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600' :
+                    stat.color === 'amber' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600' :
+                      'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600'
+                }`}>
                 <stat.icon size={24} />
               </div>
               <span className={`text-[10px] font-black uppercase px-2 py-1 rounded-lg ${stat.trend.startsWith('+') ? 'bg-green-50 text-green-600' : 'bg-slate-50 text-slate-500'}`}>
@@ -141,65 +139,65 @@ const AdminSection: React.FC<AdminSectionProps> = ({ t, user }) => {
                 <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Revenue vs. Booking Density</p>
               </div>
               <div className="flex gap-4">
-                 <div className="flex items-center gap-2">
-                   <div className="w-3 h-3 rounded bg-amber-500" />
-                   <span className="text-[10px] font-black uppercase text-slate-400">Revenue</span>
-                 </div>
-                 <div className="flex items-center gap-2">
-                   <div className="w-3 h-3 rounded bg-slate-950 dark:bg-white" />
-                   <span className="text-[10px] font-black uppercase text-slate-400">Bookings</span>
-                 </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded bg-amber-500" />
+                  <span className="text-[10px] font-black uppercase text-slate-400">Revenue</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded bg-slate-950 dark:bg-white" />
+                  <span className="text-[10px] font-black uppercase text-slate-400">Bookings</span>
+                </div>
               </div>
             </div>
             <div className="h-[350px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={data}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" opacity={0.5} />
-                  <XAxis 
-                    dataKey="name" 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{fill: '#94a3b8', fontSize: 10, fontWeight: 800}} 
+                  <XAxis
+                    dataKey="name"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 800 }}
                   />
-                  <YAxis 
+                  <YAxis
                     yAxisId="left"
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{fill: '#94a3b8', fontSize: 10}} 
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#94a3b8', fontSize: 10 }}
                     label={{ value: 'Revenue (₹)', angle: -90, position: 'insideLeft', offset: 10, fill: '#64748b', fontSize: 10, fontWeight: 'bold' }}
                   />
-                  <YAxis 
+                  <YAxis
                     yAxisId="right"
                     orientation="right"
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{fill: '#94a3b8', fontSize: 10}} 
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#94a3b8', fontSize: 10 }}
                     label={{ value: 'Bookings', angle: 90, position: 'insideRight', offset: 10, fill: '#64748b', fontSize: 10, fontWeight: 'bold' }}
                   />
-                  <Tooltip 
-                    contentStyle={{borderRadius: '24px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', background: '#0f172a', color: '#fff'}}
-                    itemStyle={{fontSize: '10px', fontWeight: 800, textTransform: 'uppercase'}}
-                    cursor={{fill: '#f1f5f9', opacity: 0.1}}
+                  <Tooltip
+                    contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', background: '#0f172a', color: '#fff' }}
+                    itemStyle={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase' }}
+                    cursor={{ fill: '#f1f5f9', opacity: 0.1 }}
                   />
-                  <Bar 
-                    yAxisId="left" 
-                    dataKey="revenue" 
-                    name="Revenue" 
-                    radius={[8, 8, 0, 0]} 
+                  <Bar
+                    yAxisId="left"
+                    dataKey="revenue"
+                    name="Revenue"
+                    radius={[8, 8, 0, 0]}
                     barSize={32}
                   >
                     {data.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill="#f59e0b" />
                     ))}
                   </Bar>
-                  <Line 
-                    yAxisId="right" 
-                    type="monotone" 
-                    dataKey="bookings" 
+                  <Line
+                    yAxisId="right"
+                    type="monotone"
+                    dataKey="bookings"
                     name="Bookings"
-                    stroke="#020617" 
-                    strokeWidth={4} 
-                    dot={{fill: '#020617', r: 5, strokeWidth: 2, stroke: '#fff'}} 
+                    stroke="#020617"
+                    strokeWidth={4}
+                    dot={{ fill: '#020617', r: 5, strokeWidth: 2, stroke: '#fff' }}
                     activeDot={{ r: 8 }}
                   />
                 </ComposedChart>
@@ -238,7 +236,7 @@ const AdminSection: React.FC<AdminSectionProps> = ({ t, user }) => {
         </div>
 
         <div className="space-y-8">
-          <div className="bg-slate-950 p-10 rounded-[48px] text-white relative overflow-hidden">
+          <div className="bg-slate-950 p-6 md:p-10 rounded-[48px] text-white relative overflow-hidden">
             <h3 className="text-xl font-black italic uppercase tracking-tight mb-8 flex items-center gap-3">
               <Activity className="text-amber-500" size={24} />
               Health Matrix
@@ -256,7 +254,7 @@ const AdminSection: React.FC<AdminSectionProps> = ({ t, user }) => {
                     <span className="text-amber-500">{item.val}%</span>
                   </div>
                   <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden">
-                    <div className="bg-amber-500 h-full shadow-[0_0_8px_#f59e0b]" style={{width: `${item.val}%`}} />
+                    <div className="bg-amber-500 h-full shadow-[0_0_8px_#f59e0b]" style={{ width: `${item.val}%` }} />
                   </div>
                 </div>
               ))}
@@ -267,15 +265,15 @@ const AdminSection: React.FC<AdminSectionProps> = ({ t, user }) => {
             <Activity className="absolute -right-12 -bottom-12 opacity-5 rotate-12" size={250} />
           </div>
 
-          <div className="bg-white dark:bg-slate-800 p-8 rounded-[40px] border border-slate-100 dark:border-slate-700 shadow-sm group">
+          <div className="bg-white dark:bg-slate-800 p-6 md:p-8 rounded-[40px] border border-slate-100 dark:border-slate-700 shadow-sm group">
             <h3 className="font-black italic uppercase tracking-tight text-sm mb-6">Dispatch Momentum</h3>
             <div className="h-[200px] w-full">
-               <ResponsiveContainer width="100%" height="100%">
-                 <LineChart data={data}>
-                   <Line type="monotone" dataKey="bookings" stroke="#f59e0b" strokeWidth={4} dot={{fill: '#f59e0b', r: 5}} activeDot={{r: 8}} />
-                   <Tooltip contentStyle={{borderRadius: '16px', border: 'none', background: '#020617', color: '#fff'}} />
-                 </LineChart>
-               </ResponsiveContainer>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={data}>
+                  <Line type="monotone" dataKey="bookings" stroke="#f59e0b" strokeWidth={4} dot={{ fill: '#f59e0b', r: 5 }} activeDot={{ r: 8 }} />
+                  <Tooltip contentStyle={{ borderRadius: '16px', border: 'none', background: '#020617', color: '#fff' }} />
+                </LineChart>
+              </ResponsiveContainer>
             </div>
             <p className="text-[9px] font-black uppercase tracking-widest text-center text-slate-400 mt-6 group-hover:text-amber-500 transition-colors">Growth in weekly partnership onboarding</p>
           </div>
