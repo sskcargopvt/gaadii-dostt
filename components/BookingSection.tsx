@@ -233,42 +233,49 @@ const BookingSection: React.FC<{ t: any }> = ({ t }) => {
     }
   };
 
-  // Real-time subscription for booking status updates
+  // Real-time subscription for booking status updates via broadcast
+  // Subscribes to booking:<bookingId> for real-time updates on this booking
+  // UI tooltip: "Real-time updates enabled — you'll see driver responses and counter-offers instantly."
   useEffect(() => {
     if (!activeBooking?.bookingId) return;
 
-    const channel = supabase
-      .channel('booking-updates')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'booking_requests',
-          filter: `id=eq.${activeBooking.bookingId}`
-        },
-        (payload) => {
-          console.log('Booking updated:', payload);
-          const updated = payload.new;
+    const topic = `booking:${activeBooking.bookingId}`;
+    const channel = supabase.channel(topic, { config: { private: true } });
 
-          // Update booking status
-          setBookingStatus(updated.status || '');
+    channel
+      .on('broadcast', { event: '*' }, (payload) => {
+        console.log('Booking broadcast received:', payload);
 
-          // Update active booking with new data
-          setActiveBooking((prev: any) => ({
-            ...prev,
-            status: updated.status,
-            counter_offer: updated.counter_offer,
-            driver_response: updated.driver_response
-          }));
+        // Normalize payload (DB trigger sends new row data)
+        const updated = payload.new ?? payload.new_row ?? payload.payload;
 
-          // Update chat history if messages changed
-          if (updated.messages) {
-            setChatHistory(updated.messages);
-          }
+        if (!updated) return;
+
+        // Update booking status
+        setBookingStatus(updated.status || '');
+
+        // Update active booking with new data
+        setActiveBooking((prev: any) => ({
+          ...prev,
+          status: updated.status,
+          counter_offer: updated.counter_offer,
+          driver_response: updated.driver_response
+        }));
+
+        // Update chat history if messages changed
+        if (updated.messages) {
+          setChatHistory(updated.messages);
         }
-      )
-      .subscribe();
+      })
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ Subscribed to booking updates:', topic);
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('❌ Channel error for:', topic);
+        } else {
+          console.log('Channel status:', status);
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);
@@ -677,14 +684,14 @@ const BookingSection: React.FC<{ t: any }> = ({ t }) => {
                     {/* Real-time Booking Status */}
                     {bookingStatus && (
                       <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl font-black text-sm ${bookingStatus === 'accepted' ? 'bg-emerald-100 text-emerald-700' :
-                          bookingStatus === 'rejected' ? 'bg-red-100 text-red-700' :
-                            bookingStatus === 'bargaining' ? 'bg-amber-100 text-amber-700' :
-                              'bg-blue-100 text-blue-700'
+                        bookingStatus === 'rejected' ? 'bg-red-100 text-red-700' :
+                          bookingStatus === 'bargaining' ? 'bg-amber-100 text-amber-700' :
+                            'bg-blue-100 text-blue-700'
                         }`}>
                         <div className={`w-2 h-2 rounded-full animate-pulse ${bookingStatus === 'accepted' ? 'bg-emerald-500' :
-                            bookingStatus === 'rejected' ? 'bg-red-500' :
-                              bookingStatus === 'bargaining' ? 'bg-amber-500' :
-                                'bg-blue-500'
+                          bookingStatus === 'rejected' ? 'bg-red-500' :
+                            bookingStatus === 'bargaining' ? 'bg-amber-500' :
+                              'bg-blue-500'
                           }`} />
                         {bookingStatus === 'accepted' ? '✓ DRIVER ACCEPTED' :
                           bookingStatus === 'rejected' ? '✗ DRIVER DECLINED' :
