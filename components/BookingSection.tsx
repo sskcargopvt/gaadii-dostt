@@ -290,10 +290,11 @@ const BookingSection: React.FC<{ t: any }> = ({ t }) => {
 
       const priceValue = truck.price.replace(/[^\d]/g, '');
 
-      // 2. Insert into Supabase - This will automatically notify admin app via realtime
+      // 2. Insert into Supabase - This will automatically notify driver app via realtime
       const { data, error } = await supabase
         .from('booking_requests')
         .insert([{
+          customer_id: user?.id, // Link to authenticated user
           customer_name: user?.user_metadata?.name || 'Guest User',
           customer_phone: user?.phone || '9999999999',
           pickup_location: pickupAddress,
@@ -307,12 +308,15 @@ const BookingSection: React.FC<{ t: any }> = ({ t }) => {
           offered_price: priceValue,
           status: 'pending',
           vehicle_id: truck.id,
+          messages: [], // Initialize empty messages array for chat
           created_at: new Date().toISOString()
         }])
         .select()
         .single();
 
       if (error) throw error;
+
+      console.log('✅ Booking created:', data.id);
 
       // 3. Set Active State
       setActiveBooking({ ...truck, bookingId: data.id, status: 'pending' });
@@ -326,7 +330,7 @@ const BookingSection: React.FC<{ t: any }> = ({ t }) => {
     }
   };
 
-  // Send request to ALL nearby trucks (broadcast to admin)
+  // Send request to ALL nearby trucks (broadcast to driver app)
   const sendRequestToAllTrucks = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -334,6 +338,7 @@ const BookingSection: React.FC<{ t: any }> = ({ t }) => {
 
       // Create requests for all found trucks
       const requests = foundTrucks.map(truck => ({
+        customer_id: user?.id, // Link to authenticated user
         customer_name: user?.user_metadata?.name || 'Guest User',
         customer_phone: user?.phone || '9999999999',
         pickup_location: pickupAddress,
@@ -347,6 +352,7 @@ const BookingSection: React.FC<{ t: any }> = ({ t }) => {
         offered_price: truck.price.replace(/[^\d]/g, ''),
         status: 'pending',
         vehicle_id: truck.id,
+        messages: [], // Initialize empty messages array
         created_at: new Date().toISOString()
       }));
 
@@ -357,10 +363,13 @@ const BookingSection: React.FC<{ t: any }> = ({ t }) => {
 
       if (error) throw error;
 
+      console.log(`✅ Broadcast ${data?.length || 0} booking requests to drivers`);
+
       setPendingRequests(data || []);
-      alert(`Sent booking request to ${foundTrucks.length} nearby drivers!`);
+      alert(`📢 Sent booking request to ${foundTrucks.length} nearby drivers!\n\nThey will receive instant notifications.`);
     } catch (err) {
       console.error('Broadcast Error:', err);
+      alert('❌ Failed to send requests. Please try again.');
     }
   };
 
