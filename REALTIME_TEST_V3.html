@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connection Test V3 (No Modules)</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: system-ui, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            line-height: 1.5;
+            padding: 20px;
+            background: #f0fdf4;
+        }
+
+        .box {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            margin-top: 0;
+            color: #166534;
+        }
+
+        button {
+            background: #22c55e;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        button:hover {
+            background: #16a34a;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .log {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: monospace;
+            height: 300px;
+            overflow-y: auto;
+            margin-top: 20px;
+            white-space: pre-wrap;
+        }
+
+        .status {
+            font-weight: bold;
+            color: #ca8a04;
+            background: #fef9c3;
+            padding: 10px;
+            border-radius: 6px;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="box">
+        <h1>🚀 Simple Connection Test V3</h1>
+        <div id="status" class="status">⏳ Waiting for you to click button...</div>
+
+        <p>This test uses a simple script tag. It should work perfectly.</p>
+
+        <button id="btn" onclick="startTest()">CLICK ME TO TEST CONNECTION</button>
+
+        <div id="log" class="log">Ready...</div>
+    </div>
+
+    <script>
+        const LOG = document.getElementById('log');
+        const STATUS = document.getElementById('status');
+        const BTN = document.getElementById('btn');
+
+        function log(msg) {
+            LOG.textContent += '\n[' + new Date().toLocaleTimeString() + '] ' + msg;
+            LOG.scrollTop = LOG.scrollHeight;
+        }
+
+        async function startTest() {
+            BTN.disabled = true;
+            BTN.textContent = '⏳ Testing...';
+            log('Starting test...');
+
+            try {
+                // Initialize Supabase
+                const URL = 'https://tstboympleybwbdwicik.supabase.co';
+                const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzdGJveW1wbGV5YndiZHdpY2lrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg2NDg0OTcsImV4cCI6MjA4NDIyNDQ5N30.JQZFd3z4yrVeUHG66Pe_FGFnupoG6JfguEP8auY-qUE';
+
+                if (typeof supabase === 'undefined') {
+                    throw new Error('Supabase script failed to load. Check internet connection.');
+                }
+
+                const client = supabase.createClient(URL, KEY);
+                log('✅ Supabase client initialized');
+
+                // 1. Test Database Access
+                log('1️⃣ Testing Database Access...');
+                const { data, error } = await client
+                    .from('booking_requests')
+                    .select('count', { count: 'exact', head: true });
+
+                if (error) throw error;
+                log('✅ Database access WORKING! (Status: 200 OK)');
+
+                // 2. Test Realtime Connection
+                log('2️⃣ Testing Realtime Connection...');
+                const channel = client.channel('booking_requests', {
+                    config: { broadcast: { self: true }, private: true }
+                });
+
+                channel
+                    .on('broadcast', { event: '*' }, (payload) => {
+                        log('📢 BROADCAST RECEIVED! SUCCESS!');
+                        log(JSON.stringify(payload));
+                        STATUS.textContent = '✅ SUCCESS! CONNECTED!';
+                        STATUS.style.background = '#dcfce7';
+                        STATUS.style.color = '#166534';
+                    })
+                    .subscribe((status) => {
+                        log('📡 Connection Status: ' + status);
+                        if (status === 'SUBSCRIBED') {
+                            log('✅ Subscribed successfully!');
+
+                            // 3. Send Test Message
+                            log('3️⃣ Sending test broadcast...');
+                            channel.send({
+                                type: 'broadcast',
+                                event: 'test',
+                                payload: { message: 'Hello from V3 Test!' }
+                            });
+                        }
+                    });
+
+            } catch (err) {
+                log('❌ ERROR: ' + err.message);
+                STATUS.textContent = '❌ FAILED';
+                STATUS.style.background = '#fee2e2';
+                STATUS.style.color = '#991b1b';
+            } finally {
+                BTN.disabled = false;
+                BTN.textContent = 'CLICK ME TO TEST CONNECTION';
+            }
+        }
+    </script>
+</body>
+
+</html>

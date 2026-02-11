@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Test V2</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            max-width: 900px;
+            margin: 30px auto;
+            padding: 20px;
+            background: #f8fafc;
+            color: #334155;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            margin-bottom: 24px;
+        }
+
+        h1 {
+            color: #1e293b;
+            margin-bottom: 12px;
+            font-weight: 800;
+            font-size: 24px;
+        }
+
+        p {
+            color: #64748b;
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+
+        .status {
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 16px;
+            border-radius: 9999px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .status span {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status.waiting {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status.waiting span {
+            background: #f59e0b;
+        }
+
+        .status.connected {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status.connected span {
+            background: #22c55e;
+        }
+
+        .status.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .status.error span {
+            background: #ef4444;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 16px;
+        }
+
+        button {
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+
+        .btn-success {
+            background: #22c55e;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #16a34a;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #475569;
+        }
+
+        .btn-secondary:hover {
+            background: #cbd5e1;
+        }
+
+        .log-container {
+            background: #1e293b;
+            border-radius: 8px;
+            padding: 16px;
+            height: 400px;
+            overflow-y: auto;
+            font-family: 'SF Mono', 'Roboto Mono', Menlo, monospace;
+            font-size: 13px;
+        }
+
+        .log-entry {
+            margin-bottom: 8px;
+            line-height: 1.5;
+            word-break: break-all;
+        }
+
+        .log-time {
+            color: #64748b;
+            margin-right: 8px;
+        }
+
+        .text-info {
+            color: #e2e8f0;
+        }
+
+        .text-success {
+            color: #4ade80;
+        }
+
+        .text-error {
+            color: #f87171;
+        }
+
+        .text-warn {
+            color: #fcd34d;
+        }
+
+        .text-broadcast {
+            color: #fbbf24;
+            font-weight: bold;
+            background: rgba(251, 191, 36, 0.1);
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <h1>🚀 Real-Time Connection Test V2</h1>
+        <p>Advanced diagnostic tool using ES Modules for Supabase connectivity verification.</p>
+        <div id="status" class="status waiting"><span></span>Disconnected</div>
+        <div class="btn-group">
+            <button id="btnConnect" class="btn-success">🔌 Connect</button>
+            <button id="btnDisconnect" class="btn-danger" style="display: none;">❌ Disconnect</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <h1>🧪 Test Actions</h1>
+        <p>Perform these actions to verify system behavior.</p>
+        <div class="btn-group">
+            <button id="btnInsert" class="btn-primary">📢 Insert Test Booking</button>
+            <button id="btnFetch" class="btn-secondary">📊 Fetch Recent Bookings</button>
+            <button id="btnClear" class="btn-secondary">🗑️ Clear Log</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <h1>📝 Activity Log</h1>
+        <div id="log" class="log-container">
+            <div class="log-entry"><span class="log-time">[System]</span> <span class="text-info">Ready to start
+                    test...</span></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+
+        const SUPABASE_URL = 'https://tstboympleybwbdwicik.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzdGJveW1wbGV5YndiZHdpY2lrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg2NDg0OTcsImV4cCI6MjA4NDIyNDQ5N30.JQZFd3z4yrVeUHG66Pe_FGFnupoG6JfguEP8auY-qUE';
+
+        let supabase;
+        let channel = null;
+
+        try {
+            supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+            log('System', 'Supabase client initialized successfully', 'success');
+        } catch (err) {
+            log('System', `Failed to initialize Supabase: ${err.message}`, 'error');
+        }
+
+        // DOM Elements
+        const btnConnect = document.getElementById('btnConnect');
+        const btnDisconnect = document.getElementById('btnDisconnect');
+        const btnInsert = document.getElementById('btnInsert');
+        const btnFetch = document.getElementById('btnFetch');
+        const btnClear = document.getElementById('btnClear');
+        const statusEl = document.getElementById('status');
+        const logEl = document.getElementById('log');
+
+        // Event Listeners
+        btnConnect.addEventListener('click', connect);
+        btnDisconnect.addEventListener('click', disconnect);
+        btnInsert.addEventListener('click', insertTestBooking);
+        btnFetch.addEventListener('click', fetchBookings);
+        btnClear.addEventListener('click', clearLog);
+
+        function log(source, message, type = 'info') {
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            const time = new Date().toLocaleTimeString();
+
+            let colorClass = 'text-info';
+            if (type === 'success') colorClass = 'text-success';
+            if (type === 'error') colorClass = 'text-error';
+            if (type === 'warn') colorClass = 'text-warn';
+            if (type === 'broadcast') colorClass = 'text-broadcast';
+
+            entry.innerHTML = `<span class="log-time">[${time}] ${source}:</span> <span class="${colorClass}">${message}</span>`;
+            logEl.appendChild(entry);
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        function setStatus(state, message) {
+            statusEl.className = `status ${state}`;
+            statusEl.innerHTML = `<span></span>${message}`;
+
+            if (state === 'connected') {
+                btnConnect.style.display = 'none';
+                btnDisconnect.style.display = 'inline-flex';
+            } else {
+                btnConnect.style.display = 'inline-flex';
+                btnDisconnect.style.display = 'none';
+            }
+        }
+
+        function clearLog() {
+            logEl.innerHTML = '<div class="log-entry"><span class="log-time">[System]</span> <span class="text-info">Log cleared</span></div>';
+        }
+
+        async function connect() {
+            if (channel) return;
+
+            log('Connection', 'Attempting to verify connection...', 'info');
+
+            // Check auth/config first
+            try {
+                const { data, error } = await supabase.from('booking_requests').select('count', { count: 'exact', head: true });
+                if (error) throw error;
+                log('Connection', 'Database verification successful', 'success');
+            } catch (err) {
+                log('Connection', `Database check failed: ${err.message}`, 'error');
+                return;
+            }
+
+            log('Realtime', 'Subscribing to channel: booking_requests', 'info');
+
+            channel = supabase.channel('booking_requests', {
+                config: {
+                    broadcast: { self: false },
+                    private: true
+                }
+            });
+
+            channel
+                .on('broadcast', { event: '*' }, (payload) => {
+                    log('BROADCAST', '📨 Message Received!', 'broadcast');
+                    log('Debug', JSON.stringify(payload, null, 2), 'info');
+
+                    const type = payload.type || payload.event;
+                    const newRow = payload.new || payload.payload;
+
+                    if (newRow && newRow.pickup_location) {
+                        const msg = `Booking Update: ${newRow.customer_name || 'User'} - ${newRow.pickup_location}`;
+                        log('Application', msg, 'success');
+                    }
+                })
+                .subscribe((status) => {
+                    if (status === 'SUBSCRIBED') {
+                        log('Realtime', '✅ Connected! Listening for events...', 'success');
+                        setStatus('connected', 'Connected');
+                    } else if (status === 'CHANNEL_ERROR') {
+                        log('Realtime', '❌ Channel subscription failed', 'error');
+                        setStatus('error', 'Connection Error');
+                    } else if (status === 'TIMED_OUT') {
+                        log('Realtime', '⚠️ Connection timed out', 'warn');
+                        setStatus('error', 'Timeout');
+                    } else {
+                        log('Realtime', `Status change: ${status}`, 'info');
+                    }
+                });
+        }
+
+        function disconnect() {
+            if (channel) {
+                supabase.removeChannel(channel);
+                channel = null;
+                log('Realtime', 'Disconnected by user', 'warn');
+                setStatus('waiting', 'Disconnected');
+            }
+        }
+
+        async function insertTestBooking() {
+            log('Test', 'Creating test booking...', 'info');
+            const dummyData = {
+                customer_name: `TEST_${Math.floor(Math.random() * 1000)}`,
+                customer_phone: '555-0199',
+                pickup_location: 'Test Station Alpha',
+                drop_location: 'Test Station Beta',
+                pickup_lat: 28.6139,
+                pickup_lng: 77.2090,
+                drop_lat: 19.0760,
+                drop_lng: 72.8777,
+                goods_type: 'Test Cargo',
+                weight: '500kg',
+                offered_price: '1500',
+                status: 'pending',
+                messages: []
+            };
+
+            try {
+                const { data, error } = await supabase
+                    .from('booking_requests')
+                    .insert(dummyData)
+                    .select()
+                    .single();
+
+                if (error) throw error;
+                log('Database', `✅ Insert successful (ID: ${data.id.substring(0, 8)}...)`, 'success');
+                log('Test', '👀 Watch for broadcast message above...', 'warn');
+            } catch (err) {
+                log('Database', `❌ Insert failed: ${err.message}`, 'error');
+            }
+        }
+
+        async function fetchBookings() {
+            log('Database', 'Fetching recent 5 bookings...', 'info');
+            try {
+                const { data, error } = await supabase
+                    .from('booking_requests')
+                    .select('id, customer_name, status, created_at')
+                    .order('created_at', { ascending: false })
+                    .limit(5);
+
+                if (error) throw error;
+                log('Database', `Found ${data.length} records`, 'success');
+                data.forEach(b => {
+                    log('Record', `${new Date(b.created_at).toLocaleTimeString()} - ${b.customer_name} (${b.status})`, 'info');
+                });
+            } catch (err) {
+                log('Database', `❌ Fetch failed: ${err.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+
+</html>

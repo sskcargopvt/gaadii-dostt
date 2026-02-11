@@ -318,7 +318,20 @@ const BookingSection: React.FC<{ t: any }> = ({ t }) => {
 
       console.log('✅ Booking created:', data.id);
 
-      // 3. Set Active State
+      // 3. Broadcast to driver app manually
+      const channel = supabase.channel('booking_requests');
+      await channel.send({
+        type: 'broadcast',
+        event: 'INSERT',
+        payload: {
+          type: 'INSERT',
+          new: data,
+          new_row: data
+        }
+      });
+      console.log('📢 Broadcast sent to drivers');
+
+      // 4. Set Active State
       setActiveBooking({ ...truck, bookingId: data.id, status: 'pending' });
       setBookingStatus('pending');
       setView('active');
@@ -364,6 +377,21 @@ const BookingSection: React.FC<{ t: any }> = ({ t }) => {
       if (error) throw error;
 
       console.log(`✅ Broadcast ${data?.length || 0} booking requests to drivers`);
+
+      // Manually broadcast each booking to drivers
+      const channel = supabase.channel('booking_requests');
+      for (const booking of (data || [])) {
+        await channel.send({
+          type: 'broadcast',
+          event: 'INSERT',
+          payload: {
+            type: 'INSERT',
+            new: booking,
+            new_row: booking
+          }
+        });
+      }
+      console.log('📢 Manual broadcasts sent');
 
       setPendingRequests(data || []);
       alert(`📢 Sent booking request to ${foundTrucks.length} nearby drivers!\n\nThey will receive instant notifications.`);

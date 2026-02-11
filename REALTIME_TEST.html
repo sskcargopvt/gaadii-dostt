@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Test</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 30px auto;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .status {
+            padding: 12px;
+            border-radius: 6px;
+            margin: 15px 0;
+            font-weight: bold;
+        }
+
+        .status.waiting {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status.connected {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 15px;
+            margin: 5px;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        button.green {
+            background: #28a745;
+        }
+
+        button.green:hover {
+            background: #218838;
+        }
+
+        button.red {
+            background: #dc3545;
+        }
+
+        button.red:hover {
+            background: #c82333;
+        }
+
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            max-height: 350px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 13px;
+        }
+
+        .log div {
+            padding: 6px;
+            margin: 4px 0;
+            border-radius: 3px;
+        }
+
+        .log .success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .log .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .log .info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .log .broadcast {
+            background: #fff3cd;
+            color: #856404;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <h1>🔍 Real-Time Connection Test</h1>
+        <p>Test if database trigger and broadcasts are working</p>
+        <div id="status" class="status waiting">⏳ Not connected</div>
+    </div>
+
+    <div class="card">
+        <h2>Step 1: Connect</h2>
+        <button class="green" onclick="connect()">🔌 Connect to booking_requests</button>
+        <button class="red" onclick="disconnect()">❌ Disconnect</button>
+    </div>
+
+    <div class="card">
+        <h2>Step 2: Test</h2>
+        <button onclick="testInsert()">📢 Insert Test Booking</button>
+        <button onclick="fetchAll()">📊 Fetch Bookings</button>
+        <button onclick="clearLog()">🗑️ Clear Log</button>
+    </div>
+
+    <div class="card">
+        <h2>📝 Log</h2>
+        <div id="log" class="log">
+            <div class="info">Ready to test...</div>
+        </div>
+    </div>
+
+    <script>
+        const URL = 'https://tstboympleybwbdwicik.supabase.co';
+        const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzdGJveW1wbGV5YndiZHdpY2lrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg2NDg0OTcsImV4cCI6MjA4NDIyNDQ5N30.JQZFd3z4yrVeUHG66Pe_FGFnupoG6JfguEP8auY-qUE';
+
+        const sb = supabase.createClient(URL, KEY);
+        let ch = null;
+
+        function addLog(msg, type = 'info') {
+            const log = document.getElementById('log');
+            const div = document.createElement('div');
+            div.className = type;
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            log.appendChild(div);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function setStatus(msg, type) {
+            const status = document.getElementById('status');
+            status.textContent = msg;
+            status.className = 'status ' + type;
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '<div class="info">Log cleared</div>';
+        }
+
+        function connect() {
+            if (ch) {
+                addLog('Already connected!', 'error');
+                return;
+            }
+
+            addLog('Connecting to booking_requests...', 'info');
+
+            ch = sb.channel('booking_requests', {
+                config: { private: true, broadcast: { self: false } }
+            });
+
+            ch.on('broadcast', { event: '*' }, (payload) => {
+                addLog('📢 BROADCAST RECEIVED!', 'broadcast');
+                addLog(JSON.stringify(payload, null, 2), 'broadcast');
+
+                const type = payload.type || payload.event;
+                const row = payload.new || payload.payload;
+
+                if (type === 'INSERT' && row) {
+                    addLog(`✅ New: ${row.customer_name} - ${row.pickup_location}`, 'success');
+                }
+            })
+                .subscribe((status) => {
+                    if (status === 'SUBSCRIBED') {
+                        addLog('✅ Connected successfully!', 'success');
+                        setStatus('✅ Connected and listening', 'connected');
+                    } else if (status === 'CHANNEL_ERROR') {
+                        addLog('❌ Connection failed!', 'error');
+                        setStatus('❌ Connection failed', 'error');
+                    } else {
+                        addLog(`Status: ${status}`, 'info');
+                    }
+                });
+        }
+
+        function disconnect() {
+            if (ch) {
+                sb.removeChannel(ch);
+                ch = null;
+                addLog('Disconnected', 'info');
+                setStatus('⏳ Not connected', 'waiting');
+            } else {
+                addLog('Not connected', 'error');
+            }
+        }
+
+        async function testInsert() {
+            addLog('Inserting test booking...', 'info');
+
+            try {
+                const { data, error } = await sb
+                    .from('booking_requests')
+                    .insert({
+                        customer_name: 'TEST ' + Date.now(),
+                        customer_phone: '9999999999',
+                        pickup_location: 'Test Pickup',
+                        drop_location: 'Test Drop',
+                        pickup_lat: 28.6274,
+                        pickup_lng: 77.3725,
+                        drop_lat: 28.4744,
+                        drop_lng: 77.5030,
+                        goods_type: 'Test Goods',
+                        weight: '100',
+                        offered_price: '5000',
+                        status: 'pending',
+                        messages: []
+                    })
+                    .select()
+                    .single();
+
+                if (error) throw error;
+                addLog(`✅ Inserted! ID: ${data.id}`, 'success');
+                addLog('👀 Check above for broadcast message!', 'info');
+            } catch (err) {
+                addLog(`❌ Error: ${err.message}`, 'error');
+            }
+        }
+
+        async function fetchAll() {
+            addLog('Fetching bookings...', 'info');
+
+            try {
+                const { data, error } = await sb
+                    .from('booking_requests')
+                    .select('id, customer_name, pickup_location, status')
+                    .order('created_at', { ascending: false })
+                    .limit(5);
+
+                if (error) throw error;
+                addLog(`✅ Found ${data.length} bookings`, 'success');
+                data.forEach((b, i) => {
+                    addLog(`${i + 1}. ${b.customer_name} - ${b.pickup_location} (${b.status})`, 'info');
+                });
+            } catch (err) {
+                addLog(`❌ Error: ${err.message}`, 'error');
+            }
+        }
+
+        window.onload = () => {
+            addLog('🚀 Test tool loaded. Click Connect!', 'info');
+        };
+    </script>
+</body>
+
+</html>
