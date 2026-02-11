@@ -170,11 +170,50 @@
         </div>
     </div>
 
+    <div style="margin-top: 20px; padding: 15px; background: #f0f9ff; border-radius: 8px;">
+        <h3>📤 Send Test Broadcast</h3>
+        <button onclick="sendTestBroadcast()"
+            style="background: #0284c7; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+            Send Test Request
+        </button>
+        <div id="send-status" style="margin-top: 10px; font-size: 14px;"></div>
+    </div>
+
     <script>
         const SUPABASE_URL = 'https://tstboympleybwbdwicik.supabase.co';
+        // Using the key extracted from your previous file versions
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzdGJveW1wbGV5YndiZHdpY2lrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg2NDg0OTcsImV4cCI6MjA4NDIyNDQ5N30.JQZFd3z4yrVeUHG66Pe_FGFnupoG6JfguEP8auY-qUE';
 
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        async function sendTestBroadcast() {
+            const statusDiv = document.getElementById('send-status');
+            statusDiv.textContent = 'Connecting...';
+
+            try {
+                const channel = supabase.channel('booking_requests');
+                channel.subscribe(async (status) => {
+                    if (status === 'SUBSCRIBED') {
+                        statusDiv.textContent = 'Connected! Sending test...';
+                        await channel.send({
+                            type: 'broadcast',
+                            event: 'INSERT',
+                            payload: {
+                                type: 'INSERT',
+                                new: { id: 'TEST-' + Date.now(), status: 'pending', customer_name: 'TEST TOOL' }
+                            }
+                        });
+                        statusDiv.textContent = '✅ Sent! If you see it below, permissions are fixed.';
+                        // Keep channel open briefly
+                        setTimeout(() => supabase.removeChannel(channel), 2000);
+                    } else if (status === 'CHANNEL_ERROR') {
+                        statusDiv.textContent = '❌ Connection Error! You MUST run FIX_BROADCAST_PERMISSION.sql';
+                    }
+                });
+            } catch (e) {
+                statusDiv.textContent = 'Error: ' + e.message;
+            }
+        }
         let channel = null;
 
         function log(message, type = 'info') {
