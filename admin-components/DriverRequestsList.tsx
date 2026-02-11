@@ -39,13 +39,14 @@ export default function DriverRequestsList() {
         channelRef.current = channel;
 
         channel
-            .on('broadcast', { event: '*' }, (payload) => {
+            .on('broadcast', { event: '*' }, (payload: any) => {
                 console.log('📢 Broadcast received:', payload);
 
                 // Normalize payload (DB trigger sends new row data)
-                const type = payload.type || payload.event; // 'INSERT' | 'UPDATE' | 'DELETE'
-                const newRow = payload.new ?? payload.new_row ?? payload.payload;
-                const oldRow = payload.old ?? payload.old_row;
+                // Fix: Check payload.payload.type first, then event, then top-level type
+                const type = payload.payload?.type || payload.event || payload.type;
+                const newRow = payload.new ?? payload.new_row ?? payload.payload?.new ?? payload.payload;
+                const oldRow = payload.old ?? payload.old_row ?? payload.payload?.old;
 
                 if (type === 'INSERT' && newRow) {
                     // New booking request
@@ -190,9 +191,9 @@ export default function DriverRequestsList() {
                                     <p className="text-sm text-slate-500">{request.customer_phone}</p>
                                 </div>
                                 <div className={`px-3 py-1 rounded-full text-xs font-black ${request.status === 'pending' ? 'bg-blue-100 text-blue-700' :
-                                        request.status === 'accepted' ? 'bg-green-100 text-green-700' :
-                                            request.status === 'rejected' ? 'bg-red-100 text-red-700' :
-                                                'bg-amber-100 text-amber-700'
+                                    request.status === 'accepted' ? 'bg-green-100 text-green-700' :
+                                        request.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                                            'bg-amber-100 text-amber-700'
                                     }`}>
                                     {request.status.toUpperCase()}
                                 </div>
