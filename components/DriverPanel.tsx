@@ -60,6 +60,8 @@ interface DriverProfile {
     bank_name: string;
     experience_years: string;
     profile_photo_url: string;
+    lat?: number;
+    lng?: number;
 }
 
 interface BookingRequest {
@@ -82,6 +84,7 @@ interface BookingRequest {
     messages?: any[];
     created_at: string;
     updated_at?: string;
+    distance_km?: string;
 }
 
 // Haversine distance in km
@@ -136,6 +139,8 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
     >("dashboard");
 
     const [currentCoords, setCurrentCoords] = useState<{ lat: number; lng: number } | null>(null);
+    const [driverAvailable, setDriverAvailable] = useState(false);
+    const [driverId, setDriverId] = useState<string | null>(null);
 
     // ─── Geo Tracking ──────────────────────────────────────
     useEffect(() => {
@@ -190,7 +195,6 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
     const [nearbyServices, setNearbyServices] = useState<any[]>([]);
 
     // ─── Driver state ─────────────────────────────────────
-    const [driverAvailable, setDriverAvailable] = useState(false);
     const [savingAvail, setSavingAvail] = useState(false);
     const [deliveryStage, setDeliveryStage] = useState<string>("idle");
     const [activeRequest, setActiveRequest] = useState<BookingRequest | null>(
@@ -262,6 +266,8 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
         bank_name: "",
         experience_years: "",
         profile_photo_url: "",
+        lat: 0,
+        lng: 0,
     });
     const [profileLoading, setProfileLoading] = useState(false);
     const [profileSuccess, setProfileSuccess] = useState(false);
@@ -270,7 +276,6 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
     const [photoPreview, setPhotoPreview] = useState<string | null>(null);
 
     // ─── Load driver id ────────────────────────────────────
-    const [driverId, setDriverId] = useState<string | null>(null);
 
     useEffect(() => {
         (async () => {
