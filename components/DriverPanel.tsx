@@ -34,6 +34,8 @@ import {
     Wrench,
     Flame,
     ArrowRight,
+    MessageSquare,
+    Send,
 } from "lucide-react";
 
 import { supabase } from "../services/supabaseClient";
@@ -85,6 +87,8 @@ interface BookingRequest {
     created_at: string;
     updated_at?: string;
     distance_km?: string;
+    counter_offer?: string;
+    driver_response?: string;
 }
 
 // Haversine distance in km
@@ -274,6 +278,12 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
     const [profileError, setProfileError] = useState<string | null>(null);
     const [profileExists, setProfileExists] = useState(false);
     const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+
+    // ─── Chat & Bargain State ──────────────────────────────
+    const [chatMessage, setChatMessage] = useState("");
+    const [chatHistory, setChatHistory] = useState<any[]>([]);
+    const [isBargaining, setIsBargaining] = useState(false);
+    const [bargainPrice, setBargainPrice] = useState("");
 
     // ─── Load driver id ────────────────────────────────────
 
@@ -503,6 +513,39 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
         if (activeTab === "history" && driverId) fetchTripHistory();
     }, [activeTab, driverId]);
 
+    // ─── Real-time Chat & Bargain Subscription ─────────────
+    useEffect(() => {
+        if (!activeRequest?.id) return;
+
+        const topic = `booking:${activeRequest.id}`;
+        const channel = supabase.channel(topic, { config: { broadcast: { self: false } } });
+
+        channel
+            .on('broadcast', { event: '*' }, (payload) => {
+                const updated = payload.new ?? payload.new_row ?? payload.payload;
+                if (!updated) return;
+
+                // Update active request with new status/counter-offer
+                if (updated.id === activeRequest.id) {
+                    setActiveRequest(prev => prev ? ({
+                        ...prev,
+                        status: updated.status || prev.status,
+                        offered_price: updated.offered_price || prev.offered_price,
+                        messages: updated.messages || prev.messages
+                    }) : null);
+
+                    if (updated.messages) {
+                        setChatHistory(updated.messages);
+                    }
+                }
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [activeRequest?.id]);
+
     // ─── Notifications helper ──────────────────────────────
     const addNotification = (
         Icon: any,
@@ -625,6 +668,66 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
                 }));
             }
         } catch (_) { }
+    };
+
+    // ─── Chat & Bargaining logic ───────────────────────────
+    const sendChatMessage = async () => {
+        if (!chatMessage.trim() || !activeRequest?.id) return;
+
+        const newMsg = { sender: 'driver', text: chatMessage, time: new Date().toISOString() };
+        const updatedHistory = [...chatHistory, newMsg];
+
+        setChatHistory(updatedHistory);
+        setChatMessage("");
+
+        try {
+            await supabase
+                .from('booking_requests')
+                .update({ messages: updatedHistory })
+                .eq('id', activeRequest.id);
+
+            // Broadcast on the booking channel
+            const topic = `booking:${activeRequest.id}`;
+            supabase.channel(topic).send({
+                type: 'broadcast',
+                event: 'CHAT_MSG',
+                payload: { messages: updatedHistory, id: activeRequest.id }
+            });
+        } catch (err) {
+            console.error("Chat Error:", err);
+        }
+    };
+
+    const handleBargain = async () => {
+        if (!bargainPrice || !activeRequest?.id) return;
+
+        try {
+            const { data, error } = await supabase
+                .from('booking_requests')
+                .update({
+                    offered_price: bargainPrice,
+                    status: 'bargaining'
+                })
+                .eq('id', activeRequest.id)
+                .select()
+                .single();
+
+            if (data) {
+                setActiveRequest(data);
+                setIsBargaining(false);
+                addNotification(TrendingUp, "blue", "Counter-offer Sent", `Proposed ₹${bargainPrice}`);
+
+                // Broadcast
+                const topic = `booking:${activeRequest.id}`;
+                supabase.channel(topic).send({
+                    type: 'broadcast',
+                    event: 'UPDATE',
+                    payload: { ...data, type: 'UPDATE' }
+                });
+            }
+        } catch (err) {
+            console.error("Bargain Error:", err);
+        }
     };
 
     // ─── Profile save ──────────────────────────────────────
@@ -1518,6 +1621,76 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
                                                 <CheckCircle2 size={16} /> Complete & Next
                                             </button>
                                         )}
+                                    </div>
+
+                                    {/* ── Chat & Bargain Area ── */}
+                                    <div className="mt-8 pt-8 border-t border-slate-100 dark:border-slate-700 space-y-6">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <MessageSquare size={18} className="text-blue-500" />
+                                                <h5 className="font-black text-sm uppercase tracking-tight">Customer Chat & Pricing</h5>
+                                            </div>
+                                            <button
+                                                onClick={() => setIsBargaining(!isBargaining)}
+                                                className="text-[10px] font-black uppercase text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-950/20 px-3 py-1.5 rounded-lg transition-colors border border-orange-200 dark:border-orange-800"
+                                            >
+                                                {isBargaining ? 'Cancel Bargain' : 'Bargain Price'}
+                                            </button>
+                                        </div>
+
+                                        {isBargaining && (
+                                            <div className="bg-orange-50 dark:bg-orange-950/20 p-5 rounded-2xl border border-orange-100 dark:border-orange-900/40 animate-in slide-in-from-top-4">
+                                                <p className="text-[10px] font-black uppercase text-orange-600 mb-3 tracking-widest">Enter Counter-Offer (₹)</p>
+                                                <div className="flex gap-2">
+                                                    <input
+                                                        type="number"
+                                                        value={bargainPrice}
+                                                        onChange={(e) => setBargainPrice(e.target.value)}
+                                                        placeholder="e.g. 25000"
+                                                        className="flex-1 bg-white dark:bg-slate-900 border-0 rounded-xl py-3 px-4 text-sm font-bold focus:ring-2 focus:ring-orange-500 outline-none"
+                                                    />
+                                                    <button
+                                                        onClick={handleBargain}
+                                                        className="bg-orange-500 text-white px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-orange-600 transition-colors shadow-lg"
+                                                    >
+                                                        Send
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <div className="bg-slate-50 dark:bg-slate-900/50 rounded-2xl p-4 h-48 overflow-y-auto space-y-3 no-scrollbar flex flex-col-reverse">
+                                            <div className="space-y-3">
+                                                {chatHistory.length === 0 ? (
+                                                    <p className="text-center text-[10px] text-slate-400 font-bold uppercase py-10">No messages yet. Send a greeting!</p>
+                                                ) : (
+                                                    chatHistory.map((msg, i) => (
+                                                        <div key={i} className={`flex ${msg.sender === 'driver' ? 'justify-end' : 'justify-start'}`}>
+                                                            <div className={`max-w-[80%] p-3 rounded-2xl text-xs font-bold ${msg.sender === 'driver' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-sm border border-slate-100 dark:border-slate-700'}`}>
+                                                                {msg.text}
+                                                            </div>
+                                                        </div>
+                                                    ))
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="relative">
+                                            <input
+                                                type="text"
+                                                value={chatMessage}
+                                                onChange={(e) => setChatMessage(e.target.value)}
+                                                onKeyPress={(e) => e.key === 'Enter' && sendChatMessage()}
+                                                placeholder="Type status or message..."
+                                                className="w-full bg-slate-100 dark:bg-slate-900 border-0 rounded-2xl py-4 pl-5 pr-14 text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500/20"
+                                            />
+                                            <button
+                                                onClick={sendChatMessage}
+                                                className="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-600 text-white p-2.5 rounded-xl hover:bg-blue-500 transition-colors"
+                                            >
+                                                <Send size={18} />
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

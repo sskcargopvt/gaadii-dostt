@@ -111,68 +111,39 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ onNavigate, t, user, onLo
         </div>
       </section>
 
-      {/* 3D KPI Stats with Shining Effects */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Fleet Pulse - 3D Card */}
-        <div onClick={() => onNavigate(AppPanel.GPS)} className="relative group cursor-pointer">
-          <div className="absolute inset-0 bg-gradient-to-br from-orange-500 to-red-600 rounded-[32px] blur-lg group-hover:blur-xl transition-all opacity-50" />
-          <div className="relative bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6 rounded-[32px] text-white shadow-2xl overflow-hidden transform hover:scale-105 hover:-translate-y-1 active:scale-95 transition-all duration-300 border border-white/10">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-orange-500/20 to-transparent rounded-full blur-2xl" />
-            <div className="relative z-10">
-              <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-orange-500/50 transform group-hover:rotate-12 transition-transform">
-                <TrendingUp size={24} className="drop-shadow-lg" />
-              </div>
-              <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-2">Fleet Pulse</p>
-              <p className="text-4xl font-black italic leading-none">{fleetStats.running}<span className="text-sm text-slate-500 ml-1 font-medium italic">/ {fleetStats.total}</span></p>
-            </div>
-            <Activity size={100} className="absolute -right-8 -bottom-8 opacity-5 rotate-12" />
-          </div>
-        </div>
-
-        {/* In-Transit - 3D Card */}
+      {/* Featured Bilty Book Card */}
+      <section>
         <div onClick={() => onNavigate(AppPanel.BILTY)} className="relative group cursor-pointer">
-          <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-[32px] blur-lg group-hover:blur-xl transition-all opacity-30" />
-          <div className="relative bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-6 rounded-[32px] border border-white/20 dark:border-white/10 shadow-2xl overflow-hidden transform hover:scale-105 hover:-translate-y-1 active:scale-95 transition-all duration-300">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-indigo-500/10 to-transparent rounded-full blur-2xl" />
-            <div className="relative z-10">
-              <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-indigo-500/50 transform group-hover:rotate-12 transition-transform">
-                <Clock size={24} className="text-white drop-shadow-lg" />
-              </div>
-              <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">In-Transit</p>
-              <p className="text-4xl font-black dark:text-white leading-none">0</p>
-            </div>
-            <FileText size={100} className="absolute -right-8 -bottom-8 opacity-5 rotate-12" />
-          </div>
-        </div>
+          <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 rounded-[32px] blur-xl opacity-30 group-hover:opacity-50 transition-all duration-500" />
+          <div className="relative bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl p-8 rounded-[32px] border border-white/20 dark:border-white/10 shadow-2xl overflow-hidden transform hover:scale-[1.02] hover:-translate-y-1 active:scale-[0.98] transition-all duration-300 min-h-[160px] flex items-center justify-between">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-emerald-500/10 to-transparent rounded-full blur-3xl" />
 
-        {/* Ledger Balance - 3D Card */}
-        <div className="relative group cursor-pointer" onClick={() => onNavigate(AppPanel.CALCULATOR)}>
-          <div className="absolute inset-0 bg-gradient-to-br from-[#a2d149] to-[#7cb342] rounded-[32px] blur-lg group-hover:blur-xl transition-all opacity-60" />
-          <div className="relative bg-gradient-to-br from-[#a2d149] via-[#8bc34a] to-[#9ccc65] p-6 rounded-[32px] shadow-2xl shadow-[#a2d149]/40 overflow-hidden transform hover:scale-105 hover:-translate-y-1 active:scale-95 transition-all duration-300 border border-white/30">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-white/20 to-transparent rounded-full blur-2xl" />
-            <div className="relative z-10">
-              <div className="w-12 h-12 bg-white/30 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-4 shadow-lg border border-white/40 transform group-hover:rotate-12 transition-transform">
-                <Calculator size={24} className="text-[#001f3f] drop-shadow-lg" />
+            <div className="relative z-10 flex items-center gap-6">
+              <div className="relative group/icon">
+                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl blur-md opacity-50 group-hover:blur-lg transition-all" />
+                <div className="relative w-20 h-20 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-emerald-500/40 transform group-hover:rotate-12 transition-transform duration-300">
+                  <FileText size={40} className="text-white drop-shadow-lg" />
+                </div>
               </div>
-              <p className="text-[10px] font-black uppercase text-slate-700 tracking-widest mb-2">Ledger Balance</p>
-              <p className="text-4xl font-black text-[#001f3f] leading-none">₹0.0</p>
+              <div>
+                <h2 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter italic leading-none">
+                  {t.bilty}
+                </h2>
+                <div className="flex items-center gap-2 mt-2">
+                  <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                  <p className="text-slate-500 dark:text-slate-400 font-black uppercase text-[10px] tracking-[0.2em] leading-none">
+                    Digital Receipt Management
+                  </p>
+                </div>
+              </div>
             </div>
-            <TrendingUp size={100} className="absolute -right-8 -bottom-8 opacity-10 rotate-12" />
-          </div>
-        </div>
 
-        {/* Network Reliability - 3D Card */}
-        <div className="relative group hidden sm:block">
-          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-[32px] blur-lg group-hover:blur-xl transition-all opacity-30" />
-          <div className="relative bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-6 rounded-[32px] border border-white/20 dark:border-white/10 shadow-2xl overflow-hidden transform hover:scale-105 hover:-translate-y-1 transition-all duration-300">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-500/10 to-transparent rounded-full blur-2xl" />
-            <div className="relative z-10">
-              <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-emerald-500/50 transform group-hover:rotate-12 transition-transform">
-                <Zap size={24} className="text-white drop-shadow-lg" />
-              </div>
-              <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Network Reliability</p>
-              <p className="text-4xl font-black dark:text-white leading-none">100.0%</p>
+            <div className="relative z-10 hidden md:flex items-center gap-3 bg-emerald-500/10 dark:bg-emerald-500/20 px-6 py-4 rounded-2xl border border-emerald-500/20 backdrop-blur-sm">
+              <span className="text-emerald-600 dark:text-emerald-400 font-black text-[10px] uppercase tracking-widest">Connect Bilty Book</span>
+              <ArrowRight size={16} className="text-emerald-600 dark:text-emerald-400 group-hover:translate-x-2 transition-transform duration-300" strokeWidth={3} />
             </div>
+
+            <FileText size={180} className="absolute -right-12 -bottom-12 opacity-5 rotate-12 pointer-events-none group-hover:scale-110 transition-transform duration-500 text-emerald-500" />
           </div>
         </div>
       </section>

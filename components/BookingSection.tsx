@@ -307,12 +307,11 @@ const BookingSection: React.FC<{ t: any; user?: User }> = ({ t, user }) => {
         // Update active booking with new data
         setActiveBooking((prev: any) => ({
           ...prev,
-          status: updated.status,
-          counter_offer: updated.counter_offer,
-          driver_response: updated.driver_response
+          status: updated.status || prev.status,
+          offered_price: updated.offered_price || prev.offered_price,
+          messages: updated.messages || prev.messages
         }));
 
-        // Update chat history if messages changed
         if (updated.messages) {
           setChatHistory(updated.messages);
         }
@@ -485,6 +484,68 @@ const BookingSection: React.FC<{ t: any; user?: User }> = ({ t, user }) => {
 
     } catch (err) {
       console.error("Chat Error:", err);
+    }
+  };
+
+  const [isBargaining, setIsBargaining] = useState(false);
+  const [bargainPrice, setBargainPrice] = useState("");
+
+  const handleBargainConfirm = async () => {
+    if (!bargainPrice || !activeBooking?.bookingId) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('booking_requests')
+        .update({
+          offered_price: bargainPrice,
+          status: 'bargaining'
+        })
+        .eq('id', activeBooking.bookingId)
+        .select()
+        .single();
+
+      if (data) {
+        setActiveBooking((prev: any) => ({ ...prev, offered_price: data.offered_price, status: data.status }));
+        setIsBargaining(false);
+        setBargainPrice("");
+
+        // Broadcast update
+        const topic = `booking:${activeBooking.bookingId}`;
+        supabase.channel(topic).send({
+          type: 'broadcast',
+          event: 'UPDATE',
+          payload: { ...data, type: 'UPDATE' }
+        });
+      }
+    } catch (err) {
+      console.error("Bargain Error:", err);
+    }
+  };
+
+  const acceptBargain = async () => {
+    if (!activeBooking?.bookingId) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('booking_requests')
+        .update({ status: 'accepted' })
+        .eq('id', activeBooking.bookingId)
+        .select()
+        .single();
+
+      if (data) {
+        setActiveBooking((prev: any) => ({ ...prev, status: 'accepted' }));
+
+        // Broadcast update
+        const topic = `booking:${activeBooking.bookingId}`;
+        supabase.channel(topic).send({
+          type: 'broadcast',
+          event: 'UPDATE',
+          payload: { ...data, type: 'UPDATE' }
+        });
+      }
+    } catch (err) {
+      console.error("Accept Bargain Error:", err);
     }
   };
 
@@ -802,6 +863,93 @@ const BookingSection: React.FC<{ t: any; user?: User }> = ({ t, user }) => {
                     </div>
                   </div>
                   <button className="ml-auto bg-blue-500 text-white p-3 rounded-xl shadow-lg hover:scale-110 transition-transform">
+                    <MessageSquare size={18} />
+                  </button>
+                </div>
+              </div>
+
+              {/* ── Chat & Pricing Tool ── */}
+              <div className="pt-8 border-t border-slate-50 dark:border-slate-700 space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <IndianRupee size={16} className="text-orange-500" />
+                    <h5 className="font-black text-xs uppercase tracking-tight">Booking Details</h5>
+                  </div>
+                  {activeBooking.status === 'bargaining' && (
+                    <button
+                      onClick={acceptBargain}
+                      className="bg-emerald-500 text-white px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-colors shadow-lg"
+                    >
+                      Accept Price
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setIsBargaining(!isBargaining)}
+                    className="text-[10px] font-black uppercase text-orange-500 border border-orange-200 dark:border-orange-800 px-3 py-1.5 rounded-lg hover:bg-orange-50 transition-colors"
+                  >
+                    Bargain
+                  </button>
+                </div>
+
+                <div className="bg-slate-50 dark:bg-slate-900/40 p-5 rounded-3xl">
+                  <div className="flex justify-between items-center mb-4">
+                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Current Fare</p>
+                    <p className="text-2xl font-black text-orange-500 italic">₹{Number(activeBooking.offered_price || 0).toLocaleString()}</p>
+                  </div>
+
+                  {isBargaining && (
+                    <div className="pt-4 border-t border-slate-100 dark:border-slate-800 animate-in slide-in-from-top-4 space-y-3">
+                      <p className="text-[10px] font-black uppercase text-orange-600 tracking-widest">New Counter-Offer</p>
+                      <div className="flex gap-2">
+                        <input
+                          type="number"
+                          value={bargainPrice}
+                          onChange={(e) => setBargainPrice(e.target.value)}
+                          placeholder="Enter your price"
+                          className="flex-1 bg-white dark:bg-slate-800 border-0 rounded-xl py-3 px-4 text-sm font-bold focus:ring-2 focus:ring-orange-500 outline-none"
+                        />
+                        <button
+                          onClick={handleBargainConfirm}
+                          className="bg-orange-500 text-white px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-orange-600 transition-colors shadow-lg"
+                        >
+                          Send
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Chat History */}
+                <div className="bg-slate-50 dark:bg-slate-900/50 rounded-3xl p-4 h-48 overflow-y-auto no-scrollbar flex flex-col-reverse">
+                  <div className="space-y-3">
+                    {chatHistory.length === 0 ? (
+                      <p className="text-center text-[10px] text-slate-400 font-black uppercase py-10 opacity-50">No messages yet. Send a greeting!</p>
+                    ) : (
+                      chatHistory.map((msg, i) => (
+                        <div key={i} className={`flex ${msg.sender === 'customer' ? 'justify-end' : 'justify-start'}`}>
+                          <div className={`max-w-[85%] p-3.5 rounded-[22px] text-xs font-bold ${msg.sender === 'customer' ? 'bg-orange-500 text-white shadow-lg' : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-100 dark:border-slate-700'}`}>
+                            {msg.text}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                {/* Chat Input */}
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={chatMessage}
+                    onChange={(e) => setChatMessage(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                    placeholder="Message driver..."
+                    className="w-full bg-slate-100 dark:bg-slate-900 border-0 rounded-2xl py-4 pl-5 pr-14 text-sm font-bold outline-none focus:ring-4 focus:ring-orange-500/10 transition-all"
+                  />
+                  <button
+                    onClick={sendMessage}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-orange-500 text-white p-2.5 rounded-xl hover:bg-orange-600 transition-all shadow-lg active:scale-95"
+                  >
                     <Send size={18} />
                   </button>
                 </div>
