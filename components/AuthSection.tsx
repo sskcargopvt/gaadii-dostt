@@ -66,7 +66,7 @@ const AuthSection: React.FC<{ t: any }> = ({ t }) => {
 
   /* ── Base fields (all roles) ── */
   const [formData, setFormData] = useState({
-    email: '', password: '', name: '', phone: '', address: '', city: '', state: '', pincode: ''
+    email: '', password: '', name: '', phone: '', address: '', city: '', state: '', pincode: '', business_name: ''
   });
 
   /* ── Driver-specific fields ── */
@@ -133,6 +133,7 @@ const AuthSection: React.FC<{ t: any }> = ({ t }) => {
           city: formData.city,
           state: formData.state,
           pincode: formData.pincode,
+          business_name: formData.business_name
         };
         if (role === 'driver') Object.assign(metadata, driverData);
         if (role === 'mechanic') Object.assign(metadata, mechanicData);
@@ -497,7 +498,11 @@ const AuthSection: React.FC<{ t: any }> = ({ t }) => {
                           <div className="col-span-2 space-y-1">
                             <label className={lbl}>Business / Company Name (Optional)</label>
                             <div className="relative"><Building2 className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
-                              <input type="text" placeholder="ABC Logistics Pvt. Ltd." className={inp} />
+                              <input type="text" placeholder="ABC Logistics Pvt. Ltd."
+                                className={inp}
+                                value={formData.business_name}
+                                onChange={e => set('business_name', e.target.value)}
+                              />
                             </div>
                           </div>
                         </div>

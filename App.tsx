@@ -1,16 +1,16 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { 
-  Truck, 
-  MapPin, 
-  Shield, 
-  FileText, 
-  Calculator, 
-  LayoutDashboard, 
-  Menu, 
-  X, 
-  Languages, 
-  Moon, 
+import {
+  Truck,
+  MapPin,
+  Shield,
+  FileText,
+  Calculator,
+  LayoutDashboard,
+  Menu,
+  X,
+  Languages,
+  Moon,
   Sun,
   User as UserIcon,
   Activity,
@@ -50,7 +50,7 @@ const App: React.FC = () => {
     const panelTitle = t[panelKey as keyof typeof t] || 'Logistics';
     document.title = `${panelTitle} | Gadi Dost - India's Premier Fleet Platform`;
     document.documentElement.lang = lang;
-    
+
     const metaDesc = document.querySelector('meta[name="description"]');
     if (metaDesc) {
       const descriptions: Record<string, string> = {
@@ -76,7 +76,7 @@ const App: React.FC = () => {
           role: metadata.role || 'customer',
           name: metadata.full_name || metadata.name || session.user.email!.split('@')[0],
           phone: metadata.phone,
-          businessName: metadata.businessName,
+          businessName: metadata.business_name || metadata.businessName || metadata.shop_name,
           address: metadata.address,
           bilty_linked: metadata.bilty_linked || false,
           bilty_token: metadata.bilty_token
@@ -87,7 +87,7 @@ const App: React.FC = () => {
       }
       setInitializing(false);
     });
-    
+
     // Initial session check
     const checkInitialSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -155,7 +155,7 @@ const App: React.FC = () => {
 
   if (initializing) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'}}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
         <div className="flex flex-col items-center gap-6">
           <div className="w-16 h-16 border-4 border-white/20 border-t-white rounded-full animate-spin" />
           <p className="font-black text-white uppercase tracking-[0.3em] text-[10px] animate-pulse drop-shadow-lg">Syncing Cloud Network...</p>
@@ -170,7 +170,7 @@ const App: React.FC = () => {
     <div className={`min-h-screen flex flex-col ${darkMode ? 'bg-[#0a0a0f] text-slate-100' : 'bg-[#f8f9ff] text-slate-950'} transition-colors duration-300`}>
       <div className="flex flex-1 overflow-hidden relative">
         {/* Desktop Sidebar */}
-        <aside className="hidden lg:flex w-72 flex-col text-white border-r border-white/10 shadow-2xl z-40 relative" style={{background: 'linear-gradient(180deg, #667eea 0%, #764ba2 100%)'}}>
+        <aside className="hidden lg:flex w-72 flex-col text-white border-r border-white/10 shadow-2xl z-40 relative" style={{ background: 'linear-gradient(180deg, #667eea 0%, #764ba2 100%)' }}>
           <div className="p-8">
             <div className="flex items-center gap-3 mb-10 cursor-pointer group" onClick={() => setActivePanel(AppPanel.DASHBOARD)}>
               <div className="bg-white/20 backdrop-blur-sm p-2.5 rounded-2xl group-hover:bg-white/30 transition-all shadow-lg">
@@ -184,11 +184,10 @@ const App: React.FC = () => {
                 <button
                   key={item.id}
                   onClick={() => setActivePanel(item.id)}
-                  className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all ${
-                    activePanel === item.id 
-                      ? 'bg-white text-indigo-600 shadow-xl shadow-black/20' 
+                  className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all ${activePanel === item.id
+                      ? 'bg-white text-indigo-600 shadow-xl shadow-black/20'
                       : 'text-white/70 hover:text-white hover:bg-white/10'
-                  }`}
+                    }`}
                 >
                   <item.icon size={18} strokeWidth={2.5} /> {item.label}
                 </button>
@@ -216,7 +215,7 @@ const App: React.FC = () => {
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
           <header className="h-20 bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl border-b border-slate-200/50 dark:border-white/5 px-6 lg:px-10 flex items-center justify-between z-30 shadow-sm safe-area-top" role="banner">
             <div className="lg:hidden flex items-center gap-2">
-               <div className="p-1.5 rounded-xl" style={{background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'}}>
+              <div className="p-1.5 rounded-xl" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
                 <Truck size={18} strokeWidth={3} className="text-white" />
               </div>
               <h1 className="font-black text-lg uppercase tracking-tighter">GADI <span className="gradient-text">DOST</span></h1>
@@ -237,17 +236,16 @@ const App: React.FC = () => {
               <div className="flex items-center gap-3 cursor-pointer p-1 rounded-2xl hover:bg-slate-50 dark:hover:bg-white/5 transition-all" onClick={() => setActivePanel(AppPanel.PROFILE)}>
                 <div className="text-right hidden sm:block">
                   <p className="text-xs font-black uppercase tracking-tight leading-none mb-1.5">{user.name}</p>
-                  <div className={`inline-block px-2 py-0.5 rounded-[4px] text-[8px] font-black uppercase tracking-[0.1em] border ${
-                    user.role === 'admin' 
-                      ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white border-pink-400' 
+                  <div className={`inline-block px-2 py-0.5 rounded-[4px] text-[8px] font-black uppercase tracking-[0.1em] border ${user.role === 'admin'
+                      ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white border-pink-400'
                       : user.role === 'transporter'
-                      ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white border-indigo-400'
-                      : 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white border-cyan-400'
-                  }`}>
+                        ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white border-indigo-400'
+                        : 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white border-cyan-400'
+                    }`}>
                     {user.role}
                   </div>
                 </div>
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white border-2 border-indigo-400 shadow-lg group" style={{background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'}}>
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white border-2 border-indigo-400 shadow-lg group" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
                   <UserIcon size={20} className="group-hover:scale-110 transition-transform" />
                 </div>
               </div>
@@ -263,24 +261,23 @@ const App: React.FC = () => {
 
         {/* Mobile Navigation Interface */}
         <nav className="lg:hidden fixed bottom-6 left-6 right-6 h-18 glass-nav border border-white/20 dark:border-white/10 flex items-center justify-around px-2 z-50 rounded-[28px] shadow-[0_20px_40px_rgba(0,0,0,0.15)] safe-area-bottom">
-           {[
-             { id: AppPanel.DASHBOARD, icon: LayoutDashboard, label: 'Home' },
-             { id: AppPanel.GPS, icon: MapPin, label: 'GPS' },
-             { id: AppPanel.BOOKING, icon: Truck, label: 'Book' },
-             { id: AppPanel.BILTY, icon: FileText, label: 'Bilty' },
-             { id: AppPanel.EMERGENCY, icon: Shield, label: 'SOS' },
-           ].map((item) => (
-             <button
-               key={item.id}
-               onClick={() => setActivePanel(item.id)}
-               className={`flex flex-col items-center justify-center gap-1.5 px-3 py-2 rounded-2xl transition-all active:scale-90 ${
-                 activePanel === item.id ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500'
-               }`}
-             >
-               <item.icon size={22} strokeWidth={activePanel === item.id ? 3 : 2} />
-               <span className="text-[9px] font-black uppercase tracking-widest">{item.label}</span>
-             </button>
-           ))}
+          {[
+            { id: AppPanel.DASHBOARD, icon: LayoutDashboard, label: 'Home' },
+            { id: AppPanel.GPS, icon: MapPin, label: 'GPS' },
+            { id: AppPanel.BOOKING, icon: Truck, label: 'Book' },
+            { id: AppPanel.BILTY, icon: FileText, label: 'Bilty' },
+            { id: AppPanel.EMERGENCY, icon: Shield, label: 'SOS' },
+          ].map((item) => (
+            <button
+              key={item.id}
+              onClick={() => setActivePanel(item.id)}
+              className={`flex flex-col items-center justify-center gap-1.5 px-3 py-2 rounded-2xl transition-all active:scale-90 ${activePanel === item.id ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500'
+                }`}
+            >
+              <item.icon size={22} strokeWidth={activePanel === item.id ? 3 : 2} />
+              <span className="text-[9px] font-black uppercase tracking-widest">{item.label}</span>
+            </button>
+          ))}
         </nav>
       </div>
     </div>
