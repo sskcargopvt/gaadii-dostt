@@ -36,6 +36,7 @@ import AuthSection from './components/AuthSection';
 import DriverPanel from './components/DriverPanel';
 import MechanicPanel from './components/MechanicPanel';
 import { supabase } from './services/supabaseClient';
+import GadidostLogo from './components/GadidostLogo';
 
 const App: React.FC = () => {
   const [activePanel, setActivePanel] = useState<AppPanel>(AppPanel.DASHBOARD);
@@ -50,7 +51,7 @@ const App: React.FC = () => {
   useEffect(() => {
     const panelKey = activePanel.toLowerCase();
     const panelTitle = t[panelKey as keyof typeof t] || 'Logistics';
-    document.title = `${panelTitle} | Gadi Dost - India's Premier Fleet Platform`;
+    document.title = `gadidost — ${panelTitle}`;
     document.documentElement.lang = lang;
 
     const metaDesc = document.querySelector('meta[name="description"]');
@@ -159,10 +160,11 @@ const App: React.FC = () => {
 
   if (initializing) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
-        <div className="flex flex-col items-center gap-6">
-          <div className="w-16 h-16 border-4 border-white/20 border-t-white rounded-full animate-spin" />
-          <p className="font-black text-white uppercase tracking-[0.3em] text-[10px] animate-pulse drop-shadow-lg">Syncing Cloud Network...</p>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-8 bg-white">
+        <GadidostLogo height={52} />
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-[3px] border-blue-100 border-t-[#3B82C4] border-r-[#3DB54A] rounded-full animate-spin" />
+          <p className="font-semibold text-[11px] text-slate-400 uppercase tracking-[0.25em] animate-pulse">Loading...</p>
         </div>
       </div>
     );
@@ -174,43 +176,44 @@ const App: React.FC = () => {
     <div className={`min-h-screen flex flex-col ${darkMode ? 'bg-[#0a0a0f] text-slate-100' : 'bg-[#f8f9ff] text-slate-950'} transition-colors duration-300`}>
       <div className="flex flex-1 overflow-hidden relative">
         {/* Desktop Sidebar */}
-        <aside className="hidden lg:flex w-72 flex-col text-white border-r border-white/10 shadow-2xl z-40 relative" style={{ background: 'linear-gradient(180deg, #667eea 0%, #764ba2 100%)' }}>
-          <div className="p-8">
-            <div className="flex items-center gap-3 mb-10 cursor-pointer group" onClick={() => setActivePanel(AppPanel.DASHBOARD)}>
-              <div className="bg-white/20 backdrop-blur-sm p-2.5 rounded-2xl group-hover:bg-white/30 transition-all shadow-lg">
-                <Truck size={24} strokeWidth={3} className="text-white" />
-              </div>
-              <h1 className="font-black text-2xl tracking-tighter uppercase">GADI <span className="text-white drop-shadow-lg">DOST</span></h1>
+        <aside className="hidden lg:flex w-72 flex-col border-r border-slate-200 dark:border-white/10 shadow-2xl z-40 relative bg-white dark:bg-slate-900">
+          <div className="p-6 pb-0">
+            {/* Logo on white bg — exact brand colors show correctly */}
+            <div
+              className="flex items-center mb-8 cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={() => setActivePanel(AppPanel.DASHBOARD)}
+            >
+              <GadidostLogo height={34} />
             </div>
 
-            <nav className="space-y-2">
+            <nav className="space-y-1">
               {navItems.map((item) => (
                 <button
                   key={item.id}
                   onClick={() => setActivePanel(item.id)}
-                  className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all ${activePanel === item.id
-                    ? 'bg-white text-indigo-600 shadow-xl shadow-black/20'
-                    : 'text-white/70 hover:text-white hover:bg-white/10'
+                  className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all ${activePanel === item.id
+                      ? 'bg-[#3B82C4]/10 text-[#3B82C4] font-black'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-white/5'
                     }`}
                 >
-                  <item.icon size={18} strokeWidth={2.5} /> {item.label}
+                  <item.icon size={17} strokeWidth={activePanel === item.id ? 2.5 : 2} /> {item.label}
                 </button>
               ))}
             </nav>
           </div>
 
-          <div className="mt-auto p-8 space-y-4">
+          <div className="mt-auto p-6 space-y-3 border-t border-slate-100 dark:border-white/5">
             {user.bilty_linked && (
-              <div className="bg-white/10 backdrop-blur-sm border border-white/20 p-4 rounded-2xl flex items-center gap-3 mb-2 animate-in">
-                <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse shadow-lg shadow-cyan-400/50" />
-                <span className="text-[9px] font-black uppercase text-white tracking-widest">Bilty Book Connected</span>
+              <div className="bg-[#3DB54A]/10 border border-[#3DB54A]/20 p-3 rounded-xl flex items-center gap-3 mb-2 animate-in">
+                <div className="w-2 h-2 bg-[#3DB54A] rounded-full animate-pulse" />
+                <span className="text-[9px] font-black uppercase text-[#3DB54A] tracking-widest">Bilty Book Connected</span>
               </div>
             )}
-            <button onClick={toggleLang} className="w-full flex items-center justify-center gap-3 px-5 py-3 rounded-xl text-[10px] font-black uppercase text-white bg-white/10 border border-white/20 hover:bg-white/20 transition-all backdrop-blur-sm">
-              <Languages size={16} /> {lang === 'en' ? 'HINDI VERSION' : 'ENGLISH MODE'}
+            <button onClick={toggleLang} className="w-full flex items-center justify-center gap-3 px-4 py-2.5 rounded-xl text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 transition-all">
+              <Languages size={15} /> {lang === 'en' ? 'Hindi' : 'English'}
             </button>
-            <button onClick={handleLogout} className="w-full flex items-center justify-center gap-3 px-5 py-3 rounded-xl text-[10px] font-black uppercase text-white bg-red-500/20 border border-red-400/30 hover:bg-red-500/30 transition-all backdrop-blur-sm">
-              <LogOut size={16} /> SIGN OUT
+            <button onClick={handleLogout} className="w-full flex items-center justify-center gap-3 px-4 py-2.5 rounded-xl text-[10px] font-bold uppercase text-red-500 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 transition-all">
+              <LogOut size={15} /> Sign Out
             </button>
           </div>
         </aside>
@@ -218,11 +221,9 @@ const App: React.FC = () => {
         {/* Content Viewport */}
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
           <header className="h-20 bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl border-b border-slate-200/50 dark:border-white/5 px-6 lg:px-10 flex items-center justify-between z-30 shadow-sm safe-area-top" role="banner">
-            <div className="lg:hidden flex items-center gap-2">
-              <div className="p-1.5 rounded-xl" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
-                <Truck size={18} strokeWidth={3} className="text-white" />
-              </div>
-              <h1 className="font-black text-lg uppercase tracking-tighter">GADI <span className="gradient-text">DOST</span></h1>
+            {/* Mobile top-left logo — exact logo, white bg header */}
+            <div className="lg:hidden flex items-center">
+              <GadidostLogo height={30} />
             </div>
 
             <div className="hidden lg:block">

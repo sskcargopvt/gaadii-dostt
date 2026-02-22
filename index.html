@@ -9,14 +9,17 @@
     <!-- iOS / PWA Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Gadi Dost">
-    <meta name="theme-color" content="#667eea">
+    <meta name="apple-mobile-web-app-title" content="gadidost">
+    <meta name="theme-color" content="#2F75D8">
+    <!-- Favicon: exact gadidost GD monogram as inline SVG -->
+    <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23ffffff'/%3E%3Cpath d='M8 50C8 27 27 8 50 8 62 8 73 13 80 22L67 31C63 26 57 22 50 22 36 22 25 33 25 50 25 67 36 78 50 78 59 78 67 73 72 66L72 58 52 58 52 44 86 44 86 68C77 80 64 92 50 92 27 92 8 73 8 50Z' fill='%232F75D8'/%3E%3Crect x='88' y='8' width='4' height='84' rx='2' fill='%2334C35A'/%3E%3Cpath d='M92 8Q100 8 100 50Q100 92 92 92L92 78Q97 78 97 50Q97 22 92 22Z' fill='%2334C35A'/%3E%3C/svg%3E">
     <link rel="apple-touch-icon"
-        href="https://tstboympleybwbdwicik.supabase.co/storage/v1/object/public/assets/logo-icon.png">
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%232F75D8'/%3E%3Cpath d='M10 50C10 29 29 10 50 10 61 10 71 15 78 23L66 32C62 27 56 24 50 24 37 24 26 35 26 50 26 65 37 76 50 76 58 76 66 72 71 65L71 58 53 58 53 44 84 44 84 66C76 78 64 90 50 90 29 90 10 71 10 50Z' fill='white'/%3E%3Crect x='88' y='10' width='4' height='80' rx='2' fill='%2334C35A'/%3E%3Cpath d='M92 10Q100 10 100 50Q100 90 92 90L92 76Q96 76 96 50Q96 24 92 24Z' fill='%2334C35A'/%3E%3C/svg%3E">
 
     <!-- Primary SEO Meta Tags -->
-    <title>Gadi Dost - India's #1 Smart Fleet Management & Logistics App</title>
-    <meta name="title" content="Gadi Dost - India's #1 Smart Fleet Management & Logistics App">
+    <title>gadidost — India's Smart Logistics Platform</title>
+    <meta name="title" content="gadidost — India's Smart Logistics Platform">
     <meta name="description"
         content="Gadi Dost is India's leading digital logistics platform. Offering real-time GPS tracking, 24/7 highway emergency rescue (RSA), digital bilty management, and AI-powered load estimation for transporters and fleet owners.">
     <meta name="keywords"
@@ -74,14 +77,14 @@
 
     <style>
         :root {
-            --ios-bg: #f8f9ff;
-            --ios-dark-bg: #0a0a0f;
-            --brand-primary: #6366f1;
-            --brand-secondary: #8b5cf6;
-            --brand-accent: #06b6d4;
-            --brand-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            --brand-gradient-alt: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            --brand-gradient-success: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --ios-bg: #f5f8ff;
+            --ios-dark-bg: #0a0c14;
+            --brand-primary: #2F75D8;
+            --brand-secondary: #34C35A;
+            --brand-accent: #1a2d4a;
+            --brand-gradient: linear-gradient(135deg, #2F75D8 0%, #34C35A 100%);
+            --brand-gradient-alt: linear-gradient(135deg, #1a2d4a 0%, #2F75D8 100%);
+            --brand-gradient-success: linear-gradient(135deg, #34C35A 0%, #2F75D8 100%);
         }
 
         body {
@@ -105,17 +108,36 @@
             align-items: center;
             justify-content: center;
             height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #ffffff;
+        }
+
+        #root:empty::before {
+            content: '';
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            border: 3px solid #e8f0fe;
+            border-top-color: #2F75D8;
+            border-right-color: #34C35A;
+            border-radius: 50%;
+            animation: spin 0.9s linear infinite;
+            margin-bottom: 120px;
         }
 
         #root:empty::after {
-            content: "GADI DOST";
-            font-weight: 900;
-            font-style: italic;
-            color: white;
-            letter-spacing: 0.2em;
+            content: "gadidost";
+            font-weight: 800;
+            font-size: 22px;
+            color: #1a2d4a;
+            letter-spacing: -0.5px;
             animation: pulse 1.5s ease-in-out infinite;
-            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            margin-top: 60px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         @keyframes pulse {

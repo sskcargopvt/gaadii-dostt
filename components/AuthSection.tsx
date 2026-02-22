@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { UserRole } from '../types';
 import { supabase } from '../services/supabaseClient';
+import GadidostLogo from './GadidostLogo';
 
 /* ── Google Logo ─────────────────────────────────────── */
 const GoogleLogo = ({ size = 20 }: { size?: number }) => (
@@ -18,35 +19,18 @@ const GoogleLogo = ({ size = 20 }: { size?: number }) => (
   </svg>
 );
 
-/* ── Logo ─────────────────────────────────────── */
-const GadiDostLogo: React.FC<{ className?: string }> = ({ className }) => (
-  <div className={`relative flex flex-col items-center justify-center ${className}`}>
-    <svg viewBox="0 0 400 300" className="w-full h-full drop-shadow-2xl" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <g transform="translate(140, 130) scale(1.2)">
-        <path d="M60 40 L100 40 L120 70 L120 100 L10 100 L10 80 L30 80 L30 40 Z" fill="white" />
-        <path d="M85 45 L105 45 L115 65 L85 65 Z" fill="#a2d149" />
-        <circle cx="95" cy="100" r="12" fill="#a2d149" stroke="white" strokeWidth="4" />
-      </g>
-      <path d="M80 100 C120 80 180 150 210 120 C230 100 210 80 200 80 C230 80 260 110 210 160 C180 190 120 220 100 230 C120 200 110 140 80 100 Z" fill="#a2d149" />
-      <text x="50%" y="250" textAnchor="middle" className="font-black italic">
-        <tspan fill="white" style={{ fontSize: '54px', letterSpacing: '-2px' }}>GADI</tspan>
-        <tspan fill="#a2d149" style={{ fontSize: '54px', letterSpacing: '-2px' }}>DOST</tspan>
-      </text>
-    </svg>
-  </div>
-);
 
 /* ── Shared input class ─────────────────────────────── */
-const inp = 'w-full bg-[#001f3f]/40 border border-white/5 rounded-2xl py-4 pl-12 pr-4 text-white font-bold text-sm outline-none focus:border-[#a2d149]/50 transition-colors placeholder:text-slate-600';
-const inpPl = 'w-full bg-[#001f3f]/40 border border-white/5 rounded-2xl py-4 px-5 text-white font-bold text-sm outline-none focus:border-[#a2d149]/50 transition-colors placeholder:text-slate-600';
+const inp = 'w-full bg-[#0d1e36]/60 border border-white/8 rounded-2xl py-4 pl-12 pr-4 text-white font-bold text-sm outline-none focus:border-[#2F75D8]/60 transition-colors placeholder:text-slate-600';
+const inpPl = 'w-full bg-[#0d1e36]/60 border border-white/8 rounded-2xl py-4 px-5 text-white font-bold text-sm outline-none focus:border-[#2F75D8]/60 transition-colors placeholder:text-slate-600';
 const lbl = 'text-[9px] font-black uppercase text-slate-500 tracking-[0.2em] ml-1 block mb-1';
 
 /* ─────────────────────────────────────────────────────
    ROLE TABS CONFIG
 ───────────────────────────────────────────────────── */
 const ROLES = [
-  { id: 'customer', label: 'Customer', icon: User, accentColor: '#a2d149', desc: 'Book trucks & track shipments' },
-  { id: 'driver', label: 'Driver', icon: Truck, accentColor: '#3b82f6', desc: 'Receive orders & manage trips' },
+  { id: 'customer', label: 'Customer', icon: User, accentColor: '#2F75D8', desc: 'Book trucks & track shipments' },
+  { id: 'driver', label: 'Driver', icon: Truck, accentColor: '#34C35A', desc: 'Receive orders & manage trips' },
   { id: 'mechanic', label: 'Mechanic', icon: Wrench, accentColor: '#f97316', desc: 'Offer breakdown & repair services' },
 ] as const;
 
@@ -209,21 +193,31 @@ const AuthSection: React.FC<{ t: any }> = ({ t }) => {
   );
 
   return (
-    <div className="min-h-screen bg-[#001f3f] text-white flex flex-col lg:flex-row overflow-hidden relative">
-      <div className="fixed inset-0 z-0 pointer-events-none opacity-20 bg-[radial-gradient(circle_at_50%_50%,#a2d14922_0%,transparent_50%)]" />
+    <div className="min-h-screen text-white flex flex-col lg:flex-row overflow-hidden relative" style={{ background: 'linear-gradient(135deg, #0a1628 0%, #0f2040 40%, #102235 100%)' }}>
+      {/* Subtle brand glow blobs */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <div className="absolute top-[-10%] left-[-5%] w-[500px] h-[500px] rounded-full opacity-20" style={{ background: 'radial-gradient(circle, #2F75D8 0%, transparent 70%)' }} />
+        <div className="absolute bottom-[-10%] right-[-5%] w-[400px] h-[400px] rounded-full opacity-15" style={{ background: 'radial-gradient(circle, #34C35A 0%, transparent 70%)' }} />
+      </div>
 
       {/* ── LEFT PANEL ── */}
       <div className="relative z-10 flex flex-col items-center justify-center p-6 lg:w-5/12 lg:p-16">
-        <div className="lg:absolute lg:top-12 lg:left-12 flex items-center gap-3 mb-6 lg:mb-0">
-          <div className="bg-[#a2d149] p-2 rounded-lg shadow-lg"><Truck size={20} className="text-[#001f3f]" /></div>
-          <h1 className="text-xl font-bold tracking-tight uppercase italic">GADI <span className="text-[#a2d149]">DOST</span></h1>
+
+        {/* Top-left: exact logo on a white bg pill */}
+        <div className="lg:absolute lg:top-10 lg:left-10 mb-8 lg:mb-0">
+          <div className="bg-white rounded-2xl px-4 py-3 shadow-lg shadow-black/20">
+            <GadidostLogo height={28} />
+          </div>
         </div>
-        <div className="w-full max-w-lg mb-8 lg:mb-12 animate-in zoom-in duration-700">
-          <GadiDostLogo className="w-full h-auto" />
+
+        {/* Centre hero: exact logo, bigger, on white card */}
+        <div className="bg-white rounded-3xl px-10 py-8 shadow-2xl shadow-black/30 mb-8 lg:mb-10 animate-in zoom-in duration-700">
+          <GadidostLogo height={50} />
         </div>
+
         <div className="text-center max-w-sm hidden lg:block animate-in slide-in-from-bottom duration-500">
-          <h2 className="text-2xl font-black leading-tight tracking-tight uppercase italic mb-3">
-            INDIA'S <span className="text-[#a2d149]">SMARTEST</span> TRANSPORT HUB.
+          <h2 className="text-2xl font-black leading-tight tracking-tight uppercase mb-3">
+            INDIA'S <span style={{ color: '#34C35A' }}>SMARTEST</span> TRANSPORT HUB.
           </h2>
           <p className="text-slate-400 text-[11px] font-bold uppercase tracking-widest leading-relaxed">
             Verified Carriers • Real-time GPS • Digital Documentation
@@ -247,301 +241,307 @@ const AuthSection: React.FC<{ t: any }> = ({ t }) => {
           <div className="bg-[#002b55]/60 backdrop-blur-2xl border border-white/5 rounded-[40px] p-6 lg:p-10 shadow-2xl relative overflow-hidden">
 
             {/* Accent top bar — changes color per role */}
-            <div className="absolute top-0 left-0 w-full h-[3px] transition-all duration-500"
+            <div className="absolute top-0 left-0 w-full h-[3px] rounded-t-[40px] transition-all duration-500"
               style={{ background: `linear-gradient(to right, transparent, ${accentColor}, transparent)` }} />
 
-            {mode === 'reset-sent' ? (
-              <div className="text-center space-y-4 py-8 animate-in zoom-in">
-                <div className="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto text-emerald-500"><CheckCircle2 size={40} /></div>
-                <h3 className="text-2xl font-black italic uppercase tracking-tight">Email Sent!</h3>
-                <p className="text-slate-400 text-sm">Check your inbox for the password reset link.</p>
-                <button onClick={() => setMode('signin')} className="text-[#a2d149] font-black uppercase text-[10px] tracking-widest underline underline-offset-4">Back to Login</button>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {/* ── Header ── */}
-                <div className="text-center lg:text-left">
-                  <h3 className="text-2xl lg:text-3xl font-black tracking-tight italic uppercase text-white">
-                    {mode === 'signin' ? 'AUTHORIZE' : mode === 'signup' ? 'REGISTER' : 'RECOVER'}
-                  </h3>
-                  <p className="text-slate-500 font-bold text-[10px] uppercase tracking-widest mt-1">
-                    {mode === 'signin' ? 'Welcome back to Gadi Dost.' : "Join India's premier logistics network."}
-                  </p>
+            {/* Glass bg overlay */}
+            <div className="absolute inset-0 rounded-[40px] pointer-events-none" style={{ background: 'rgba(13,30,60,0.55)', backdropFilter: 'blur(24px)' }} />
+            <div className="relative z-10">
+
+              {mode === 'reset-sent' ? (
+                <div className="text-center space-y-4 py-8 animate-in zoom-in">
+                  <div className="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto text-emerald-500"><CheckCircle2 size={40} /></div>
+                  <h3 className="text-2xl font-black italic uppercase tracking-tight">Email Sent!</h3>
+                  <p className="text-slate-400 text-sm">Check your inbox for the password reset link.</p>
+                  <button onClick={() => setMode('signin')} className="text-[#a2d149] font-black uppercase text-[10px] tracking-widest underline underline-offset-4">Back to Login</button>
                 </div>
-
-                {/* ── Error ── */}
-                {errorMsg && (
-                  <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-2xl flex items-center gap-3 text-red-400 animate-in">
-                    <AlertCircle size={18} />
-                    <p className="text-[10px] font-black uppercase tracking-tight">{errorMsg}</p>
-                  </div>
-                )}
-
-                {/* ── Google Button ── */}
-                <button onClick={handleGoogleLogin} disabled={loading}
-                  className="w-full bg-white text-slate-900 py-4 rounded-2xl font-black text-xs hover:bg-slate-50 transition-all flex items-center justify-center gap-3 active:scale-[0.98] border border-slate-200 shadow-sm uppercase tracking-tight">
-                  <GoogleLogo /> Connect with Google
-                </button>
-
-                <div className="relative flex items-center py-1">
-                  <div className="flex-grow border-t border-white/5" />
-                  <span className="flex-shrink mx-4 text-[9px] font-black text-slate-600 uppercase tracking-[0.3em]">OR USE EMAIL</span>
-                  <div className="flex-grow border-t border-white/5" />
-                </div>
-
-                {/* ══ ROLE SELECTOR ══ */}
-                <div className="space-y-2">
-                  <p className={lbl}>Select Your Role</p>
-                  <div className="grid grid-cols-3 gap-2">
-                    {ROLES.map(r => (
-                      <button key={r.id} type="button" onClick={() => setRole(r.id)}
-                        style={role === r.id ? { backgroundColor: r.accentColor, color: '#001f3f' } : {}}
-                        className={`py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest flex flex-col items-center gap-1.5 transition-all border ${role === r.id ? 'border-transparent shadow-lg scale-[1.04]' : 'border-white/10 text-slate-400 hover:text-slate-200 bg-white/5'}`}>
-                        <r.icon size={16} />
-                        {r.label}
-                      </button>
-                    ))}
-                  </div>
-                  <p className="text-[9px] text-slate-500 font-bold text-center mt-1">{ROLES.find(r => r.id === role)?.desc}</p>
-                </div>
-
-                {/* ── FORM ── */}
-                <form onSubmit={handleAuth} className="space-y-4">
-
-                  {/* Email */}
-                  <div className="space-y-1">
-                    <div className="flex justify-between items-center ml-1">
-                      <label className={lbl}>Email Address</label>
-                      {emailError && <span className="text-[8px] font-black text-red-400 uppercase tracking-widest animate-pulse">{emailError}</span>}
-                    </div>
-                    <div className="relative">
-                      <Mail className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${emailError ? 'text-red-400' : 'text-slate-500'}`} size={16} />
-                      <input type="email" required placeholder="your@email.com"
-                        className={`${inp} ${emailError ? 'border-red-500/50' : ''}`}
-                        value={formData.email} onChange={handleEmailChange} />
-                    </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* ── Header ── */}
+                  <div className="text-center lg:text-left">
+                    <h3 className="text-2xl lg:text-3xl font-black tracking-tight uppercase text-white">
+                      {mode === 'signin' ? 'SIGN IN' : mode === 'signup' ? 'CREATE ACCOUNT' : 'RECOVER'}
+                    </h3>
+                    <p className="text-slate-400 font-bold text-[11px] uppercase tracking-widest mt-1">
+                      {mode === 'signin' ? 'Welcome back to gadidost.' : "Join India's premier logistics network."}
+                    </p>
                   </div>
 
-                  {/* Password */}
-                  {mode !== 'forgot-password' && (
-                    <div className="space-y-1">
-                      <label className={lbl}>Password</label>
-                      <div className="relative">
-                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
-                        <input type="password" required placeholder="••••••••" className={inp}
-                          value={formData.password} onChange={e => set('password', e.target.value)} />
-                      </div>
+                  {/* ── Error ── */}
+                  {errorMsg && (
+                    <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-2xl flex items-center gap-3 text-red-400 animate-in">
+                      <AlertCircle size={18} />
+                      <p className="text-[10px] font-black uppercase tracking-tight">{errorMsg}</p>
                     </div>
                   )}
 
-                  {/* ══ SIGNUP EXTRA FIELDS ══ */}
-                  {mode === 'signup' && (
-                    <div className="space-y-5 pt-5 border-t border-white/5 animate-in slide-in-from-top-4">
-
-                      {/* ── COMMON FIELDS (all roles) ── */}
-                      <div>
-                        <p className="text-[9px] font-black uppercase text-slate-400 tracking-[0.2em] mb-3 flex items-center gap-2">
-                          <User size={11} /> Personal Details
-                        </p>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="col-span-2 space-y-1">
-                            <label className={lbl}>Full Name</label>
-                            <div className="relative"><User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
-                              <input type="text" required placeholder="Full legal name" className={inp} value={formData.name} onChange={e => set('name', e.target.value)} />
-                            </div>
-                          </div>
-                          <div className="space-y-1">
-                            <label className={lbl}>Phone</label>
-                            <div className="relative"><Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
-                              <input type="tel" placeholder="+91 98765 43210" className={inp} value={formData.phone} onChange={e => set('phone', e.target.value)} />
-                            </div>
-                          </div>
-                          <div className="space-y-1">
-                            <label className={lbl}>City</label>
-                            <div className="relative"><MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
-                              <input type="text" placeholder="Delhi" className={inp} value={formData.city} onChange={e => set('city', e.target.value)} />
-                            </div>
-                          </div>
-                          <div className="space-y-1">
-                            <label className={lbl}>State</label>
-                            <input type="text" placeholder="Uttar Pradesh" className={inpPl} value={formData.state} onChange={e => set('state', e.target.value)} />
-                          </div>
-                          <div className="space-y-1">
-                            <label className={lbl}>Pincode</label>
-                            <input type="text" placeholder="110001" className={inpPl} value={formData.pincode} onChange={e => set('pincode', e.target.value)} />
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* ══ DRIVER SPECIFIC ══ */}
-                      {role === 'driver' && (
-                        <div className="space-y-4 p-4 rounded-3xl border border-blue-500/20 bg-blue-500/5">
-                          <p className="text-[9px] font-black uppercase text-blue-400 tracking-[0.2em] flex items-center gap-2"><Truck size={11} /> Vehicle & License Details</p>
-                          <div className="grid grid-cols-2 gap-3">
-                            <div className="col-span-2 space-y-1">
-                              <label className={lbl}>Vehicle Type</label>
-                              <div className="relative">
-                                <Car className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
-                                <select value={driverData.vehicle_type} onChange={e => setD('vehicle_type', e.target.value)}
-                                  className={`${inp} appearance-none cursor-pointer`}>
-                                  {VEHICLE_TYPES.map(v => <option key={v} className="bg-slate-900">{v}</option>)}
-                                </select>
-                              </div>
-                            </div>
-                            <div className="space-y-1">
-                              <label className={lbl}>Registration No.</label>
-                              <div className="relative"><Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
-                                <input type="text" placeholder="UP-14 AB 1234" className={inp} value={driverData.vehicle_registration} onChange={e => setD('vehicle_registration', e.target.value)} />
-                              </div>
-                            </div>
-                            <div className="space-y-1">
-                              <label className={lbl}>Vehicle Model</label>
-                              <input type="text" placeholder="Tata Ace Gold" className={inpPl} value={driverData.vehicle_model} onChange={e => setD('vehicle_model', e.target.value)} />
-                            </div>
-                            <div className="space-y-1">
-                              <label className={lbl}>Mfg. Year</label>
-                              <input type="text" placeholder="2021" className={inpPl} value={driverData.vehicle_year} onChange={e => setD('vehicle_year', e.target.value)} />
-                            </div>
-                            <div className="space-y-1">
-                              <label className={lbl}>Experience (yrs)</label>
-                              <div className="relative"><Star className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
-                                <input type="number" placeholder="5" className={inp} value={driverData.experience_years} onChange={e => setD('experience_years', e.target.value)} />
-                              </div>
-                            </div>
-                            <div className="space-y-1">
-                              <label className={lbl}>License No.</label>
-                              <div className="relative"><FileText className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
-                                <input type="text" placeholder="DL-14201100123" className={inp} value={driverData.license_number} onChange={e => setD('license_number', e.target.value)} />
-                              </div>
-                            </div>
-                            <div className="col-span-2 space-y-1">
-                              <label className={lbl}>License Expiry Date</label>
-                              <div className="relative"><Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
-                                <input type="date" className={inp} value={driverData.license_expiry} onChange={e => setD('license_expiry', e.target.value)} />
-                              </div>
-                            </div>
-                          </div>
-                          <p className="text-[9px] font-black uppercase text-blue-400 tracking-[0.2em] flex items-center gap-2 pt-2"><Building2 size={11} /> Bank Details (for payouts)</p>
-                          <div className="grid grid-cols-2 gap-3">
-                            <div className="col-span-2 space-y-1">
-                              <label className={lbl}>Account Holder Name</label>
-                              <div className="relative"><User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
-                                <input type="text" placeholder="As per bank records" className={inp} value={driverData.bank_account_name} onChange={e => setD('bank_account_name', e.target.value)} />
-                              </div>
-                            </div>
-                            <div className="space-y-1">
-                              <label className={lbl}>Account No.</label>
-                              <input type="text" placeholder="1234 5678 9012" className={inpPl} value={driverData.bank_account_number} onChange={e => setD('bank_account_number', e.target.value)} />
-                            </div>
-                            <div className="space-y-1">
-                              <label className={lbl}>IFSC Code</label>
-                              <input type="text" placeholder="SBIN0001234" className={inpPl} value={driverData.bank_ifsc} onChange={e => setD('bank_ifsc', e.target.value)} />
-                            </div>
-                            <div className="col-span-2 space-y-1">
-                              <label className={lbl}>Bank Name</label>
-                              <div className="relative"><Building2 className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
-                                <input type="text" placeholder="State Bank of India" className={inp} value={driverData.bank_name} onChange={e => setD('bank_name', e.target.value)} />
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* ══ MECHANIC SPECIFIC ══ */}
-                      {role === 'mechanic' && (
-                        <div className="space-y-4 p-4 rounded-3xl border border-orange-500/20 bg-orange-500/5">
-                          <p className="text-[9px] font-black uppercase text-orange-400 tracking-[0.2em] flex items-center gap-2"><Wrench size={11} /> Shop & Services</p>
-                          <div className="grid grid-cols-2 gap-3">
-                            <div className="col-span-2 space-y-1">
-                              <label className={lbl}>Shop / Business Name</label>
-                              <div className="relative"><Building2 className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
-                                <input type="text" placeholder="Sharma Auto Works" className={inp} value={mechanicData.shop_name} onChange={e => setM('shop_name', e.target.value)} />
-                              </div>
-                            </div>
-                            <div className="space-y-1">
-                              <label className={lbl}>Experience (yrs)</label>
-                              <div className="relative"><Star className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
-                                <input type="number" placeholder="8" className={inp} value={mechanicData.experience_years} onChange={e => setM('experience_years', e.target.value)} />
-                              </div>
-                            </div>
-                            <div className="space-y-1">
-                              <label className={lbl}>Service Radius (km)</label>
-                              <input type="number" placeholder="10" className={inpPl} value={mechanicData.service_radius_km} onChange={e => setM('service_radius_km', e.target.value)} />
-                            </div>
-                            <div className="space-y-1">
-                              <label className={lbl}>GST Number</label>
-                              <input type="text" placeholder="27AAAAA0000A1Z5" className={inpPl} value={mechanicData.gst_number} onChange={e => setM('gst_number', e.target.value)} />
-                            </div>
-                            <div className="space-y-1">
-                              <label className={lbl}>UPI ID</label>
-                              <input type="text" placeholder="shop@upi" className={inpPl} value={mechanicData.upi_id} onChange={e => setM('upi_id', e.target.value)} />
-                            </div>
-                          </div>
-                          <div className="space-y-2">
-                            <label className={lbl}>Services Offered (Select all that apply)</label>
-                            <div className="grid grid-cols-2 gap-2">
-                              {MECHANIC_SERVICES.map(s => (
-                                <button key={s} type="button" onClick={() => toggleService(s)}
-                                  className={`py-2.5 px-3 rounded-xl text-[9px] font-black uppercase tracking-wide transition-all text-left flex items-center gap-2 ${mechanicData.selected_services.includes(s) ? 'bg-orange-500 text-white' : 'bg-white/5 text-slate-400 border border-white/10 hover:border-orange-500/30'}`}>
-                                  {mechanicData.selected_services.includes(s) && <CheckCircle2 size={10} />}
-                                  {s}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* ── CUSTOMER EXTRA (for signup) ── */}
-                      {role === 'customer' && (
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="col-span-2 space-y-1">
-                            <label className={lbl}>Business / Company Name (Optional)</label>
-                            <div className="relative"><Building2 className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
-                              <input type="text" placeholder="ABC Logistics Pvt. Ltd."
-                                className={inp}
-                                value={formData.business_name}
-                                onChange={e => set('business_name', e.target.value)}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* ── SUBMIT ── */}
-                  <button type="submit" disabled={loading || !!emailError}
-                    style={{ backgroundColor: accentColor, color: '#001f3f' }}
-                    className="w-full py-4 rounded-[20px] font-black text-sm hover:opacity-90 transition-all flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50 group shadow-xl uppercase tracking-tight mt-2">
-                    {loading
-                      ? <Loader2 className="animate-spin" size={20} />
-                      : <span className="italic font-black">
-                        {mode === 'signin' ? 'ENTER HIGHWAY' : mode === 'signup' ? `REGISTER AS ${role.toUpperCase()}` : 'SEND LINK'}
-                      </span>}
-                    {!loading && <ArrowRight className="group-hover:translate-x-1 transition-transform" size={18} strokeWidth={3} />}
+                  {/* ── Google Button ── */}
+                  <button onClick={handleGoogleLogin} disabled={loading}
+                    className="w-full bg-white text-slate-900 py-4 rounded-2xl font-black text-xs hover:bg-slate-50 transition-all flex items-center justify-center gap-3 active:scale-[0.98] border border-slate-200 shadow-sm uppercase tracking-tight">
+                    <GoogleLogo /> Connect with Google
                   </button>
-                </form>
 
-                {/* ── Footer links ── */}
-                <div className="text-center pt-1">
-                  <p className="text-slate-500 font-bold text-[11px]">
-                    {mode === 'signin' ? 'NEW TO GADI DOST?' : 'ALREADY A MEMBER?'}{' '}
-                    <button onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setErrorMsg(null); }}
-                      className="text-[#a2d149] font-black hover:text-white underline underline-offset-4 transition-all uppercase italic ml-1">
-                      {mode === 'signin' ? 'Create Account' : 'Sign In Now'}
+                  <div className="relative flex items-center py-1">
+                    <div className="flex-grow border-t border-white/5" />
+                    <span className="flex-shrink mx-4 text-[9px] font-black text-slate-600 uppercase tracking-[0.3em]">OR USE EMAIL</span>
+                    <div className="flex-grow border-t border-white/5" />
+                  </div>
+
+                  {/* ══ ROLE SELECTOR ══ */}
+                  <div className="space-y-2">
+                    <p className={lbl}>Select Your Role</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {ROLES.map(r => (
+                        <button key={r.id} type="button" onClick={() => setRole(r.id)}
+                          style={role === r.id ? { backgroundColor: r.accentColor, color: '#001f3f' } : {}}
+                          className={`py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest flex flex-col items-center gap-1.5 transition-all border ${role === r.id ? 'border-transparent shadow-lg scale-[1.04]' : 'border-white/10 text-slate-400 hover:text-slate-200 bg-white/5'}`}>
+                          <r.icon size={16} />
+                          {r.label}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-[9px] text-slate-500 font-bold text-center mt-1">{ROLES.find(r => r.id === role)?.desc}</p>
+                  </div>
+
+                  {/* ── FORM ── */}
+                  <form onSubmit={handleAuth} className="space-y-4">
+
+                    {/* Email */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between items-center ml-1">
+                        <label className={lbl}>Email Address</label>
+                        {emailError && <span className="text-[8px] font-black text-red-400 uppercase tracking-widest animate-pulse">{emailError}</span>}
+                      </div>
+                      <div className="relative">
+                        <Mail className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${emailError ? 'text-red-400' : 'text-slate-500'}`} size={16} />
+                        <input type="email" required placeholder="your@email.com"
+                          className={`${inp} ${emailError ? 'border-red-500/50' : ''}`}
+                          value={formData.email} onChange={handleEmailChange} />
+                      </div>
+                    </div>
+
+                    {/* Password */}
+                    {mode !== 'forgot-password' && (
+                      <div className="space-y-1">
+                        <label className={lbl}>Password</label>
+                        <div className="relative">
+                          <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+                          <input type="password" required placeholder="••••••••" className={inp}
+                            value={formData.password} onChange={e => set('password', e.target.value)} />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ══ SIGNUP EXTRA FIELDS ══ */}
+                    {mode === 'signup' && (
+                      <div className="space-y-5 pt-5 border-t border-white/5 animate-in slide-in-from-top-4">
+
+                        {/* ── COMMON FIELDS (all roles) ── */}
+                        <div>
+                          <p className="text-[9px] font-black uppercase text-slate-400 tracking-[0.2em] mb-3 flex items-center gap-2">
+                            <User size={11} /> Personal Details
+                          </p>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="col-span-2 space-y-1">
+                              <label className={lbl}>Full Name</label>
+                              <div className="relative"><User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+                                <input type="text" required placeholder="Full legal name" className={inp} value={formData.name} onChange={e => set('name', e.target.value)} />
+                              </div>
+                            </div>
+                            <div className="space-y-1">
+                              <label className={lbl}>Phone</label>
+                              <div className="relative"><Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+                                <input type="tel" placeholder="+91 98765 43210" className={inp} value={formData.phone} onChange={e => set('phone', e.target.value)} />
+                              </div>
+                            </div>
+                            <div className="space-y-1">
+                              <label className={lbl}>City</label>
+                              <div className="relative"><MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+                                <input type="text" placeholder="Delhi" className={inp} value={formData.city} onChange={e => set('city', e.target.value)} />
+                              </div>
+                            </div>
+                            <div className="space-y-1">
+                              <label className={lbl}>State</label>
+                              <input type="text" placeholder="Uttar Pradesh" className={inpPl} value={formData.state} onChange={e => set('state', e.target.value)} />
+                            </div>
+                            <div className="space-y-1">
+                              <label className={lbl}>Pincode</label>
+                              <input type="text" placeholder="110001" className={inpPl} value={formData.pincode} onChange={e => set('pincode', e.target.value)} />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* ══ DRIVER SPECIFIC ══ */}
+                        {role === 'driver' && (
+                          <div className="space-y-4 p-4 rounded-3xl border border-blue-500/20 bg-blue-500/5">
+                            <p className="text-[9px] font-black uppercase text-blue-400 tracking-[0.2em] flex items-center gap-2"><Truck size={11} /> Vehicle & License Details</p>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="col-span-2 space-y-1">
+                                <label className={lbl}>Vehicle Type</label>
+                                <div className="relative">
+                                  <Car className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
+                                  <select value={driverData.vehicle_type} onChange={e => setD('vehicle_type', e.target.value)}
+                                    className={`${inp} appearance-none cursor-pointer`}>
+                                    {VEHICLE_TYPES.map(v => <option key={v} className="bg-slate-900">{v}</option>)}
+                                  </select>
+                                </div>
+                              </div>
+                              <div className="space-y-1">
+                                <label className={lbl}>Registration No.</label>
+                                <div className="relative"><Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+                                  <input type="text" placeholder="UP-14 AB 1234" className={inp} value={driverData.vehicle_registration} onChange={e => setD('vehicle_registration', e.target.value)} />
+                                </div>
+                              </div>
+                              <div className="space-y-1">
+                                <label className={lbl}>Vehicle Model</label>
+                                <input type="text" placeholder="Tata Ace Gold" className={inpPl} value={driverData.vehicle_model} onChange={e => setD('vehicle_model', e.target.value)} />
+                              </div>
+                              <div className="space-y-1">
+                                <label className={lbl}>Mfg. Year</label>
+                                <input type="text" placeholder="2021" className={inpPl} value={driverData.vehicle_year} onChange={e => setD('vehicle_year', e.target.value)} />
+                              </div>
+                              <div className="space-y-1">
+                                <label className={lbl}>Experience (yrs)</label>
+                                <div className="relative"><Star className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+                                  <input type="number" placeholder="5" className={inp} value={driverData.experience_years} onChange={e => setD('experience_years', e.target.value)} />
+                                </div>
+                              </div>
+                              <div className="space-y-1">
+                                <label className={lbl}>License No.</label>
+                                <div className="relative"><FileText className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+                                  <input type="text" placeholder="DL-14201100123" className={inp} value={driverData.license_number} onChange={e => setD('license_number', e.target.value)} />
+                                </div>
+                              </div>
+                              <div className="col-span-2 space-y-1">
+                                <label className={lbl}>License Expiry Date</label>
+                                <div className="relative"><Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+                                  <input type="date" className={inp} value={driverData.license_expiry} onChange={e => setD('license_expiry', e.target.value)} />
+                                </div>
+                              </div>
+                            </div>
+                            <p className="text-[9px] font-black uppercase text-blue-400 tracking-[0.2em] flex items-center gap-2 pt-2"><Building2 size={11} /> Bank Details (for payouts)</p>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="col-span-2 space-y-1">
+                                <label className={lbl}>Account Holder Name</label>
+                                <div className="relative"><User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+                                  <input type="text" placeholder="As per bank records" className={inp} value={driverData.bank_account_name} onChange={e => setD('bank_account_name', e.target.value)} />
+                                </div>
+                              </div>
+                              <div className="space-y-1">
+                                <label className={lbl}>Account No.</label>
+                                <input type="text" placeholder="1234 5678 9012" className={inpPl} value={driverData.bank_account_number} onChange={e => setD('bank_account_number', e.target.value)} />
+                              </div>
+                              <div className="space-y-1">
+                                <label className={lbl}>IFSC Code</label>
+                                <input type="text" placeholder="SBIN0001234" className={inpPl} value={driverData.bank_ifsc} onChange={e => setD('bank_ifsc', e.target.value)} />
+                              </div>
+                              <div className="col-span-2 space-y-1">
+                                <label className={lbl}>Bank Name</label>
+                                <div className="relative"><Building2 className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+                                  <input type="text" placeholder="State Bank of India" className={inp} value={driverData.bank_name} onChange={e => setD('bank_name', e.target.value)} />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* ══ MECHANIC SPECIFIC ══ */}
+                        {role === 'mechanic' && (
+                          <div className="space-y-4 p-4 rounded-3xl border border-orange-500/20 bg-orange-500/5">
+                            <p className="text-[9px] font-black uppercase text-orange-400 tracking-[0.2em] flex items-center gap-2"><Wrench size={11} /> Shop & Services</p>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="col-span-2 space-y-1">
+                                <label className={lbl}>Shop / Business Name</label>
+                                <div className="relative"><Building2 className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+                                  <input type="text" placeholder="Sharma Auto Works" className={inp} value={mechanicData.shop_name} onChange={e => setM('shop_name', e.target.value)} />
+                                </div>
+                              </div>
+                              <div className="space-y-1">
+                                <label className={lbl}>Experience (yrs)</label>
+                                <div className="relative"><Star className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+                                  <input type="number" placeholder="8" className={inp} value={mechanicData.experience_years} onChange={e => setM('experience_years', e.target.value)} />
+                                </div>
+                              </div>
+                              <div className="space-y-1">
+                                <label className={lbl}>Service Radius (km)</label>
+                                <input type="number" placeholder="10" className={inpPl} value={mechanicData.service_radius_km} onChange={e => setM('service_radius_km', e.target.value)} />
+                              </div>
+                              <div className="space-y-1">
+                                <label className={lbl}>GST Number</label>
+                                <input type="text" placeholder="27AAAAA0000A1Z5" className={inpPl} value={mechanicData.gst_number} onChange={e => setM('gst_number', e.target.value)} />
+                              </div>
+                              <div className="space-y-1">
+                                <label className={lbl}>UPI ID</label>
+                                <input type="text" placeholder="shop@upi" className={inpPl} value={mechanicData.upi_id} onChange={e => setM('upi_id', e.target.value)} />
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <label className={lbl}>Services Offered (Select all that apply)</label>
+                              <div className="grid grid-cols-2 gap-2">
+                                {MECHANIC_SERVICES.map(s => (
+                                  <button key={s} type="button" onClick={() => toggleService(s)}
+                                    className={`py-2.5 px-3 rounded-xl text-[9px] font-black uppercase tracking-wide transition-all text-left flex items-center gap-2 ${mechanicData.selected_services.includes(s) ? 'bg-orange-500 text-white' : 'bg-white/5 text-slate-400 border border-white/10 hover:border-orange-500/30'}`}>
+                                    {mechanicData.selected_services.includes(s) && <CheckCircle2 size={10} />}
+                                    {s}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* ── CUSTOMER EXTRA (for signup) ── */}
+                        {role === 'customer' && (
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="col-span-2 space-y-1">
+                              <label className={lbl}>Business / Company Name (Optional)</label>
+                              <div className="relative"><Building2 className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+                                <input type="text" placeholder="ABC Logistics Pvt. Ltd."
+                                  className={inp}
+                                  value={formData.business_name}
+                                  onChange={e => set('business_name', e.target.value)}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* ── SUBMIT ── */}
+                    <button type="submit" disabled={loading || !!emailError}
+                      style={{ backgroundColor: accentColor, color: '#001f3f' }}
+                      className="w-full py-4 rounded-[20px] font-black text-sm hover:opacity-90 transition-all flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50 group shadow-xl uppercase tracking-tight mt-2">
+                      {loading
+                        ? <Loader2 className="animate-spin" size={20} />
+                        : <span className="italic font-black">
+                          {mode === 'signin' ? 'ENTER HIGHWAY' : mode === 'signup' ? `REGISTER AS ${role.toUpperCase()}` : 'SEND LINK'}
+                        </span>}
+                      {!loading && <ArrowRight className="group-hover:translate-x-1 transition-transform" size={18} strokeWidth={3} />}
                     </button>
-                  </p>
-                  {mode === 'signin' && (
-                    <button onClick={() => setMode('forgot-password')}
-                      className="mt-3 text-slate-600 hover:text-slate-400 text-[10px] font-black uppercase tracking-widest transition-colors">
-                      Lost Passcode?
-                    </button>
-                  )}
+                  </form>
+
+                  {/* ── Footer links ── */}
+                  <div className="text-center pt-1">
+                    <p className="text-slate-400 font-bold text-[11px]">
+                      {mode === 'signin' ? 'NEW TO GADIDOST?' : 'ALREADY A MEMBER?'}{' '}
+                      <button onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setErrorMsg(null); }}
+                        className="font-black hover:text-white underline underline-offset-4 transition-all uppercase italic ml-1"
+                        style={{ color: '#34C35A' }}>
+                        {mode === 'signin' ? 'Create Account' : 'Sign In Now'}
+                      </button>
+                    </p>
+                    {mode === 'signin' && (
+                      <button onClick={() => setMode('forgot-password')}
+                        className="mt-3 text-slate-600 hover:text-slate-400 text-[10px] font-black uppercase tracking-widest transition-colors">
+                        Lost Passcode?
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          </div>{/* end relative z-10 */}
 
           {/* Footer badges */}
           <div className="mt-8 text-center space-y-3">
