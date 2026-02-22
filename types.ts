@@ -1,7 +1,8 @@
 
 export type Language = 'en' | 'hi';
 
-export type UserRole = 'customer' | 'transporter' | 'admin';
+export type UserRole = 'customer' | 'transporter' | 'admin' | 'driver' | 'mechanic';
+
 
 export enum AppPanel {
   DASHBOARD = 'dashboard',

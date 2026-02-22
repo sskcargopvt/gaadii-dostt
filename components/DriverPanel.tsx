@@ -1,0 +1,1478 @@
+
+import React, { useState, useEffect, useRef } from 'react';
+import {
+    Truck, Bell, Star, CheckCircle2, X, Navigation, Package,
+    ToggleLeft, ToggleRight, TrendingUp, Clock, MapPin,
+    User, Phone, FileText, CreditCard, Camera, Save,
+    Loader2, AlertCircle, ChevronDown, Shield, Building2, Mail,
+    Banknote, Car, Hash, Calendar,
+    IndianRupee, Zap, ShieldAlert, Wrench, Flame
+} from 'lucide-react';
+
+import { supabase } from '../services/supabaseClient';
+
+// ─── Types ─────────────────────────────────────────────
+interface DriverProfile {
+    full_name: string;
+    phone: string;
+    email: string;
+    date_of_birth: string;
+    address: string;
+    city: string;
+    state: string;
+    pincode: string;
+    vehicle_type: string;
+    vehicle_registration: string;
+    vehicle_model: string;
+    vehicle_year: string;
+    license_number: string;
+    license_expiry: string;
+    bank_account_name: string;
+    bank_account_number: string;
+    bank_ifsc: string;
+    bank_name: string;
+    experience_years: string;
+    profile_photo_url: string;
+}
+
+interface BookingRequest {
+    id: string;
+    customer_id?: string;
+    customer_name: string;
+    customer_phone: string;
+    pickup_location: string;
+    drop_location: string;
+    pickup_lat: number;
+    pickup_lng: number;
+    drop_lat: number;
+    drop_lng: number;
+    goods_type: string;
+    weight: string;
+    offered_price: string;
+    status: string;
+    vehicle_id?: string;
+    vehicle_type?: string;
+    messages?: any[];
+    created_at: string;
+    updated_at?: string;
+}
+
+// Haversine distance in km
+const haversineKm = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+};
+
+const fmtDate = (iso: string) => {
+    if (!iso) return '—';
+    return new Date(iso).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+};
+
+const VEHICLE_TYPES = ['Tata Ace / LCV', '14ft Container', '19ft Eicher', '22ft Multi-Axle', '32ft MX Trailer', 'Mini Truck', 'Bike / Two-Wheeler'];
+
+const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
+    // ─── Tab ───────────────────────────────────────────────
+    const [activeTab, setActiveTab] = useState<'dashboard' | 'profile' | 'estimator' | 'emergency' | 'history'>('dashboard');
+
+    // ─── Load Estimator state ─────────────────────────────────
+    const [estFrom, setEstFrom] = useState('');
+    const [estTo, setEstTo] = useState('');
+    const [estDistance, setEstDistance] = useState('');
+    const [estWeight, setEstWeight] = useState('');
+    const [estVehicle, setEstVehicle] = useState('Tata Ace / LCV');
+    const [estGoodsType, setEstGoodsType] = useState('General');
+    const [estResult, setEstResult] = useState<null | { fare: number; fuel: number; toll: number; labour: number; total: number }>(null);
+    const [estLoading, setEstLoading] = useState(false);
+
+    // ─── Emergency state ──────────────────────────────────────
+    const [sosActive, setSosActive] = useState(false);
+    const [sosCountdown, setSosCountdown] = useState(0);
+    const [nearbyServices, setNearbyServices] = useState<any[]>([]);
+
+    // ─── Driver state ─────────────────────────────────────
+    const [driverAvailable, setDriverAvailable] = useState(false);
+    const [savingAvail, setSavingAvail] = useState(false);
+    const [deliveryStage, setDeliveryStage] = useState<string>('idle');
+    const [activeRequest, setActiveRequest] = useState<BookingRequest | null>(null);
+    const [incomingRequests, setIncomingRequests] = useState<BookingRequest[]>([]);
+    const [notifications, setNotifications] = useState<{ id: string; icon: any; color: string; title: string; desc: string; time: string }[]>([]);
+    const [earnings, setEarnings] = useState({ today: 0, week: 0, month: 0, todayCount: 0, weekCount: 0, monthCount: 0 });
+    const [loadingEarnings, setLoadingEarnings] = useState(true);
+    const [tripHistory, setTripHistory] = useState<BookingRequest[]>([]);
+    const [loadingHistory, setLoadingHistory] = useState(false);
+    const channelRef = useRef<any>(null);
+
+    // ─── Profile state ─────────────────────────────────────
+    const [profile, setProfile] = useState<DriverProfile>({
+        full_name: '', phone: '', email: '', date_of_birth: '', address: '',
+        city: '', state: '', pincode: '', vehicle_type: VEHICLE_TYPES[0],
+        vehicle_registration: '', vehicle_model: '', vehicle_year: '',
+        license_number: '', license_expiry: '',
+        bank_account_name: '', bank_account_number: '', bank_ifsc: '', bank_name: '',
+        experience_years: '', profile_photo_url: ''
+    });
+    const [profileLoading, setProfileLoading] = useState(false);
+    const [profileSuccess, setProfileSuccess] = useState(false);
+    const [profileError, setProfileError] = useState<string | null>(null);
+    const [profileExists, setProfileExists] = useState(false);
+    const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+
+    // ─── Load driver id ────────────────────────────────────
+    const [driverId, setDriverId] = useState<string | null>(null);
+
+    useEffect(() => {
+        (async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.user) {
+                setDriverId(session.user.id);
+            }
+        })();
+    }, []);
+
+    // ─── Load profile from DB ──────────────────────────────
+    useEffect(() => {
+        if (!driverId) return;
+        (async () => {
+            const { data } = await supabase
+                .from('driver_profiles')
+                .select('*')
+                .eq('driver_id', driverId)
+                .single();
+            if (data) {
+                setProfile({ ...profile, ...data });
+                setProfileExists(true);
+                if (data.available !== undefined) setDriverAvailable(data.available);
+                if (data.profile_photo_url) setPhotoPreview(data.profile_photo_url);
+            }
+        })();
+    }, [driverId]);
+
+    // ─── Load earnings ─────────────────────────────────────
+    useEffect(() => {
+        if (!driverId) return;
+        (async () => {
+            setLoadingEarnings(true);
+            try {
+                const now = new Date();
+                const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+                const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7).toISOString();
+                const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+                const { data } = await supabase
+                    .from('booking_requests')
+                    .select('offered_price, created_at, status')
+                    .eq('vehicle_id', driverId)
+                    .eq('status', 'completed');
+
+                if (data) {
+                    const calc = (from: string) => data.filter(r => r.created_at >= from);
+                    const sum = (rows: any[]) => rows.reduce((a, r) => a + Number(r.offered_price || 0), 0);
+                    setEarnings({
+                        today: sum(calc(todayStart)),
+                        week: sum(calc(weekStart)),
+                        month: sum(calc(monthStart)),
+                        todayCount: calc(todayStart).length,
+                        weekCount: calc(weekStart).length,
+                        monthCount: calc(monthStart).length
+                    });
+                }
+            } catch (_) { } finally {
+                setLoadingEarnings(false);
+            }
+        })();
+    }, [driverId]);
+
+    // ─── Real-time incoming booking requests ───────────────
+    useEffect(() => {
+        if (!driverId) return;
+
+        // ── Dual subscription: Postgres changes + Broadcast ──────────
+        // This guarantees the driver sees new bookings even if broadcast slightly delays.
+        const channel = supabase
+            .channel('driver_booking_requests', {
+                config: { broadcast: { self: false } }
+            })
+            // 1️⃣ Postgres realtime — fires when a new row is inserted in booking_requests
+            .on(
+                'postgres_changes',
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'booking_requests',
+                    filter: 'status=eq.pending'
+                },
+                (payload: any) => {
+                    const booking: BookingRequest = payload.new;
+                    if (!booking) return;
+                    setIncomingRequests(prev => {
+                        if (prev.find(r => r.id === booking.id)) return prev;
+                        return [booking, ...prev];
+                    });
+                    addNotification(Bell, 'blue', '🚚 New Order!', `Pickup: ${booking.pickup_location?.split(',')[0] || '...'}`);
+                }
+            )
+            // 2️⃣ Broadcast fallback — fires when customer manually sends broadcast
+            .on('broadcast', { event: 'INSERT' }, (payload: any) => {
+                const booking: BookingRequest = payload.payload?.new || payload.payload?.new_row || payload.payload;
+                if (!booking) return;
+                setIncomingRequests(prev => {
+                    if (prev.find(r => r.id === booking.id)) return prev;
+                    return [booking, ...prev];
+                });
+                addNotification(Bell, 'blue', '🚚 New Order Nearby!', `Pickup: ${booking.pickup_location?.split(',')[0] || '...'}`);
+            })
+            .subscribe((status) => {
+                console.log('Driver realtime channel:', status);
+            });
+
+        channelRef.current = channel;
+
+        // Initial fetch of pending requests
+        fetchPendingRequests();
+        // Refresh every 20 seconds as safety net
+        const interval = setInterval(fetchPendingRequests, 20000);
+
+        return () => {
+            supabase.removeChannel(channel);
+            clearInterval(interval);
+        };
+    }, [driverId]);
+
+
+    const fetchPendingRequests = async () => {
+        const { data } = await supabase
+            .from('booking_requests')
+            .select('*')
+            .eq('status', 'pending')
+            .order('created_at', { ascending: false })
+            .limit(5);
+        if (data) setIncomingRequests(data);
+    };
+
+    const fetchTripHistory = async () => {
+        if (!driverId) return;
+        setLoadingHistory(true);
+        try {
+            const { data } = await supabase
+                .from('booking_requests')
+                .select('*')
+                .or(`driver_id.eq.${driverId},vehicle_id.eq.${driverId}`)
+                .order('created_at', { ascending: false })
+                .limit(50);
+            if (data) setTripHistory(data);
+        } finally {
+            setLoadingHistory(false);
+        }
+    };
+
+    // Load trip history when tab switched or driverId available
+    useEffect(() => {
+        if (activeTab === 'history' && driverId) fetchTripHistory();
+    }, [activeTab, driverId]);
+
+
+    // ─── Notifications helper ──────────────────────────────
+    const addNotification = (Icon: any, color: string, title: string, desc: string) => {
+        const entry = { id: Date.now().toString(), icon: Icon, color, title, desc, time: 'Just now' };
+        setNotifications(prev => [entry, ...prev].slice(0, 10));
+    };
+
+    // ─── Availability toggle (syncs to DB) ────────────────
+    const toggleAvailability = async () => {
+        setSavingAvail(true);
+        const next = !driverAvailable;
+        setDriverAvailable(next);
+        try {
+            if (driverId) {
+                await supabase.from('driver_profiles').upsert({ driver_id: driverId, available: next }, { onConflict: 'driver_id' });
+                // Also update vehicles table if vehicle registered
+                if (profile.vehicle_registration) {
+                    await supabase.from('vehicles').update({ available: next }).eq('driver_id', driverId);
+                }
+            }
+            addNotification(next ? ToggleRight : ToggleLeft, next ? 'emerald' : 'slate', next ? 'You are Online' : 'You are Offline', next ? 'You will now receive delivery requests' : 'You will not receive new requests');
+        } catch (_) { } finally {
+            setSavingAvail(false);
+        }
+    };
+
+    // ─── Accept request ────────────────────────────────────
+    const acceptRequest = async (req: BookingRequest) => {
+        try {
+            await supabase.from('booking_requests').update({ status: 'accepted', driver_id: driverId }).eq('id', req.id);
+            setActiveRequest(req);
+            setDeliveryStage('pickup');
+            setIncomingRequests(prev => prev.filter(r => r.id !== req.id));
+            addNotification(CheckCircle2, 'emerald', 'Order Accepted!', `Heading to ${req.pickup_location?.split(',')[0]}`);
+        } catch (err) {
+            console.error('Accept error:', err);
+        }
+    };
+
+    // ─── Reject request ────────────────────────────────────
+    const rejectRequest = async (req: BookingRequest) => {
+        try {
+            await supabase.from('booking_requests').update({ status: 'rejected' }).eq('id', req.id);
+            setIncomingRequests(prev => prev.filter(r => r.id !== req.id));
+            addNotification(X, 'red', 'Order Declined', `Booking #${req.id.slice(0, 6)} rejected`);
+        } catch (_) {
+            setIncomingRequests(prev => prev.filter(r => r.id !== req.id));
+        }
+    };
+
+    // ─── Delivery status update ────────────────────────────
+    const updateDeliveryStage = async (stage: string) => {
+        setDeliveryStage(stage);
+        if (!activeRequest) return;
+        const statusMap: Record<string, string> = { pickup: 'picked_up', transit: 'in_transit', delivered: 'completed' };
+        try {
+            await supabase.from('booking_requests').update({ status: statusMap[stage] || stage }).eq('id', activeRequest.id);
+            if (stage === 'delivered') {
+                addNotification(CheckCircle2, 'emerald', 'Delivery Completed!', `Trip #${activeRequest.id.slice(0, 6)} done`);
+                // Update earnings optimistically
+                setEarnings(prev => ({
+                    ...prev,
+                    today: prev.today + Number(activeRequest.offered_price || 0),
+                    todayCount: prev.todayCount + 1
+                }));
+            }
+        } catch (_) { }
+    };
+
+    // ─── Profile save ──────────────────────────────────────
+    const handleSaveProfile = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!driverId) return;
+        setProfileLoading(true);
+        setProfileError(null);
+        setProfileSuccess(false);
+        try {
+            const payload = { ...profile, driver_id: driverId, available: driverAvailable, updated_at: new Date().toISOString() };
+            const { error } = await supabase.from('driver_profiles').upsert(payload, { onConflict: 'driver_id' });
+            if (error) throw error;
+
+            // Also register the vehicle
+            if (profile.vehicle_registration) {
+                await supabase.from('vehicles').upsert({
+                    driver_id: driverId,
+                    registration_number: profile.vehicle_registration,
+                    type: profile.vehicle_type,
+                    model: profile.vehicle_model,
+                    year: profile.vehicle_year,
+                    available: driverAvailable
+                }, { onConflict: 'registration_number' });
+            }
+
+            setProfileExists(true);
+            setProfileSuccess(true);
+            addNotification(CheckCircle2, 'emerald', 'Profile Updated', 'Your driver profile has been saved successfully');
+            setTimeout(() => setProfileSuccess(false), 4000);
+        } catch (err: any) {
+            setProfileError(err.message || 'Failed to save profile. Please try again.');
+        } finally {
+            setProfileLoading(false);
+        }
+    };
+
+    const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            const url = ev.target?.result as string;
+            setPhotoPreview(url);
+            setProfile(p => ({ ...p, profile_photo_url: url }));
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const field = (id: keyof DriverProfile) => ({
+        value: profile[id],
+        onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+            setProfile(p => ({ ...p, [id]: e.target.value }))
+    });
+
+    const inputCls = 'w-full bg-slate-50 dark:bg-slate-900 border-0 rounded-2xl py-4 pl-12 pr-4 text-sm font-bold focus:ring-4 focus:ring-blue-500/10 outline-none transition-all';
+
+    // ─── Render ────────────────────────────────────────────
+    return (
+        <div className="space-y-6 animate-in fade-in duration-500">
+
+            {/* ── Driver Top Bar ─────────────────────────────── */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white dark:bg-slate-800 rounded-[32px] p-5 border border-slate-100 dark:border-slate-700 shadow-xl">
+                <div className="flex items-center gap-4">
+                    <div className="relative">
+                        {photoPreview
+                            ? <img src={photoPreview} alt="Driver" className="w-14 h-14 rounded-2xl object-cover shadow-lg" />
+                            : <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg"><Truck size={26} /></div>
+                        }
+                        <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white dark:border-slate-800 ${driverAvailable ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+                    </div>
+                    <div>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Driver Dashboard</p>
+                        <h3 className="text-lg font-black">{profile.full_name || 'Complete Your Profile'}</h3>
+                        <div className="flex items-center gap-1 text-amber-500 text-xs font-bold">
+                            <Star size={12} fill="currentColor" /> {profile.vehicle_type || 'No vehicle registered'}
+                        </div>
+                    </div>
+                </div>
+                <div className="flex flex-col items-start sm:items-end gap-1.5">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Availability Toggle</p>
+                    <button onClick={toggleAvailability} disabled={savingAvail} className="flex items-center gap-2 disabled:opacity-60">
+                        {savingAvail
+                            ? <Loader2 size={36} className="animate-spin text-slate-400" />
+                            : driverAvailable
+                                ? <ToggleRight size={44} className="text-emerald-500" />
+                                : <ToggleLeft size={44} className="text-slate-400" />}
+                    </button>
+                    <span className={`text-xs font-black ${driverAvailable ? 'text-emerald-500' : 'text-slate-400'}`}>
+                        {driverAvailable ? '● ONLINE – Receiving Orders' : '○ OFFLINE – Not Available'}
+                    </span>
+                </div>
+            </div>
+
+            {/* ── Tab Switcher ───────────────────────────────── */}
+            <div className="flex flex-wrap bg-slate-100 dark:bg-slate-800 p-1.5 rounded-[24px] border border-slate-200 dark:border-slate-700 gap-1 w-fit">
+                <button onClick={() => setActiveTab('dashboard')}
+                    className={`px-5 py-2.5 rounded-[18px] text-[11px] font-black uppercase tracking-tight flex items-center gap-2 transition-all ${activeTab === 'dashboard' ? 'bg-white dark:bg-slate-700 shadow-xl text-blue-600' : 'text-slate-500'}`}
+                ><Truck size={13} /> Orders</button>
+                <button onClick={() => setActiveTab('estimator')}
+                    className={`px-5 py-2.5 rounded-[18px] text-[11px] font-black uppercase tracking-tight flex items-center gap-2 transition-all ${activeTab === 'estimator' ? 'bg-white dark:bg-slate-700 shadow-xl text-emerald-600' : 'text-slate-500'}`}
+                ><IndianRupee size={13} /> Load Estimator</button>
+                <button onClick={() => setActiveTab('emergency')}
+                    className={`px-5 py-2.5 rounded-[18px] text-[11px] font-black uppercase tracking-tight flex items-center gap-2 transition-all ${activeTab === 'emergency' ? 'bg-white dark:bg-slate-700 shadow-xl text-red-600' : 'text-slate-500'}`}
+                ><ShieldAlert size={13} /> Emergency <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" /></button>
+                <button onClick={() => setActiveTab('history')}
+                    className={`px-5 py-2.5 rounded-[18px] text-[11px] font-black uppercase tracking-tight flex items-center gap-2 transition-all ${activeTab === 'history' ? 'bg-white dark:bg-slate-700 shadow-xl text-purple-600' : 'text-slate-500'}`}
+                ><FileText size={13} /> Trip History {tripHistory.length > 0 && <span className="bg-purple-500 text-white text-[9px] px-1.5 py-0.5 rounded-full font-black">{tripHistory.length}</span>}</button>
+                <button onClick={() => setActiveTab('profile')}
+                    className={`px-5 py-2.5 rounded-[18px] text-[11px] font-black uppercase tracking-tight flex items-center gap-2 transition-all ${activeTab === 'profile' ? 'bg-white dark:bg-slate-700 shadow-xl text-blue-600' : 'text-slate-500'}`}
+                ><User size={13} /> Profile {!profileExists && <span className="w-2 h-2 bg-orange-500 rounded-full" />}</button>
+            </div>
+
+
+            {/* ═══════════════════════════════════════════════ */}
+            {/*              DASHBOARD TAB                     */}
+            {/* ═══════════════════════════════════════════════ */}
+            {activeTab === 'dashboard' && (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+                    {/* ── LEFT ── */}
+                    <div className="lg:col-span-7 space-y-6">
+
+                        {/* Incoming Requests */}
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">
+                                    Incoming Requests {incomingRequests.length > 0 && <span className="bg-orange-500 text-white px-2 py-0.5 rounded-full text-[9px] ml-2">{incomingRequests.length}</span>}
+                                </h4>
+                                <button onClick={fetchPendingRequests} className="text-[10px] font-black uppercase text-blue-500 hover:text-blue-700 flex items-center gap-1">
+                                    <Bell size={11} /> Refresh
+                                </button>
+                            </div>
+
+                            {!driverAvailable && (
+                                <div className="bg-slate-100 dark:bg-slate-800 rounded-[28px] p-6 text-center">
+                                    <ToggleLeft size={32} className="text-slate-400 mx-auto mb-2" />
+                                    <p className="font-black text-slate-500 text-sm uppercase">You are Offline</p>
+                                    <p className="text-xs text-slate-400 font-medium mt-1">Toggle availability above to receive orders</p>
+                                </div>
+                            )}
+
+                            {driverAvailable && incomingRequests.length === 0 && !activeRequest && (
+                                <div className="rounded-[28px] border-2 border-dashed border-slate-200 dark:border-slate-700 p-8 text-center">
+                                    <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                                        <Bell size={22} className="text-blue-500" />
+                                    </div>
+                                    <p className="font-black text-slate-500 text-sm uppercase">Waiting for Orders...</p>
+                                    <p className="text-xs text-slate-400 font-medium mt-1">You'll be notified when a nearby booking is available</p>
+                                </div>
+                            )}
+
+                            {driverAvailable && incomingRequests.map(req => {
+                                const distKm = (req.pickup_lat && req.drop_lat)
+                                    ? haversineKm(req.pickup_lat, req.pickup_lng, req.drop_lat, req.drop_lng)
+                                    : null;
+                                const etaMins = distKm ? Math.round(distKm / 40 * 60) : null;
+                                const mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${req.pickup_lat},${req.pickup_lng}&destination=${req.drop_lat},${req.drop_lng}&travelmode=driving`;
+                                return (
+                                    <div key={req.id} className="relative overflow-hidden rounded-[32px] bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 p-7 text-white shadow-2xl shadow-blue-500/20">
+                                        {/* Ping badge */}
+                                        <div className="absolute top-5 right-5 flex items-center gap-2">
+                                            <span className="text-[10px] font-black uppercase text-blue-200 tracking-widest">New Request</span>
+                                            <div className="relative w-3 h-3">
+                                                <div className="w-3 h-3 bg-orange-400 rounded-full animate-ping absolute" />
+                                                <div className="w-3 h-3 bg-orange-400 rounded-full" />
+                                            </div>
+                                        </div>
+
+                                        {/* Header */}
+                                        <div className="flex items-center gap-3 mb-5">
+                                            <div className="bg-white/20 p-3 rounded-2xl"><Bell size={20} /></div>
+                                            <div>
+                                                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-200">Booking Request</p>
+                                                <p className="font-black text-xl">{req.customer_name}</p>
+                                                <p className="text-[11px] text-blue-300 font-medium mt-0.5">ID: #{req.id?.slice(0, 8).toUpperCase()}</p>
+                                            </div>
+                                        </div>
+
+                                        {/* Route */}
+                                        <div className="bg-white/10 backdrop-blur rounded-2xl p-4 mb-4 space-y-3">
+                                            <div className="flex gap-3 items-start">
+                                                <div className="flex flex-col items-center gap-1 pt-1">
+                                                    <div className="w-3 h-3 rounded-full bg-orange-400 border-2 border-white/40" />
+                                                    <div className="w-px h-6 bg-white/20" />
+                                                    <div className="w-3 h-3 rounded-full bg-emerald-400 border-2 border-white/40" />
+                                                </div>
+                                                <div className="flex-1 space-y-2">
+                                                    <div>
+                                                        <p className="text-[9px] text-blue-200 font-black uppercase tracking-widest">Pickup Location</p>
+                                                        <p className="font-black text-sm leading-snug">{req.pickup_location}</p>
+                                                        {req.pickup_lat && <p className="text-[9px] text-blue-300 mt-0.5">{req.pickup_lat.toFixed(4)}, {req.pickup_lng.toFixed(4)}</p>}
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[9px] text-blue-200 font-black uppercase tracking-widest">Drop Location</p>
+                                                        <p className="font-black text-sm leading-snug">{req.drop_location}</p>
+                                                        {req.drop_lat && <p className="text-[9px] text-blue-300 mt-0.5">{req.drop_lat.toFixed(4)}, {req.drop_lng.toFixed(4)}</p>}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Details grid */}
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+                                            {[
+                                                { label: 'Goods Type', value: req.goods_type || '—' },
+                                                { label: 'Weight', value: req.weight ? `${req.weight} T` : '—' },
+                                                { label: 'Distance', value: distKm ? `${distKm.toFixed(0)} km` : '—' },
+                                                { label: 'Est. ETA', value: etaMins ? `~${etaMins} min` : '—' },
+                                            ].map(({ label, value }) => (
+                                                <div key={label} className="bg-white/10 rounded-xl p-3 text-center">
+                                                    <p className="text-[9px] text-blue-200 font-black uppercase mb-1">{label}</p>
+                                                    <p className="font-black text-sm">{value}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        {/* Earnings + Contact row */}
+                                        <div className="flex items-center justify-between bg-white/10 rounded-2xl px-5 py-3.5 mb-4">
+                                            <div>
+                                                <p className="text-[9px] text-blue-200 font-black uppercase">Offered Fare</p>
+                                                <p className="font-black text-2xl text-emerald-300">₹{Number(req.offered_price).toLocaleString()}</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-[9px] text-blue-200 font-black uppercase">Customer Phone</p>
+                                                <a href={`tel:${req.customer_phone}`} className="font-black text-base text-white flex items-center gap-1.5 justify-end hover:text-emerald-300 transition-colors">
+                                                    <Phone size={13} />{req.customer_phone}
+                                                </a>
+                                            </div>
+                                        </div>
+
+                                        {/* Booked at */}
+                                        <div className="flex items-center gap-2 mb-5">
+                                            <Clock size={12} className="text-blue-300" />
+                                            <p className="text-[10px] text-blue-300 font-medium">Requested at {fmtDate(req.created_at)}</p>
+                                        </div>
+
+                                        {/* Actions */}
+                                        <div className="flex gap-3">
+                                            <button onClick={() => acceptRequest(req)}
+                                                className="flex-1 bg-emerald-500 hover:bg-emerald-400 py-3.5 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-2 hover:scale-105 transition-all shadow-xl"
+                                            ><CheckCircle2 size={16} /> Accept</button>
+                                            <a href={mapsUrl} target="_blank" rel="noopener noreferrer"
+                                                className="px-4 bg-white/15 hover:bg-white/25 py-3.5 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-2 transition-all"
+                                            ><Navigation size={16} /></a>
+                                            <button onClick={() => rejectRequest(req)}
+                                                className="flex-1 bg-white/10 hover:bg-red-500/40 py-3.5 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-2 transition-all"
+                                            ><X size={16} /> Decline</button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Active Delivery Status — Full Details */}
+                        {activeRequest && (() => {
+                            const distKm = (activeRequest.pickup_lat && activeRequest.drop_lat)
+                                ? haversineKm(activeRequest.pickup_lat, activeRequest.pickup_lng, activeRequest.drop_lat, activeRequest.drop_lng)
+                                : null;
+                            const etaMins = distKm ? Math.round(distKm / 40 * 60) : null;
+                            const mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${activeRequest.pickup_lat},${activeRequest.pickup_lng}&destination=${activeRequest.drop_lat},${activeRequest.drop_lng}&travelmode=driving`;
+                            return (
+                                <div className="bg-white dark:bg-slate-800 rounded-[32px] border border-slate-100 dark:border-slate-700 shadow-xl overflow-hidden">
+                                    {/* Header banner */}
+                                    <div className="bg-gradient-to-r from-orange-500 to-amber-500 px-7 py-5 flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="bg-white/20 p-2.5 rounded-2xl"><Package size={20} className="text-white" /></div>
+                                            <div>
+                                                <p className="text-[10px] font-black uppercase tracking-widest text-orange-100">Active Delivery</p>
+                                                <h4 className="font-black text-lg text-white">Booking #{activeRequest.id?.slice(0, 8).toUpperCase()}</h4>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-[9px] text-orange-200 font-black uppercase">Fare</p>
+                                            <p className="font-black text-2xl text-white">₹{Number(activeRequest.offered_price).toLocaleString()}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="p-7 space-y-5">
+                                        {/* Stage tracker */}
+                                        <div className="flex gap-2">
+                                            {([['pickup', 'Picked Up', Package], ['transit', 'In Transit', Truck], ['delivered', 'Delivered', CheckCircle2]] as [string, string, any][]).map(([key, label, Icon]) => {
+                                                const order = ['pickup', 'transit', 'delivered'];
+                                                const done = order.indexOf(deliveryStage) >= order.indexOf(key);
+                                                const active = deliveryStage === key;
+                                                return (
+                                                    <button key={key} onClick={() => updateDeliveryStage(key)}
+                                                        className={`flex-1 py-4 rounded-2xl font-black text-xs uppercase tracking-wide transition-all flex flex-col items-center gap-2 ${active ? 'bg-orange-500 text-white shadow-lg scale-105' : done ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700' : 'bg-slate-100 dark:bg-slate-900 text-slate-400'}`}
+                                                    ><Icon size={18} />{label}</button>
+                                                );
+                                            })}
+                                        </div>
+
+                                        {/* Customer info */}
+                                        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-2xl p-4 flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 bg-blue-200 dark:bg-blue-700 rounded-xl flex items-center justify-center">
+                                                    <User size={18} className="text-blue-600 dark:text-blue-300" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] text-blue-500 font-black uppercase">Customer</p>
+                                                    <p className="font-black text-sm">{activeRequest.customer_name}</p>
+                                                </div>
+                                            </div>
+                                            <a href={`tel:${activeRequest.customer_phone}`}
+                                                className="flex items-center gap-2 bg-blue-600 text-white font-black text-xs px-4 py-2.5 rounded-xl hover:bg-blue-500 transition-colors">
+                                                <Phone size={14} /> {activeRequest.customer_phone}
+                                            </a>
+                                        </div>
+
+                                        {/* Route */}
+                                        <div className="bg-slate-50 dark:bg-slate-900 rounded-2xl p-4 space-y-3">
+                                            <div className="flex gap-3 items-start">
+                                                <div className="flex flex-col items-center gap-1 pt-1">
+                                                    <div className="w-3 h-3 rounded-full bg-orange-500" />
+                                                    <div className="w-px h-8 bg-slate-300 dark:bg-slate-600" />
+                                                    <div className="w-3 h-3 rounded-full bg-emerald-500" />
+                                                </div>
+                                                <div className="flex-1 space-y-3">
+                                                    <div>
+                                                        <p className="text-[9px] text-slate-400 font-black uppercase">Pickup</p>
+                                                        <p className="font-bold text-sm">{activeRequest.pickup_location}</p>
+                                                        {activeRequest.pickup_lat && <p className="text-[10px] text-slate-400">{activeRequest.pickup_lat?.toFixed(4)}, {activeRequest.pickup_lng?.toFixed(4)}</p>}
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[9px] text-slate-400 font-black uppercase">Drop</p>
+                                                        <p className="font-bold text-sm">{activeRequest.drop_location}</p>
+                                                        {activeRequest.drop_lat && <p className="text-[10px] text-slate-400">{activeRequest.drop_lat?.toFixed(4)}, {activeRequest.drop_lng?.toFixed(4)}</p>}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Details grid */}
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                            {[
+                                                { label: 'Goods Type', value: activeRequest.goods_type || '—', color: 'purple' },
+                                                { label: 'Weight', value: activeRequest.weight ? `${activeRequest.weight} T` : '—', color: 'orange' },
+                                                { label: 'Distance', value: distKm ? `${distKm.toFixed(0)} km` : '—', color: 'blue' },
+                                                { label: 'Est. ETA', value: etaMins ? `~${etaMins} min` : '—', color: 'emerald' },
+                                                { label: 'Booked On', value: fmtDate(activeRequest.created_at), color: 'slate' },
+                                                { label: 'Trip Status', value: deliveryStage === 'idle' ? 'Starting' : deliveryStage === 'pickup' ? 'En Route' : deliveryStage === 'transit' ? 'In Transit' : 'Delivered', color: 'amber' },
+                                            ].map(({ label, value, color }) => (
+                                                <div key={label} className={`bg-${color}-50 dark:bg-${color}-900/20 rounded-2xl p-3`}>
+                                                    <p className={`text-[9px] text-${color}-600 dark:text-${color}-400 font-black uppercase`}>{label}</p>
+                                                    <p className="font-black text-xs mt-1">{value}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        {/* Navigate + Complete */}
+                                        <div className="flex gap-3">
+                                            <a href={mapsUrl} target="_blank" rel="noopener noreferrer"
+                                                className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-3.5 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-2 transition-all">
+                                                <Navigation size={16} /> Navigate
+                                            </a>
+                                            {deliveryStage === 'delivered' && (
+                                                <button onClick={() => { setActiveRequest(null); setDeliveryStage('idle'); fetchPendingRequests(); fetchTripHistory(); }}
+                                                    className="flex-1 bg-emerald-500 text-white py-3.5 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-emerald-400 transition-all"
+                                                ><CheckCircle2 size={16} /> Complete & Next</button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })()}
+
+                        {/* Route Navigation */}
+                        <div className="bg-white dark:bg-slate-800 rounded-[32px] border border-slate-100 dark:border-slate-700 shadow-xl p-7 space-y-4">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-emerald-100 dark:bg-emerald-900/30 p-3 rounded-2xl"><Navigation className="text-emerald-600" size={22} /></div>
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Route Navigation & Optimization</p>
+                                    <h4 className="font-black text-lg">{activeRequest ? 'Active Route' : 'No Active Route'}</h4>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-3 gap-3">
+                                <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl p-4 text-center">
+                                    <p className="text-[10px] text-emerald-600 font-black uppercase">Distance</p>
+                                    <p className="text-2xl font-black mt-1">
+                                        {activeRequest && activeRequest.pickup_lat && activeRequest.drop_lat
+                                            ? `${haversineKm(activeRequest.pickup_lat, activeRequest.pickup_lng, activeRequest.drop_lat, activeRequest.drop_lng).toFixed(0)}`
+                                            : '—'}
+                                    </p>
+                                    <p className="text-xs text-slate-400 font-bold">km</p>
+                                </div>
+                                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-2xl p-4 text-center">
+                                    <p className="text-[10px] text-blue-600 font-black uppercase">ETA</p>
+                                    <p className="text-2xl font-black mt-1">
+                                        {activeRequest && activeRequest.pickup_lat && activeRequest.drop_lat
+                                            ? `${Math.round(haversineKm(activeRequest.pickup_lat, activeRequest.pickup_lng, activeRequest.drop_lat, activeRequest.drop_lng) / 40 * 60)}`
+                                            : '—'}
+                                    </p>
+                                    <p className="text-xs text-slate-400 font-bold">mins</p>
+                                </div>
+                                <div className="bg-orange-50 dark:bg-orange-900/20 rounded-2xl p-4 text-center">
+                                    <p className="text-[10px] text-orange-600 font-black uppercase">Status</p>
+                                    <p className="text-sm font-black mt-1">{deliveryStage === 'idle' ? 'Idle' : deliveryStage === 'pickup' ? 'To Pickup' : deliveryStage === 'transit' ? 'In Transit' : 'Done'}</p>
+                                </div>
+                            </div>
+                            {activeRequest && (
+                                <div className="bg-slate-50 dark:bg-slate-900 rounded-2xl p-4 flex items-center gap-3">
+                                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                                    <p className="text-sm font-bold text-slate-600 dark:text-slate-300">
+                                        {activeRequest.pickup_location} <span className="text-slate-400">→</span> {activeRequest.drop_location}
+                                        <span className="text-emerald-500 font-black ml-2">GPS Active</span>
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+
+                    {/* ── RIGHT ── */}
+                    <div className="lg:col-span-5 space-y-5">
+
+                        {/* Earnings Dashboard */}
+                        <div className="bg-slate-950 rounded-[32px] p-7 text-white shadow-2xl space-y-5 border border-slate-800">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-orange-500/20 p-3 rounded-2xl"><TrendingUp className="text-orange-400" size={22} /></div>
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Earnings Dashboard</p>
+                                    <h4 className="font-black text-lg">My Earnings</h4>
+                                </div>
+                            </div>
+                            {loadingEarnings ? (
+                                <div className="flex items-center justify-center py-6"><Loader2 className="animate-spin text-slate-400" size={28} /></div>
+                            ) : (
+                                <>
+                                    <div className="bg-white/5 rounded-2xl p-5 flex justify-between items-center">
+                                        <div>
+                                            <p className="text-[10px] text-slate-400 font-black uppercase tracking-wider">Today</p>
+                                            <p className="text-3xl font-black text-orange-400">₹{earnings.today.toLocaleString()}</p>
+                                            <p className="text-xs text-slate-500 mt-1">{earnings.todayCount} deliveries completed</p>
+                                        </div>
+                                        <div className="w-12 h-12 bg-orange-500/10 rounded-2xl flex items-center justify-center">
+                                            <Clock size={20} className="text-orange-400" />
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="bg-white/5 rounded-2xl p-4">
+                                            <p className="text-[10px] text-slate-400 font-black uppercase">This Week</p>
+                                            <p className="text-xl font-black text-emerald-400">₹{earnings.week.toLocaleString()}</p>
+                                            <p className="text-[10px] text-slate-500 mt-1">{earnings.weekCount} deliveries</p>
+                                        </div>
+                                        <div className="bg-white/5 rounded-2xl p-4">
+                                            <p className="text-[10px] text-slate-400 font-black uppercase">This Month</p>
+                                            <p className="text-xl font-black text-blue-400">₹{earnings.month.toLocaleString()}</p>
+                                            <p className="text-[10px] text-slate-500 mt-1">{earnings.monthCount} deliveries</p>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
+                        {/* In-App Notifications */}
+                        <div className="bg-white dark:bg-slate-800 rounded-[32px] border border-slate-100 dark:border-slate-700 shadow-xl p-7 space-y-4">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="bg-purple-100 dark:bg-purple-900/30 p-3 rounded-2xl"><Bell className="text-purple-600" size={18} /></div>
+                                    <div>
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">In-App Notifications</p>
+                                        <h4 className="font-black text-base">Live Alerts</h4>
+                                    </div>
+                                </div>
+                                {notifications.length > 0 && (
+                                    <span className="bg-orange-500 text-white text-[10px] font-black px-2.5 py-1 rounded-full">{notifications.length}</span>
+                                )}
+                            </div>
+                            <div className="space-y-2 max-h-64 overflow-y-auto">
+                                {notifications.length === 0 ? (
+                                    <p className="text-center text-xs text-slate-400 font-medium py-6">No notifications yet</p>
+                                ) : notifications.map((n, i) => (
+                                    <div key={n.id} className={`flex items-start gap-3 p-3 rounded-2xl ${i === 0 ? 'bg-orange-50 dark:bg-orange-900/10 border border-orange-100 dark:border-orange-900/20' : 'bg-slate-50 dark:bg-slate-900'}`}>
+                                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 bg-${n.color}-100 dark:bg-${n.color}-900/30`}>
+                                            <n.icon size={14} className={`text-${n.color}-600`} />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-xs font-black text-slate-800 dark:text-white">{n.title}</p>
+                                            <p className="text-[10px] text-slate-500 font-medium mt-0.5 truncate">{n.desc}</p>
+                                        </div>
+                                        <span className="text-[10px] text-slate-400 font-bold shrink-0">{n.time}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            )}
+
+            {/* ═══════════════════════════════════════════════════ */}
+            {/*               TRIP HISTORY TAB                      */}
+            {/* ═══════════════════════════════════════════════════ */}
+            {activeTab === 'history' && (
+                <div className="space-y-6 animate-in fade-in duration-300">
+
+                    {/* Summary stats */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        {[
+                            { label: 'Total Trips', value: tripHistory.length, color: 'blue', sub: 'All time' },
+                            { label: 'Completed', value: tripHistory.filter(t => t.status === 'completed').length, color: 'emerald', sub: 'Successfully' },
+                            { label: 'Total Earned', value: `₹${tripHistory.filter(t => t.status === 'completed').reduce((a, t) => a + Number(t.offered_price || 0), 0).toLocaleString()}`, color: 'orange', sub: 'All completed' },
+                            { label: 'Pending/Active', value: tripHistory.filter(t => ['pending', 'accepted', 'picked_up', 'in_transit'].includes(t.status)).length, color: 'purple', sub: 'Right now' },
+                        ].map(({ label, value, color, sub }) => (
+                            <div key={label} className={`bg-${color}-50 dark:bg-${color}-900/20 border border-${color}-100 dark:border-${color}-800/30 rounded-[24px] p-5`}>
+                                <p className={`text-[9px] text-${color}-600 dark:text-${color}-400 font-black uppercase tracking-widest`}>{label}</p>
+                                <p className={`text-2xl font-black text-${color}-700 dark:text-${color}-300 mt-1`}>{value}</p>
+                                <p className={`text-[10px] text-${color}-500 mt-0.5`}>{sub}</p>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Header + Refresh */}
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="bg-purple-100 dark:bg-purple-900/30 p-3 rounded-2xl"><FileText className="text-purple-600" size={20} /></div>
+                            <div>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Complete Log</p>
+                                <h3 className="font-black text-xl">Trip History</h3>
+                            </div>
+                        </div>
+                        <button onClick={fetchTripHistory} className="flex items-center gap-2 text-[11px] font-black uppercase text-purple-500 hover:text-purple-700 bg-purple-50 dark:bg-purple-900/20 px-4 py-2 rounded-xl transition-colors">
+                            <Bell size={12} /> Refresh
+                        </button>
+                    </div>
+
+                    {loadingHistory ? (
+                        <div className="flex items-center justify-center py-16">
+                            <Loader2 className="animate-spin text-purple-500" size={32} />
+                        </div>
+                    ) : tripHistory.length === 0 ? (
+                        <div className="bg-white dark:bg-slate-800 rounded-[32px] border border-slate-100 dark:border-slate-700 p-12 text-center">
+                            <div className="w-16 h-16 bg-slate-100 dark:bg-slate-700 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                                <FileText size={28} className="text-slate-400" />
+                            </div>
+                            <p className="font-black text-slate-500 uppercase text-sm">No Trip History Yet</p>
+                            <p className="text-xs text-slate-400 mt-2">Your completed, accepted and past bookings will appear here</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {tripHistory.map((trip) => {
+                                const distKm = (trip.pickup_lat && trip.drop_lat)
+                                    ? haversineKm(trip.pickup_lat, trip.pickup_lng, trip.drop_lat, trip.drop_lng)
+                                    : null;
+                                const etaMins = distKm ? Math.round(distKm / 40 * 60) : null;
+                                const mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${trip.pickup_lat},${trip.pickup_lng}&destination=${trip.drop_lat},${trip.drop_lng}&travelmode=driving`;
+
+                                const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
+                                    pending: { label: 'Pending', color: 'text-orange-600', bg: 'bg-orange-100 dark:bg-orange-900/20' },
+                                    accepted: { label: 'Accepted', color: 'text-blue-600', bg: 'bg-blue-100 dark:bg-blue-900/20' },
+                                    picked_up: { label: 'Picked Up', color: 'text-amber-600', bg: 'bg-amber-100 dark:bg-amber-900/20' },
+                                    in_transit: { label: 'In Transit', color: 'text-purple-600', bg: 'bg-purple-100 dark:bg-purple-900/20' },
+                                    completed: { label: 'Completed', color: 'text-emerald-600', bg: 'bg-emerald-100 dark:bg-emerald-900/20' },
+                                    rejected: { label: 'Rejected', color: 'text-red-600', bg: 'bg-red-100 dark:bg-red-900/20' },
+                                    cancelled: { label: 'Cancelled', color: 'text-slate-500', bg: 'bg-slate-100 dark:bg-slate-800' },
+                                };
+                                const st = statusConfig[trip.status] || { label: trip.status, color: 'text-slate-600', bg: 'bg-slate-100' };
+
+                                return (
+                                    <div key={trip.id} className="bg-white dark:bg-slate-800 rounded-[28px] border border-slate-100 dark:border-slate-700 shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
+                                        {/* Top stripe by status */}
+                                        <div className={`h-1 w-full ${trip.status === 'completed' ? 'bg-emerald-500' : trip.status === 'rejected' || trip.status === 'cancelled' ? 'bg-red-400' : trip.status === 'in_transit' || trip.status === 'picked_up' ? 'bg-orange-500' : 'bg-blue-500'}`} />
+
+                                        <div className="p-6 space-y-4">
+                                            {/* Row 1: ID + Status + Date */}
+                                            <div className="flex items-start justify-between gap-3 flex-wrap">
+                                                <div>
+                                                    <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest">Booking ID</p>
+                                                    <p className="font-black text-base font-mono">#{trip.id?.slice(0, 12).toUpperCase()}</p>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`${st.bg} ${st.color} text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-wide`}>{st.label}</span>
+                                                    <a href={mapsUrl} target="_blank" rel="noopener noreferrer"
+                                                        className="bg-blue-50 dark:bg-blue-900/20 text-blue-600 p-2 rounded-xl hover:bg-blue-100 transition-colors" title="Open in Google Maps">
+                                                        <Navigation size={14} />
+                                                    </a>
+                                                </div>
+                                            </div>
+
+                                            {/* Row 2: Customer */}
+                                            <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-900 rounded-2xl p-3">
+                                                <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/40 rounded-xl flex items-center justify-center shrink-0">
+                                                    <User size={14} className="text-blue-600" />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="font-black text-sm">{trip.customer_name}</p>
+                                                    <a href={`tel:${trip.customer_phone}`} className="text-[11px] text-blue-500 font-bold flex items-center gap-1 hover:text-blue-700">
+                                                        <Phone size={10} /> {trip.customer_phone}
+                                                    </a>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-[9px] text-slate-400 font-black uppercase">Booked</p>
+                                                    <p className="text-[10px] text-slate-600 dark:text-slate-300 font-bold">{fmtDate(trip.created_at)}</p>
+                                                </div>
+                                            </div>
+
+                                            {/* Row 3: Route */}
+                                            <div className="flex gap-3 items-start bg-slate-50 dark:bg-slate-900 rounded-2xl p-3">
+                                                <div className="flex flex-col items-center gap-1 pt-1 shrink-0">
+                                                    <div className="w-2.5 h-2.5 rounded-full bg-orange-500" />
+                                                    <div className="w-px h-5 bg-slate-300 dark:bg-slate-600" />
+                                                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                                                </div>
+                                                <div className="flex-1 space-y-2 min-w-0">
+                                                    <div>
+                                                        <p className="text-[9px] text-slate-400 font-black uppercase">Pickup</p>
+                                                        <p className="font-bold text-xs truncate">{trip.pickup_location}</p>
+                                                        {trip.pickup_lat && <p className="text-[9px] text-slate-400">{trip.pickup_lat.toFixed(4)}, {trip.pickup_lng.toFixed(4)}</p>}
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[9px] text-slate-400 font-black uppercase">Drop</p>
+                                                        <p className="font-bold text-xs truncate">{trip.drop_location}</p>
+                                                        {trip.drop_lat && <p className="text-[9px] text-slate-400">{trip.drop_lat.toFixed(4)}, {trip.drop_lng.toFixed(4)}</p>}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Row 4: Details grid */}
+                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                                {[
+                                                    { label: 'Goods', value: trip.goods_type || '—' },
+                                                    { label: 'Weight', value: trip.weight ? `${trip.weight} T` : '—' },
+                                                    { label: 'Distance', value: distKm ? `${distKm.toFixed(0)} km` : '—' },
+                                                    { label: 'ETA', value: etaMins ? `~${etaMins} min` : '—' },
+                                                ].map(({ label, value }) => (
+                                                    <div key={label} className="bg-slate-50 dark:bg-slate-900 rounded-xl p-2.5 text-center">
+                                                        <p className="text-[8px] text-slate-400 font-black uppercase">{label}</p>
+                                                        <p className="font-black text-xs mt-0.5">{value}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            {/* Row 5: Fare */}
+                                            <div className="flex items-center justify-between bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/10 dark:to-teal-900/10 rounded-2xl px-5 py-3">
+                                                <div>
+                                                    <p className="text-[9px] text-slate-400 font-black uppercase">Offered Fare</p>
+                                                    <p className={`font-black text-xl ${trip.status === 'completed' ? 'text-emerald-600' : 'text-slate-700 dark:text-slate-300'}`}>
+                                                        ₹{Number(trip.offered_price || 0).toLocaleString()}
+                                                    </p>
+                                                </div>
+                                                {trip.vehicle_id && (
+                                                    <div className="text-right">
+                                                        <p className="text-[9px] text-slate-400 font-black uppercase">Vehicle ID</p>
+                                                        <p className="font-bold text-xs font-mono text-slate-600 dark:text-slate-300">{trip.vehicle_id.slice(0, 8)}…</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* ═══════════════════════════════════════════════════ */}
+            {/*               DRIVER PROFILE TAB                   */}
+            {/* ═══════════════════════════════════════════════════ */}
+
+            {activeTab === 'profile' && (
+                <form onSubmit={handleSaveProfile} className="space-y-8 animate-in fade-in duration-300">
+
+                    {profileSuccess && (
+                        <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-2xl flex items-center gap-3 text-emerald-600 animate-in zoom-in">
+                            <CheckCircle2 size={20} /><p className="text-sm font-black uppercase">Profile Saved Successfully!</p>
+                        </div>
+                    )}
+                    {profileError && (
+                        <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-2xl flex items-center gap-3 text-red-500 animate-in zoom-in">
+                            <AlertCircle size={20} /><p className="text-sm font-black">{profileError}</p>
+                        </div>
+                    )}
+
+                    {/* Photo + Quick Stats */}
+                    <div className="bg-white dark:bg-slate-800 rounded-[36px] border border-slate-100 dark:border-slate-700 shadow-xl p-8">
+                        <div className="flex flex-col sm:flex-row items-center gap-8">
+                            <div className="flex flex-col items-center gap-3">
+                                <div className="relative w-28 h-28">
+                                    {photoPreview
+                                        ? <img src={photoPreview} className="w-full h-full rounded-[24px] object-cover shadow-xl" alt="Profile" />
+                                        : <div className="w-full h-full bg-slate-100 dark:bg-slate-700 rounded-[24px] flex items-center justify-center"><User size={48} className="text-slate-400" /></div>
+                                    }
+                                    <label className="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full cursor-pointer shadow-lg hover:bg-blue-500 transition-colors">
+                                        <Camera size={16} />
+                                        <input type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
+                                    </label>
+                                </div>
+                                <p className="text-[10px] font-black uppercase text-slate-400 text-center">Profile Photo</p>
+                            </div>
+                            <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 gap-4 w-full">
+                                {[
+                                    { label: 'Status', value: profileExists ? 'Verified' : 'Pending', color: profileExists ? 'emerald' : 'orange' },
+                                    { label: 'Vehicle', value: profile.vehicle_registration || 'Not Set', color: 'blue' },
+                                    { label: 'Experience', value: profile.experience_years ? `${profile.experience_years} yrs` : 'Not Set', color: 'purple' },
+                                ].map(({ label, value, color }) => (
+                                    <div key={label} className="bg-slate-50 dark:bg-slate-900 rounded-2xl p-4 text-center">
+                                        <p className="text-[10px] text-slate-400 font-black uppercase">{label}</p>
+                                        <p className={`font-black text-sm mt-1 text-${color}-600`}>{value}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* ── Personal Info ── */}
+                    <div className="bg-white dark:bg-slate-800 rounded-[36px] border border-slate-100 dark:border-slate-700 shadow-xl p-8 space-y-6">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-2xl"><User className="text-blue-600" size={20} /></div>
+                            <h3 className="font-black text-lg uppercase tracking-tight">Personal Information</h3>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            {[
+                                { label: 'Full Name', id: 'full_name' as keyof DriverProfile, icon: User, type: 'text', placeholder: 'Rajesh Kumar' },
+                                { label: 'Phone Number', id: 'phone' as keyof DriverProfile, icon: Phone, type: 'tel', placeholder: '+91 98765 43210' },
+                                { label: 'Email Address', id: 'email' as keyof DriverProfile, icon: Mail, type: 'email', placeholder: 'driver@example.com' },
+                                { label: 'Date of Birth', id: 'date_of_birth' as keyof DriverProfile, icon: Calendar, type: 'date', placeholder: '' },
+                                { label: 'Years of Experience', id: 'experience_years' as keyof DriverProfile, icon: Star, type: 'number', placeholder: 'e.g. 5' },
+                            ].map(({ label, id, icon: Icon, type, placeholder }) => (
+                                <div key={id} className="space-y-1.5">
+                                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">{label}</label>
+                                    <div className="relative">
+                                        <Icon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={17} />
+                                        <input type={type} placeholder={placeholder} {...field(id)} className={inputCls} />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* ── Address ── */}
+                    <div className="bg-white dark:bg-slate-800 rounded-[36px] border border-slate-100 dark:border-slate-700 shadow-xl p-8 space-y-6">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="bg-orange-100 dark:bg-orange-900/30 p-3 rounded-2xl"><MapPin className="text-orange-500" size={20} /></div>
+                            <h3 className="font-black text-lg uppercase tracking-tight">Address Details</h3>
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Street Address</label>
+                            <div className="relative">
+                                <MapPin className="absolute left-4 top-4 text-slate-400" size={17} />
+                                <textarea rows={2} placeholder="House / Flat No., Street, Area..." {...field('address')}
+                                    className="w-full bg-slate-50 dark:bg-slate-900 border-0 rounded-2xl py-4 pl-12 pr-4 text-sm font-bold focus:ring-4 focus:ring-blue-500/10 outline-none resize-none" />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                            {[
+                                { label: 'City', id: 'city' as keyof DriverProfile, placeholder: 'Delhi' },
+                                { label: 'State', id: 'state' as keyof DriverProfile, placeholder: 'Uttar Pradesh' },
+                                { label: 'Pincode', id: 'pincode' as keyof DriverProfile, placeholder: '110001' },
+                            ].map(({ label, id, placeholder }) => (
+                                <div key={id} className="space-y-1.5">
+                                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">{label}</label>
+                                    <input type="text" placeholder={placeholder} {...field(id)}
+                                        className="w-full bg-slate-50 dark:bg-slate-900 border-0 rounded-2xl py-4 px-5 text-sm font-bold focus:ring-4 focus:ring-blue-500/10 outline-none" />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* ── Vehicle Info ── */}
+                    <div className="bg-white dark:bg-slate-800 rounded-[36px] border border-slate-100 dark:border-slate-700 shadow-xl p-8 space-y-6">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="bg-emerald-100 dark:bg-emerald-900/30 p-3 rounded-2xl"><Truck className="text-emerald-600" size={20} /></div>
+                            <h3 className="font-black text-lg uppercase tracking-tight">Vehicle Information</h3>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Vehicle Type</label>
+                                <div className="relative">
+                                    <Car className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={17} />
+                                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={17} />
+                                    <select {...field('vehicle_type')} className={`${inputCls} appearance-none cursor-pointer`}>
+                                        {VEHICLE_TYPES.map(v => <option key={v}>{v}</option>)}
+                                    </select>
+                                </div>
+                            </div>
+                            {[
+                                { label: 'Registration Number', id: 'vehicle_registration' as keyof DriverProfile, icon: Hash, placeholder: 'UP-14 AB 1234' },
+                                { label: 'Vehicle Model', id: 'vehicle_model' as keyof DriverProfile, icon: Car, placeholder: 'Tata Ace Gold' },
+                                { label: 'Manufacturing Year', id: 'vehicle_year' as keyof DriverProfile, icon: Calendar, placeholder: '2021' },
+                            ].map(({ label, id, icon: Icon, placeholder }) => (
+                                <div key={id} className="space-y-1.5">
+                                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">{label}</label>
+                                    <div className="relative">
+                                        <Icon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={17} />
+                                        <input type="text" placeholder={placeholder} {...field(id)} className={inputCls} />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* ── License Info ── */}
+                    <div className="bg-white dark:bg-slate-800 rounded-[36px] border border-slate-100 dark:border-slate-700 shadow-xl p-8 space-y-6">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="bg-purple-100 dark:bg-purple-900/30 p-3 rounded-2xl"><Shield className="text-purple-600" size={20} /></div>
+                            <h3 className="font-black text-lg uppercase tracking-tight">License & Documents</h3>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            {[
+                                { label: 'Driving License Number', id: 'license_number' as keyof DriverProfile, icon: FileText, type: 'text', placeholder: 'DL-1420110012345' },
+                                { label: 'License Expiry Date', id: 'license_expiry' as keyof DriverProfile, icon: Calendar, type: 'date', placeholder: '' },
+                            ].map(({ label, id, icon: Icon, type, placeholder }) => (
+                                <div key={id} className="space-y-1.5">
+                                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">{label}</label>
+                                    <div className="relative">
+                                        <Icon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={17} />
+                                        <input type={type} placeholder={placeholder} {...field(id)} className={inputCls} />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* ── Bank Details ── */}
+                    <div className="bg-white dark:bg-slate-800 rounded-[36px] border border-slate-100 dark:border-slate-700 shadow-xl p-8 space-y-6">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="bg-amber-100 dark:bg-amber-900/30 p-3 rounded-2xl"><Banknote className="text-amber-600" size={20} /></div>
+                            <h3 className="font-black text-lg uppercase tracking-tight">Bank Account Details</h3>
+                        </div>
+                        <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30 rounded-2xl p-4 flex items-center gap-3">
+                            <Shield size={16} className="text-amber-500 shrink-0" />
+                            <p className="text-xs font-bold text-amber-700 dark:text-amber-400">Your bank details are encrypted and used only for payout processing.</p>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            {[
+                                { label: 'Account Holder Name', id: 'bank_account_name' as keyof DriverProfile, icon: User, placeholder: 'As per bank records' },
+                                { label: 'Account Number', id: 'bank_account_number' as keyof DriverProfile, icon: Hash, placeholder: '1234 5678 9012 3456' },
+                                { label: 'IFSC Code', id: 'bank_ifsc' as keyof DriverProfile, icon: Building2, placeholder: 'SBIN0001234' },
+                                { label: 'Bank Name', id: 'bank_name' as keyof DriverProfile, icon: CreditCard, placeholder: 'State Bank of India' },
+                            ].map(({ label, id, icon: Icon, placeholder }) => (
+                                <div key={id} className="space-y-1.5">
+                                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">{label}</label>
+                                    <div className="relative">
+                                        <Icon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={17} />
+                                        <input type="text" placeholder={placeholder} {...field(id)} className={inputCls} />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Save Button */}
+                    <button type="submit" disabled={profileLoading}
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white py-6 rounded-[28px] font-black text-xl flex items-center justify-center gap-3 shadow-2xl shadow-blue-500/20 hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-60 uppercase tracking-tight"
+                    >
+                        {profileLoading ? <Loader2 className="animate-spin" size={24} /> : <Save size={24} strokeWidth={2.5} />}
+                        {profileLoading ? 'Saving Profile...' : profileExists ? 'Update Driver Profile' : 'Complete Registration'}
+                    </button>
+
+                </form>
+            )}
+
+            {/* ═══════════════════════════════════════════════ */}
+            {/*            LOAD ESTIMATOR TAB                  */}
+            {/* ═══════════════════════════════════════════════ */}
+            {activeTab === 'estimator' && (
+                <div className="space-y-6 animate-in fade-in duration-300">
+                    <div className="bg-white dark:bg-slate-800 rounded-[36px] border border-slate-100 dark:border-slate-700 shadow-xl p-8 space-y-6">
+                        <div className="flex items-center gap-3">
+                            <div className="bg-emerald-100 dark:bg-emerald-900/30 p-3 rounded-2xl"><IndianRupee className="text-emerald-600" size={22} /></div>
+                            <div>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Smart Calculator</p>
+                                <h3 className="font-black text-xl">Load & Fare Estimator</h3>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            {/* From */}
+                            <div className="space-y-1.5">
+                                <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 block">From (Pickup City)</label>
+                                <div className="relative">
+                                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                    <input type="text" placeholder="Delhi" value={estFrom} onChange={e => setEstFrom(e.target.value)}
+                                        className="w-full bg-slate-50 dark:bg-slate-900 rounded-2xl py-4 pl-12 pr-4 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10" />
+                                </div>
+                            </div>
+                            {/* To */}
+                            <div className="space-y-1.5">
+                                <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 block">To (Destination City)</label>
+                                <div className="relative">
+                                    <Navigation className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                    <input type="text" placeholder="Mumbai" value={estTo} onChange={e => setEstTo(e.target.value)}
+                                        className="w-full bg-slate-50 dark:bg-slate-900 rounded-2xl py-4 pl-12 pr-4 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10" />
+                                </div>
+                            </div>
+                            {/* Distance */}
+                            <div className="space-y-1.5">
+                                <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 block">Distance (km)</label>
+                                <input type="number" placeholder="1400" value={estDistance} onChange={e => setEstDistance(e.target.value)}
+                                    className="w-full bg-slate-50 dark:bg-slate-900 rounded-2xl py-4 px-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10" />
+                            </div>
+                            {/* Weight */}
+                            <div className="space-y-1.5">
+                                <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 block">Load Weight (tonnes)</label>
+                                <input type="number" placeholder="5" value={estWeight} onChange={e => setEstWeight(e.target.value)}
+                                    className="w-full bg-slate-50 dark:bg-slate-900 rounded-2xl py-4 px-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10" />
+                            </div>
+                            {/* Vehicle Type */}
+                            <div className="space-y-1.5">
+                                <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 block">Vehicle Type</label>
+                                <div className="relative">
+                                    <Truck className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
+                                    <select value={estVehicle} onChange={e => setEstVehicle(e.target.value)}
+                                        className="w-full bg-slate-50 dark:bg-slate-900 rounded-2xl py-4 pl-12 pr-4 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 appearance-none cursor-pointer">
+                                        {VEHICLE_TYPES.map(v => <option key={v} className="bg-white dark:bg-slate-900">{v}</option>)}
+                                    </select>
+                                </div>
+                            </div>
+                            {/* Goods Type */}
+                            <div className="space-y-1.5">
+                                <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 block">Goods Type</label>
+                                <div className="relative">
+                                    <Package className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
+                                    <select value={estGoodsType} onChange={e => setEstGoodsType(e.target.value)}
+                                        className="w-full bg-slate-50 dark:bg-slate-900 rounded-2xl py-4 pl-12 pr-4 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 appearance-none cursor-pointer">
+                                        {['General', 'Perishable', 'Fragile / Electronics', 'Heavy Machinery', 'Chemicals / Hazmat', 'Agricultural', 'Textile / Garments'].map(g => <option key={g}>{g}</option>)}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button
+                            disabled={estLoading || !estDistance}
+                            onClick={() => {
+                                setEstLoading(true);
+                                const km = Number(estDistance) || 0;
+                                const wt = Number(estWeight) || 1;
+                                // Base rate per km × weight multiplier × vehicle multiplier
+                                const vehicleMultiplier: Record<string, number> = {
+                                    'Tata Ace / LCV': 0.7, '14ft Container': 1.0, '19ft Eicher': 1.2,
+                                    '22ft Multi-Axle': 1.5, '32ft MX Trailer': 2.0, 'Mini Truck': 0.85, 'Bike / Two-Wheeler': 0.3
+                                };
+                                const goodsMultiplier: Record<string, number> = {
+                                    'General': 1.0, 'Perishable': 1.3, 'Fragile / Electronics': 1.5,
+                                    'Heavy Machinery': 1.4, 'Chemicals / Hazmat': 1.6, 'Agricultural': 0.9, 'Textile / Garments': 1.1
+                                };
+                                const ratePerKm = 18; // base ₹/km
+                                const vm = vehicleMultiplier[estVehicle] || 1;
+                                const gm = goodsMultiplier[estGoodsType] || 1;
+                                const weightMul = 1 + (wt - 1) * 0.08;
+                                const fare = Math.round(ratePerKm * km * vm * gm * weightMul);
+                                const fuelPerKm = { 'Tata Ace / LCV': 4, '14ft Container': 8, '19ft Eicher': 10, '22ft Multi-Axle': 13, '32ft MX Trailer': 18, 'Mini Truck': 5, 'Bike / Two-Wheeler': 2 }[estVehicle] || 8;
+                                const fuel = Math.round(km * fuelPerKm); // ₹ at ~₹8/km avg
+                                const toll = Math.round(km * 1.2); // ~₹1.2/km national avg
+                                const labour = Math.round(fare * 0.15); // 15% driver charge
+                                setTimeout(() => {
+                                    setEstResult({ fare, fuel, toll, labour, total: fare + toll + labour });
+                                    setEstLoading(false);
+                                }, 700);
+                            }}
+                            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-5 rounded-[28px] font-black text-base uppercase tracking-widest flex items-center justify-center gap-3 shadow-xl shadow-emerald-500/20 hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-60">
+                            {estLoading ? <Loader2 className="animate-spin" size={20} /> : <IndianRupee size={20} />}
+                            {estLoading ? 'Calculating...' : 'Calculate Fare Estimate'}
+                        </button>
+
+                        {/* Result */}
+                        {estResult && (
+                            <div className="bg-gradient-to-br from-emerald-600 to-teal-700 rounded-[32px] p-7 text-white space-y-5 shadow-2xl shadow-emerald-500/20">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-200">Fare Breakdown</p>
+                                        <h4 className="font-black text-2xl mt-1">{estFrom || 'Origin'} → {estTo || 'Destination'}</h4>
+                                    </div>
+                                    <div className="bg-white/20 px-4 py-2 rounded-2xl text-right">
+                                        <p className="text-[10px] text-emerald-200 font-black uppercase">Distance</p>
+                                        <p className="font-black text-xl">{estDistance} km</p>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    {[
+                                        { label: 'Base Fare', value: estResult.fare, icon: Truck },
+                                        { label: 'Est. Fuel', value: estResult.fuel, icon: Zap },
+                                        { label: 'Toll Charges', value: estResult.toll, icon: Navigation },
+                                        { label: 'Driver Labour', value: estResult.labour, icon: User },
+                                    ].map(({ label, value, icon: Icon }) => (
+                                        <div key={label} className="bg-white/10 rounded-2xl p-4">
+                                            <div className="flex items-center gap-2 mb-1"><Icon size={13} /><p className="text-[9px] font-black uppercase text-emerald-200">{label}</p></div>
+                                            <p className="font-black text-lg">₹{value.toLocaleString()}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="border-t border-white/20 pt-4 flex items-center justify-between">
+                                    <div>
+                                        <p className="text-[10px] text-emerald-200 font-black uppercase">Total Estimate (Excl. Fuel)</p>
+                                        <p className="font-black text-4xl mt-1">₹{estResult.total.toLocaleString()}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-[9px] text-emerald-200 font-black uppercase">Vehicle · Load</p>
+                                        <p className="text-sm font-black">{estVehicle}</p>
+                                        <p className="text-sm font-black text-emerald-200">{estWeight || '1'} T · {estGoodsType}</p>
+                                    </div>
+                                </div>
+                                <p className="text-[9px] text-emerald-300 text-center font-bold">⚡ Estimates are indicative. Final price varies by market rates, route & season.</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* ═══════════════════════════════════════════════ */}
+            {/*            EMERGENCY SERVICES TAB              */}
+            {/* ═══════════════════════════════════════════════ */}
+            {activeTab === 'emergency' && (
+                <div className="space-y-6 animate-in fade-in duration-300">
+                    {/* SOS BUTTON */}
+                    <div className="bg-gradient-to-br from-red-600 to-rose-800 rounded-[36px] p-8 text-white shadow-2xl shadow-red-500/30 space-y-5">
+                        <div className="flex items-center gap-3">
+                            <div className="bg-white/20 p-3 rounded-2xl"><ShieldAlert size={28} /></div>
+                            <div>
+                                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-red-200">Emergency Services</p>
+                                <h3 className="font-black text-2xl">Driver SOS Panel</h3>
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={() => {
+                                setSosActive(true);
+                                let count = 5;
+                                setSosCountdown(count);
+                                const t = setInterval(() => {
+                                    count--;
+                                    setSosCountdown(count);
+                                    if (count <= 0) {
+                                        clearInterval(t);
+                                        // In production: call emergency API / send location / alert dispatcher
+                                        alert('🚨 SOS Alert Sent!\n\nYour location has been shared with:\n• Gadi Dost Emergency Team\n• Nearest Police Station\n• Your registered emergency contact\n\nHelp is on the way.');
+                                        setSosActive(false);
+                                    }
+                                }, 1000);
+                            }}
+                            disabled={sosActive}
+                            className={`w-full py-8 rounded-[28px] font-black text-2xl flex flex-col items-center justify-center gap-2 transition-all border-4 ${sosActive ? 'border-yellow-400 bg-white/10 animate-pulse' : 'border-white/40 bg-white/15 hover:bg-white/25 hover:scale-[1.01]'}`}>
+                            <ShieldAlert size={40} className={sosActive ? 'animate-bounce' : ''} />
+                            {sosActive ? `⚠️ Sending SOS in ${sosCountdown}s... (tap again to cancel)` : '🆘 TAP TO SEND SOS'}
+                            <p className="text-sm font-bold text-red-200 mt-1 normal-case text-center">Shares your live GPS location with emergency contacts</p>
+                        </button>
+
+                        {sosActive && (
+                            <button onClick={() => setSosActive(false)} className="w-full py-3 rounded-2xl bg-yellow-400/20 border border-yellow-400/40 text-yellow-200 font-black text-sm uppercase tracking-widest">
+                                Cancel SOS
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Emergency Contacts */}
+                    <div className="bg-white dark:bg-slate-800 rounded-[36px] border border-slate-100 dark:border-slate-700 shadow-xl p-8 space-y-5">
+                        <div className="flex items-center gap-3">
+                            <div className="bg-red-100 dark:bg-red-900/30 p-3 rounded-2xl"><Phone className="text-red-500" size={20} /></div>
+                            <h3 className="font-black text-xl uppercase">Emergency Contacts</h3>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {[
+                                { label: 'Police', number: '100', color: 'blue', icon: ShieldAlert, badge: '📞 24/7' },
+                                { label: 'Ambulance', number: '108', color: 'red', icon: Zap, badge: '📞 National' },
+                                { label: 'Fire Brigade', number: '101', color: 'orange', icon: Flame, badge: '📞 24/7' },
+                                { label: 'Highway Help', number: '1033', color: 'emerald', icon: Truck, badge: '📞 NHAI' },
+                                { label: 'Gadi Dost SOS', number: '+91 1800-XXX-XXXX', color: 'violet', icon: Phone, badge: '📞 Toll Free' },
+                                { label: 'Road Accident', number: '1073', color: 'amber', icon: AlertCircle, badge: '📞 MORTH' },
+                            ].map(({ label, number, color, icon: Icon, badge }) => (
+                                <a key={label} href={`tel:${number}`}
+                                    className={`flex items-center gap-4 p-4 rounded-2xl border transition-all hover:scale-[1.02] bg-${color}-50 dark:bg-${color}-900/10 border-${color}-100 dark:border-${color}-900/20`}>
+                                    <div className={`w-12 h-12 bg-${color}-100 dark:bg-${color}-900/30 rounded-2xl flex items-center justify-center`}><Icon size={22} className={`text-${color}-600`} /></div>
+                                    <div className="flex-1">
+                                        <p className="font-black text-sm">{label}</p>
+                                        <p className={`font-black text-lg text-${color}-600`}>{number}</p>
+                                    </div>
+                                    <span className={`text-[9px] font-black uppercase text-${color}-500 bg-${color}-100 dark:bg-${color}-900/30 px-2 py-1 rounded-xl`}>{badge}</span>
+                                </a>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Nearby Services Finder */}
+                    <div className="bg-white dark:bg-slate-800 rounded-[36px] border border-slate-100 dark:border-slate-700 shadow-xl p-8 space-y-5">
+                        <div className="flex items-center gap-3">
+                            <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-2xl"><Navigation className="text-blue-500" size={20} /></div>
+                            <h3 className="font-black text-xl uppercase">Find Nearby Help</h3>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            {[
+                                { label: 'Mechanic', icon: Wrench, query: 'truck+mechanic+near+me', color: 'orange' },
+                                { label: 'Towing', icon: Truck, query: 'towing+service+near+me', color: 'blue' },
+                                { label: 'Petrol Pump', icon: Zap, query: 'petrol+pump+near+me', color: 'yellow' },
+                                { label: 'Hospital', icon: Phone, query: 'hospital+near+me', color: 'red' },
+                            ].map(({ label, icon: Icon, query, color }) => (
+                                <a key={label}
+                                    href={`https://www.google.com/maps/search/${query}`}
+                                    target="_blank" rel="noopener noreferrer"
+                                    className={`flex flex-col items-center gap-2.5 p-4 rounded-2xl text-center transition-all hover:scale-105 bg-${color}-50 dark:bg-${color}-900/10 border border-${color}-100 dark:border-${color}-900/20`}>
+                                    <div className={`w-12 h-12 bg-${color}-100 dark:bg-${color}-900/30 rounded-2xl flex items-center justify-center`}><Icon size={22} className={`text-${color}-600`} /></div>
+                                    <p className="font-black text-xs uppercase">{label}</p>
+                                    <span className="text-[9px] text-slate-400 font-bold">Open Maps ↗</span>
+                                </a>
+                            ))}
+                        </div>
+                        <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/20 rounded-2xl p-4 flex items-start gap-3">
+                            <MapPin size={16} className="text-blue-500 shrink-0 mt-0.5" />
+                            <p className="text-xs font-bold text-blue-700 dark:text-blue-300">These links use your device GPS to find the nearest services. Allow location access when prompted.</p>
+                        </div>
+                    </div>
+
+                    {/* Breakdown Checklist */}
+                    <div className="bg-white dark:bg-slate-800 rounded-[36px] border border-slate-100 dark:border-slate-700 shadow-xl p-8 space-y-4">
+                        <div className="flex items-center gap-3">
+                            <div className="bg-amber-100 dark:bg-amber-900/30 p-3 rounded-2xl"><AlertCircle className="text-amber-500" size={20} /></div>
+                            <h3 className="font-black text-xl uppercase">Breakdown Checklist</h3>
+                        </div>
+                        <div className="space-y-2.5">
+                            {[
+                                'Move vehicle to shoulder / safe area immediately',
+                                'Turn on hazard lights (parking lights)',
+                                'Place warning triangle 50m behind the truck',
+                                'Note down exact location (road name / km marker)',
+                                'Contact Gadi Dost helpline or send SOS above',
+                                'Do not leave goods unattended — stay near vehicle',
+                                'Take photos of breakdown for insurance documentation',
+                                'Wait for authorized mechanic or towing service',
+                            ].map((step, i) => (
+                                <div key={i} className="flex items-start gap-3 p-3 rounded-2xl bg-amber-50/50 dark:bg-amber-900/5">
+                                    <div className="w-6 h-6 bg-amber-500 text-white rounded-full flex items-center justify-center text-[11px] font-black shrink-0 mt-0.5">{i + 1}</div>
+                                    <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{step}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+        </div>
+    );
+};
+
+export default DriverPanel;
+

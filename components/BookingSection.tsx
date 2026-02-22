@@ -1,4 +1,4 @@
-
+﻿
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Search,
@@ -21,10 +21,16 @@ import {
   X,
   Target,
   Send,
-  MessageSquare
+  MessageSquare,
+  Bell,
+  TrendingUp,
+  ToggleLeft,
+  ToggleRight
 } from 'lucide-react';
 import MapComponent from './MapComponent';
 import { supabase } from '../services/supabaseClient';
+import DriverPanel from './DriverPanel';
+import MechanicPanel from './MechanicPanel';
 
 // Helper function to calculate distance between two coordinates in km (Haversine formula)
 const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
@@ -62,6 +68,14 @@ const BookingSection: React.FC<{ t: any }> = ({ t }) => {
   const [podUploaded, setPodUploaded] = useState(false);
   const [pendingRequests, setPendingRequests] = useState<any[]>([]); // Track all sent requests
   const [bookingStatus, setBookingStatus] = useState<string>(''); // 'pending', 'accepted', 'rejected', 'bargaining'
+
+  // Panel toggle
+  const [panel, setPanel] = useState<'customer' | 'driver' | 'mechanic'>('customer');
+
+  // Driver demo state
+  const [driverAvailable, setDriverAvailable] = useState(true);
+  const [deliveryStage, setDeliveryStage] = useState<string>('idle');
+  const [requestAccepted, setRequestAccepted] = useState(false);
 
   // Form State
   const [pickupAddress, setPickupAddress] = useState('');
@@ -318,20 +332,18 @@ const BookingSection: React.FC<{ t: any }> = ({ t }) => {
 
       console.log('✅ Booking created:', data.id);
 
-      // 3. Broadcast to driver app manually
-      const channel = supabase.channel('booking_requests');
-      channel.subscribe((status) => {
+      // 3. Broadcast to driver panel on the SAME channel name DriverPanel subscribes to
+      const broadcastChannel = supabase.channel('driver_booking_requests');
+      broadcastChannel.subscribe((status) => {
         if (status === 'SUBSCRIBED') {
-          channel.send({
+          broadcastChannel.send({
             type: 'broadcast',
             event: 'INSERT',
-            payload: {
-              type: 'INSERT',
-              new: data,
-              new_row: data
-            }
+            payload: { type: 'INSERT', new: data, new_row: data }
           });
-          console.log('📢 Broadcast sent to drivers');
+          console.log('📢 Realtime broadcast sent to Driver Panel');
+          // Don't remove immediately — keep channel alive for a moment
+          setTimeout(() => supabase.removeChannel(broadcastChannel), 3000);
         }
       });
 
@@ -382,22 +394,19 @@ const BookingSection: React.FC<{ t: any }> = ({ t }) => {
 
       console.log(`✅ Broadcast ${data?.length || 0} booking requests to drivers`);
 
-      // Manually broadcast each booking to drivers
-      const channel = supabase.channel('booking_requests');
-      channel.subscribe(async (status) => {
+      // Broadcast all bookings to Driver Panel on the correct channel
+      const broadcastChannel = supabase.channel('driver_booking_requests');
+      broadcastChannel.subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
           for (const booking of (data || [])) {
-            await channel.send({
+            await broadcastChannel.send({
               type: 'broadcast',
               event: 'INSERT',
-              payload: {
-                type: 'INSERT',
-                new: booking,
-                new_row: booking
-              }
+              payload: { type: 'INSERT', new: booking, new_row: booking }
             });
           }
-          console.log('📢 Manual broadcasts sent');
+          console.log('📢 All booking broadcasts sent to Driver Panel');
+          setTimeout(() => supabase.removeChannel(broadcastChannel), 3000);
         }
       });
 
@@ -455,28 +464,48 @@ const BookingSection: React.FC<{ t: any }> = ({ t }) => {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-3xl md:text-4xl font-black tracking-tight uppercase">{t.booking}</h2>
-          <p className="text-slate-500 font-bold text-sm md:text-base">Instantly connect with India's largest verified fleet.</p>
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-3xl md:text-4xl font-black tracking-tight uppercase">{t.booking}</h2>
+            <p className="text-slate-500 font-bold text-sm md:text-base">Instantly connect with India's largest verified fleet.</p>
+          </div>
+          {/* Customer / Driver top-level toggle */}
+          <div className="flex bg-slate-100 dark:bg-slate-800 p-1.5 rounded-[24px] border border-slate-200 dark:border-slate-700">
+            <button
+              onClick={() => setPanel('customer')}
+              className={`px-6 py-2.5 rounded-[18px] text-xs font-black transition-all uppercase tracking-tight flex items-center gap-2 ${panel === 'customer' ? 'bg-white dark:bg-slate-700 shadow-xl text-orange-600' : 'text-slate-500'
+                }`}
+            >
+              <Package size={14} /> Customer
+            </button>
+            <button
+              onClick={() => setPanel('driver')}
+              className={`px-6 py-2.5 rounded-[18px] text-xs font-black transition-all uppercase tracking-tight flex items-center gap-2 ${panel === 'driver' ? 'bg-white dark:bg-slate-700 shadow-xl text-blue-600' : 'text-slate-500'
+                }`}
+            >
+              <Truck size={14} /> Driver
+            </button>
+          </div>
         </div>
-        <div className="flex bg-slate-100 dark:bg-slate-800 p-1.5 md:p-2 rounded-[24px] w-full sm:w-fit border border-slate-200 dark:border-slate-700">
-          <button
-            onClick={() => setView('marketplace')}
-            className={`flex-1 sm:flex-none px-4 md:px-8 py-2 md:py-3 rounded-[18px] text-xs md:text-sm font-black transition-all uppercase tracking-tighter ${view === 'marketplace' ? 'bg-white dark:bg-slate-700 shadow-xl text-orange-600' : 'text-slate-500'}`}
-          >
-            New Booking
-          </button>
-          <button
-            onClick={() => setView('active')}
-            className={`flex-1 sm:flex-none px-4 md:px-8 py-2 md:py-3 rounded-[18px] text-xs md:text-sm font-black transition-all uppercase tracking-tighter ${view === 'active' ? 'bg-white dark:bg-slate-700 shadow-xl text-orange-600' : 'text-slate-500'}`}
-          >
-            My Trips
-          </button>
-        </div>
+        {/* Sub-tabs only for customer */}
+        {panel === 'customer' && (
+          <div className="flex bg-slate-100 dark:bg-slate-800 p-1.5 rounded-[24px] w-full sm:w-fit border border-slate-200 dark:border-slate-700">
+            <button
+              onClick={() => setView('marketplace')}
+              className={`flex-1 sm:flex-none px-6 py-2.5 rounded-[18px] text-xs font-black transition-all uppercase tracking-tighter ${view === 'marketplace' ? 'bg-white dark:bg-slate-700 shadow-xl text-orange-600' : 'text-slate-500'
+                }`}
+            >New Booking</button>
+            <button
+              onClick={() => setView('active')}
+              className={`flex-1 sm:flex-none px-6 py-2.5 rounded-[18px] text-xs font-black transition-all uppercase tracking-tighter ${view === 'active' ? 'bg-white dark:bg-slate-700 shadow-xl text-orange-600' : 'text-slate-500'
+                }`}
+            >My Trips</button>
+          </div>
+        )}
       </div>
 
-      {view === 'marketplace' ? (
+      {panel === 'customer' && (view === 'marketplace' ? (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           <div className="lg:col-span-5 space-y-6">
             <form onSubmit={handleSearch} className="bg-white dark:bg-slate-800 p-6 md:p-10 rounded-[32px] md:rounded-[48px] border-4 border-slate-950 dark:border-slate-700 shadow-2xl space-y-6 md:space-y-8 relative overflow-hidden">
@@ -885,28 +914,120 @@ const BookingSection: React.FC<{ t: any }> = ({ t }) => {
             </div>
           )}
         </div>
-      )}
+      ))}
+
+
+      {/* ── DRIVER PANEL ─────────────────────────────────────────── */}
+      {panel === 'driver' && <DriverPanel t={t} />}
+      {/* ── END DRIVER PANEL ─────────────────────────────────────── */}
+
+
+      {/* ── MECHANIC PANEL ───────────────────────────────────────── */}
+      {panel === 'mechanic' && <MechanicPanel t={t} />}
+      {/* ── END MECHANIC PANEL ───────────────────────────────────── */}
+
+      {/* ── PLATFORM INFO SECTION ─────────────────────────────────── */}
+      <div className="mt-16 space-y-10">
+
+        {/* Hero Banner */}
+        <div className="relative overflow-hidden rounded-[40px] bg-gradient-to-br from-slate-950 via-slate-900 to-orange-950 border-4 border-slate-800 shadow-2xl p-10 md:p-16 text-white">
+          <div className="absolute -top-16 -right-16 w-72 h-72 bg-orange-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-16 -left-16 w-72 h-72 bg-orange-600/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="relative z-10 max-w-3xl">
+            <span className="inline-flex items-center gap-2 bg-orange-500/20 border border-orange-500/40 text-orange-400 text-[10px] font-black uppercase tracking-[0.3em] px-4 py-2 rounded-full mb-6">
+              <Truck size={12} /> On-Demand Logistics Platform
+            </span>
+            <h2 className="text-3xl md:text-5xl font-black tracking-tight leading-tight mb-4">
+              India's Most Powerful <br />
+              <span className="text-orange-500">Truck Booking</span> Clone App
+            </h2>
+            <p className="text-slate-300 text-base md:text-lg font-medium leading-relaxed mb-6">
+              A ready-made on-demand logistics solution that allows businesses to launch a delivery platform.
+              It connects users with nearby drivers for goods transportation using bikes, mini trucks, or loaders —
+              offering real-time booking, live tracking, and transparent pricing through a single platform.
+            </p>
+          </div>
+        </div>
+
+        {/* What Is It + How It Works */}
+        <div className="grid md:grid-cols-2 gap-6">
+          <div className="bg-white dark:bg-slate-800 rounded-[36px] border border-slate-100 dark:border-slate-700 shadow-xl p-8 space-y-5">
+            <div className="flex items-center gap-3">
+              <div className="bg-orange-100 dark:bg-orange-900/30 p-3 rounded-2xl"><Info className="text-orange-500" size={24} /></div>
+              <h3 className="text-xl font-black uppercase tracking-tight">What Is This App?</h3>
+            </div>
+            <p className="text-sm text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
+              A pre-built logistics and transport software designed to replicate the core features of the Porter app.
+              It enables users to book vehicles for goods delivery, track shipments in real time, and make secure online payments.
+            </p>
+            <div className="space-y-3 pt-2">
+              {['User App', 'Driver App', 'Admin Panel'].map((p, i) => (
+                <div key={i} className="flex items-center gap-3 bg-slate-50 dark:bg-slate-900 px-5 py-3 rounded-2xl">
+                  <div className={`w-3 h-3 rounded-full ${i === 0 ? 'bg-orange-500' : i === 1 ? 'bg-blue-500' : 'bg-emerald-500'}`} />
+                  <span className="font-black text-sm uppercase tracking-wide">{p}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="bg-white dark:bg-slate-800 rounded-[36px] border border-slate-100 dark:border-slate-700 shadow-xl p-8 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-2xl"><Navigation className="text-blue-500" size={24} /></div>
+              <h3 className="text-xl font-black uppercase tracking-tight">How It Works</h3>
+            </div>
+            <div className="space-y-3">
+              {[
+                [MapPin, 'orange', 'User enters pickup & drop location'],
+                [Truck, 'blue', 'Selects vehicle type (bike, mini truck, tempo)'],
+                [ArrowRight, 'purple', 'Gets instant fare estimate'],
+                [CheckCircle2, 'emerald', 'Driver accepts the booking'],
+                [Navigation, 'cyan', 'Live tracking begins'],
+                [Package, 'green', 'Goods delivered successfully'],
+                [ShieldCheck, 'emerald', 'Payment completed securely'],
+              ].map(([Icon, color, text]: any, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <div className={`w-8 h-8 rounded-full bg-${color}-100 dark:bg-${color}-900/30 flex items-center justify-center shrink-0`}>
+                    <Icon size={14} className={`text-${color}-600`} />
+                  </div>
+                  <span className="text-sm font-bold text-slate-600 dark:text-slate-300">{text}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Benefits Section */}
+        <div className="bg-slate-950 rounded-[40px] p-10 md:p-14 text-white space-y-8 border border-slate-800 shadow-2xl">
+          <div className="text-center space-y-3">
+            <span className="inline-flex items-center gap-2 bg-orange-500/20 border border-orange-500/30 text-orange-400 text-[10px] font-black uppercase tracking-[0.3em] px-5 py-2 rounded-full">
+              <ArrowRight size={12} /> Business Benefits
+            </span>
+            <h3 className="text-2xl md:text-4xl font-black tracking-tight">Why Launch with <span className="text-orange-500">Gaadii Dost?</span></h3>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {[
+              [Clock, 'orange', 'Faster Market Entry', 'Launch quickly without building from scratch.'],
+              [Star, 'yellow', 'Lower Development Cost', 'Reduce expenses vs custom app development.'],
+              [ShieldCheck, 'emerald', 'Proven Business Model', "Follows Porter's successful logistics model."],
+              [MapPin, 'blue', 'Scalable for Multiple Cities', 'Add cities, drivers, and vehicles as you grow.'],
+              [Package, 'purple', 'Full Brand Ownership', 'Your brand, your pricing, your rules.'],
+              [Truck, 'rose', 'Local & Enterprise Logistics', 'Suitable for SMEs and large enterprises.'],
+            ].map(([Icon, color, title, desc]: any, i) => (
+              <div key={i} className={`bg-slate-900 border border-slate-800 rounded-[28px] p-6 hover:border-${color}-500/50 hover:bg-slate-800 transition-all group`}>
+                <div className={`w-12 h-12 rounded-2xl bg-${color}-500/10 flex items-center justify-center mb-4 group-hover:bg-${color}-500/20 transition-colors`}>
+                  <Icon size={22} className={`text-${color}-400`} />
+                </div>
+                <h5 className="font-black text-base mb-2 text-white">{title}</h5>
+                <p className="text-slate-400 text-xs font-medium leading-relaxed">{desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+      </div>
+      {/* ── END PLATFORM INFO SECTION ─────────────────────────────── */}
+
     </div>
   );
 };
-
-// Internal icon fix for missing User import
-const UserIcon = ({ size, className }: { size: number, className?: string }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width={size}
-    height={size}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2.5"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className={className}
-  >
-    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-    <circle cx="12" cy="7" r="4" />
-  </svg>
-);
 
 export default BookingSection;
