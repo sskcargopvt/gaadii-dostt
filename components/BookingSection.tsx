@@ -26,7 +26,7 @@ import {
   TrendingUp,
   ToggleLeft,
   ToggleRight,
-  User
+  User as UserIcon
 } from 'lucide-react';
 import MapComponent from './MapComponent';
 import { supabase } from '../services/supabaseClient';
@@ -779,7 +779,7 @@ const BookingSection: React.FC<{ t: any }> = ({ t }) => {
                     )}
 
                     <div className="flex items-center gap-4 text-slate-500 font-bold text-sm md:text-base">
-                      <span className="flex items-center gap-2"><User size={18} className="text-orange-500" /> {activeBooking.driver}</span>
+                      <span className="flex items-center gap-2"><UserIcon size={18} className="text-orange-500" /> {activeBooking.driver}</span>
                       <span className="text-slate-300">|</span>
                       <span>ID: GD-98211</span>
                     </div>
