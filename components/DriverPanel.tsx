@@ -277,6 +277,8 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
     const [profileSuccess, setProfileSuccess] = useState(false);
     const [profileError, setProfileError] = useState<string | null>(null);
     const [profileExists, setProfileExists] = useState(false);
+    // profileConfirmed = true only after a confirmed SAVE with ALL required fields present
+    const [profileConfirmed, setProfileConfirmed] = useState(false);
     const [photoPreview, setPhotoPreview] = useState<string | null>(null);
 
     // ─── Chat & Bargain State ──────────────────────────────
@@ -312,10 +314,18 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
                 .eq("driver_id", driverId)
                 .single();
             if (data) {
-                setProfile({ ...profile, ...data });
+                setProfile((prev) => ({ ...prev, ...data }));
                 setProfileExists(true);
                 if (data.available !== undefined) setDriverAvailable(data.available);
                 if (data.profile_photo_url) setPhotoPreview(data.profile_photo_url);
+
+                // Only bypass onboarding gate if ALL 4 required fields are already in DB
+                const allFilled =
+                    !!data.full_name?.trim() &&
+                    !!data.phone?.trim() &&
+                    !!data.vehicle_registration?.trim() &&
+                    !!data.license_number?.trim();
+                if (allFilled) setProfileConfirmed(true);
             }
         })();
     }, [driverId]);
@@ -751,6 +761,15 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
 
             setProfileExists(true);
             setProfileSuccess(true);
+
+            // Confirm profile (open dashboard) only if all required fields are present
+            const allFilled =
+                !!profile.full_name?.trim() &&
+                !!profile.phone?.trim() &&
+                !!profile.vehicle_registration?.trim() &&
+                !!profile.license_number?.trim();
+            if (allFilled) setProfileConfirmed(true);
+
             addNotification(
                 CheckCircle2,
                 "emerald",
@@ -804,6 +823,17 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
 
                 setAutoSaveStatus('saved');
                 setProfileExists(true);
+
+                // Only confirm (open dashboard) AFTER a successful save with ALL 4 required fields
+                const allFilled =
+                    !!profile.full_name?.trim() &&
+                    !!profile.phone?.trim() &&
+                    !!profile.vehicle_registration?.trim() &&
+                    !!profile.license_number?.trim();
+                if (allFilled) {
+                    setProfileConfirmed(true);
+                }
+
                 setTimeout(() => setAutoSaveStatus('idle'), 2500);
             } catch (err: any) {
                 setAutoSaveStatus('error');
@@ -859,7 +889,9 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
     const onboardingProgress = Math.round((completedFields / requiredFields.length) * 100);
 
     // ─── Onboarding gate ──────────────────────────────────
-    if (!isProfileComplete && !profileLoading && driverId) {
+    // Gate uses profileConfirmed (= true only after a full save) NOT isProfileComplete
+    // This prevents the dashboard from opening just because fields are pre-loaded from DB
+    if (!profileConfirmed && !profileLoading && driverId) {
         return (
             <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950">
                 <div className="w-full max-w-3xl">
