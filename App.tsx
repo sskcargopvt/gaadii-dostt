@@ -33,6 +33,8 @@ import AdminSection from './components/AdminSection';
 import ProfileSection from './components/ProfileSection';
 import DashboardHome from './components/DashboardHome';
 import AuthSection from './components/AuthSection';
+import DriverPanel from './components/DriverPanel';
+import MechanicPanel from './components/MechanicPanel';
 import { supabase } from './services/supabaseClient';
 
 const App: React.FC = () => {
@@ -126,7 +128,6 @@ const App: React.FC = () => {
       { id: AppPanel.GPS, label: t.gps, icon: MapPin },
       { id: AppPanel.EMERGENCY, label: t.emergency, icon: Shield },
       { id: AppPanel.BOOKING, label: t.booking, icon: Truck },
-      { id: AppPanel.BILTY, label: t.bilty, icon: FileText },
       { id: AppPanel.CALCULATOR, label: t.calculator, icon: Sparkles },
       { id: AppPanel.PROFILE, label: t.profile, icon: Settings },
     ];
@@ -141,10 +142,13 @@ const App: React.FC = () => {
   const renderContent = () => {
     if (!user) return null;
     switch (activePanel) {
-      case AppPanel.DASHBOARD: return <DashboardHome onNavigate={setActivePanel} t={t} user={user} onLogout={handleLogout} />;
+      case AppPanel.DASHBOARD:
+        if (user.role === 'driver') return <DriverPanel t={t} />;
+        if (user.role === 'mechanic') return <MechanicPanel t={t} />;
+        return <DashboardHome onNavigate={setActivePanel} t={t} user={user} onLogout={handleLogout} />;
       case AppPanel.GPS: return <GPSSection t={t} />;
       case AppPanel.EMERGENCY: return <EmergencySection t={t} />;
-      case AppPanel.BOOKING: return <BookingSection t={t} />;
+      case AppPanel.BOOKING: return <BookingSection t={t} user={user} />;
       case AppPanel.BILTY: return <BiltySection t={t} user={user} onUpdate={setUser} />;
       case AppPanel.CALCULATOR: return <CalculatorSection t={t} />;
       case AppPanel.PROFILE: return <ProfileSection t={t} user={user} onUpdate={setUser} onLogout={handleLogout} />;
@@ -185,8 +189,8 @@ const App: React.FC = () => {
                   key={item.id}
                   onClick={() => setActivePanel(item.id)}
                   className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all ${activePanel === item.id
-                      ? 'bg-white text-indigo-600 shadow-xl shadow-black/20'
-                      : 'text-white/70 hover:text-white hover:bg-white/10'
+                    ? 'bg-white text-indigo-600 shadow-xl shadow-black/20'
+                    : 'text-white/70 hover:text-white hover:bg-white/10'
                     }`}
                 >
                   <item.icon size={18} strokeWidth={2.5} /> {item.label}
@@ -237,10 +241,10 @@ const App: React.FC = () => {
                 <div className="text-right hidden sm:block">
                   <p className="text-xs font-black uppercase tracking-tight leading-none mb-1.5">{user.name}</p>
                   <div className={`inline-block px-2 py-0.5 rounded-[4px] text-[8px] font-black uppercase tracking-[0.1em] border ${user.role === 'admin'
-                      ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white border-pink-400'
-                      : user.role === 'transporter'
-                        ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white border-indigo-400'
-                        : 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white border-cyan-400'
+                    ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white border-pink-400'
+                    : user.role === 'transporter'
+                      ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white border-indigo-400'
+                      : 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white border-cyan-400'
                     }`}>
                     {user.role}
                   </div>
@@ -261,18 +265,11 @@ const App: React.FC = () => {
 
         {/* Mobile Navigation Interface */}
         <nav className="lg:hidden fixed bottom-6 left-6 right-6 h-18 glass-nav border border-white/20 dark:border-white/10 flex items-center justify-around px-2 z-50 rounded-[28px] shadow-[0_20px_40px_rgba(0,0,0,0.15)] safe-area-bottom">
-          {[
-            { id: AppPanel.DASHBOARD, icon: LayoutDashboard, label: 'Home' },
-            { id: AppPanel.GPS, icon: MapPin, label: 'GPS' },
-            { id: AppPanel.BOOKING, icon: Truck, label: 'Book' },
-            { id: AppPanel.BILTY, icon: FileText, label: 'Bilty' },
-            { id: AppPanel.EMERGENCY, icon: Shield, label: 'SOS' },
-          ].map((item) => (
+          {navItems.slice(0, 5).map((item) => (
             <button
               key={item.id}
               onClick={() => setActivePanel(item.id)}
-              className={`flex flex-col items-center justify-center gap-1.5 px-3 py-2 rounded-2xl transition-all active:scale-90 ${activePanel === item.id ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500'
-                }`}
+              className={`flex flex-col items-center justify-center gap-1.5 px-3 py-2 rounded-2xl transition-all active:scale-90 ${activePanel === item.id ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500'}`}
             >
               <item.icon size={22} strokeWidth={activePanel === item.id ? 3 : 2} />
               <span className="text-[9px] font-black uppercase tracking-widest">{item.label}</span>

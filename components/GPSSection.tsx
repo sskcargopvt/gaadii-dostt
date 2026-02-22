@@ -908,7 +908,7 @@ const GPSSection: React.FC<{ t: any }> = ({ t }) => {
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
         <div>
-          <h2 className="text-4xl md:text-5xl font-black tracking-tighter uppercase leading-none mb-2 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">GPS Marketplace</h2>
+          <h2 className="text-4xl md:text-5xl font-black tracking-tighter uppercase leading-none mb-2 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">GADI GPS</h2>
           <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px]">Complete Fleet Management System</p>
         </div>
       </div>

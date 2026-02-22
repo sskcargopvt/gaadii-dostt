@@ -26,12 +26,13 @@ import {
   TrendingUp,
   ToggleLeft,
   ToggleRight,
-  User as UserIcon
+  User as UserIcon, CreditCard, History, Bike, IndianRupee, Activity, Zap
 } from 'lucide-react';
 import MapComponent from './MapComponent';
 import { supabase } from '../services/supabaseClient';
 import DriverPanel from './DriverPanel';
 import MechanicPanel from './MechanicPanel';
+import { User } from '../types';
 
 // Helper function to calculate distance between two coordinates in km (Haversine formula)
 const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
@@ -61,7 +62,11 @@ const getCurrentCheckpoint = (progress: number) => {
   return routeCheckpoints[3];
 };
 
-const BookingSection: React.FC<{ t: any }> = ({ t }) => {
+const BookingSection: React.FC<{ t: any; user?: User }> = ({ t, user }) => {
+  // Role-gate: drivers and mechanics see their own panels
+  if (user?.role === 'driver') return <DriverPanel t={t} />;
+  if (user?.role === 'mechanic') return <MechanicPanel t={t} />;
+
   const [view, setView] = useState<'marketplace' | 'active'>('marketplace');
   const [searching, setSearching] = useState(false);
   const [foundTrucks, setFoundTrucks] = useState<any[]>([]);
@@ -71,7 +76,7 @@ const BookingSection: React.FC<{ t: any }> = ({ t }) => {
   const [bookingStatus, setBookingStatus] = useState<string>(''); // 'pending', 'accepted', 'rejected', 'bargaining'
 
   // Panel toggle
-  const [panel, setPanel] = useState<'customer' | 'driver' | 'mechanic'>('customer');
+  const [panel, setPanel] = useState<'driver' | 'mechanic'>('driver');
 
   // Driver demo state
   const [driverAvailable, setDriverAvailable] = useState(true);
@@ -91,6 +96,9 @@ const BookingSection: React.FC<{ t: any }> = ({ t }) => {
   const [dropoffCoords, setDropoffCoords] = useState({ lat: 28.4744, lng: 77.5030 });
   const [truckPosition, setTruckPosition] = useState({ lat: 28.6274, lng: 77.3725 });
   const [tripProgress, setTripProgress] = useState(0);
+  const [distance, setDistance] = useState<number>(0);
+  const [weightUnit, setWeightUnit] = useState<'kg' | 'tons'>('kg');
+  const [customItem, setCustomItem] = useState('');
 
   // Suggestions
   const [pickupSuggestions, setPickupSuggestions] = useState<any[]>([]);
@@ -160,6 +168,11 @@ const BookingSection: React.FC<{ t: any }> = ({ t }) => {
   };
 
   useEffect(() => {
+    const dist = calculateDistance(pickupCoords.lat, pickupCoords.lng, dropoffCoords.lat, dropoffCoords.lng);
+    setDistance(dist);
+  }, [pickupCoords, dropoffCoords]);
+
+  useEffect(() => {
     let interval: number | undefined;
     if (view === 'active' && activeBooking) {
       setTruckPosition(pickupCoords);
@@ -207,7 +220,7 @@ const BookingSection: React.FC<{ t: any }> = ({ t }) => {
       }
 
       if (vehicles) {
-        // 3. Filter vehicles within 50km radius and sort by distance
+        // 3. Filter vehicles within 100km radius and MATCHING vehicle type, then sort by distance
         const nearbyTrucks = vehicles
           .map((vehicle: any) => {
             const dist = calculateDistance(
@@ -218,7 +231,7 @@ const BookingSection: React.FC<{ t: any }> = ({ t }) => {
             );
             return { ...vehicle, distNum: dist };
           })
-          .filter((v: any) => v.distNum <= 50)
+          .filter((v: any) => v.distNum <= 100 && v.type === vehicleType)
           .sort((a: any, b: any) => a.distNum - b.distNum)
           .map((vehicle: any) => {
             return {
@@ -232,12 +245,34 @@ const BookingSection: React.FC<{ t: any }> = ({ t }) => {
               lng: vehicle.lng
             };
           })
-          .slice(0, 5); // Limit to top 5 closest matches
+          .slice(0, 10); // Limit to top 10 closest matches
 
         // Artificial delay for "Scanning" effect
         setTimeout(() => {
           setFoundTrucks(nearbyTrucks);
           setSearching(false);
+
+          // 📢 Proactive Broadcast: Inform matching drivers within 100km about this search
+          const searchChannel = supabase.channel('driver_booking_requests');
+          searchChannel.subscribe((status) => {
+            if (status === 'SUBSCRIBED') {
+              searchChannel.send({
+                type: 'broadcast',
+                event: 'SEARCH_INTENT',
+                payload: {
+                  id: `intent-${Date.now()}`,
+                  pickup_location: pickupAddress,
+                  pickup_lat: pickupCoords.lat,
+                  pickup_lng: pickupCoords.lng,
+                  goods_type: goodsType === 'Other' ? customItem : goodsType,
+                  weight: `${weight} ${weightUnit}`,
+                  vehicle_type: vehicleType,
+                  distance_km: distance.toFixed(1)
+                }
+              });
+              setTimeout(() => supabase.removeChannel(searchChannel), 2000);
+            }
+          });
         }, 2500);
       } else {
         setSearching(false);
@@ -318,11 +353,12 @@ const BookingSection: React.FC<{ t: any }> = ({ t }) => {
           pickup_lng: pickupCoords.lng,
           drop_lat: dropoffCoords.lat,
           drop_lng: dropoffCoords.lng,
-          goods_type: goodsType,
-          weight: weight || '0',
+          goods_type: goodsType === 'Other' ? customItem : goodsType,
+          weight: `${weight} ${weightUnit}`,
           offered_price: priceValue,
           status: 'pending',
           vehicle_id: truck.id,
+          distance_km: distance.toFixed(1),
           messages: [], // Initialize empty messages array for chat
           created_at: new Date().toISOString()
         }])
@@ -463,570 +499,403 @@ const BookingSection: React.FC<{ t: any }> = ({ t }) => {
   // Calculate remaining distance for UI display based on trip progress
   const remainingKm = (1 - (tripProgress / 100)) * 12.5;
 
+  const inputCls = "w-full bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 rounded-2xl py-4 pl-12 pr-4 text-sm font-bold focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500/40 outline-none transition-all";
+
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h2 className="text-3xl md:text-4xl font-black tracking-tight uppercase">{t.booking}</h2>
-            <p className="text-slate-500 font-bold text-sm md:text-base">Instantly connect with India's largest verified fleet.</p>
-          </div>
-          {/* Customer / Driver top-level toggle */}
-          <div className="flex bg-slate-100 dark:bg-slate-800 p-1.5 rounded-[24px] border border-slate-200 dark:border-slate-700">
-            <button
-              onClick={() => setPanel('customer')}
-              className={`px-6 py-2.5 rounded-[18px] text-xs font-black transition-all uppercase tracking-tight flex items-center gap-2 ${panel === 'customer' ? 'bg-white dark:bg-slate-700 shadow-xl text-orange-600' : 'text-slate-500'
-                }`}
-            >
-              <Package size={14} /> Customer
-            </button>
-            <button
-              onClick={() => setPanel('driver')}
-              className={`px-6 py-2.5 rounded-[18px] text-xs font-black transition-all uppercase tracking-tight flex items-center gap-2 ${panel === 'driver' ? 'bg-white dark:bg-slate-700 shadow-xl text-blue-600' : 'text-slate-500'
-                }`}
-            >
-              <Truck size={14} /> Driver
-            </button>
-          </div>
+    <div className="space-y-12 animate-in fade-in duration-700 pb-20">
+      {/* ─── Hero / Header ─── */}
+      <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="space-y-2">
+          <h2 className="text-4xl md:text-5xl font-black tracking-tighter uppercase italic">
+            Book a <span className="text-orange-500">Vehicle</span>
+          </h2>
+          <p className="text-slate-500 font-bold text-lg flex items-center gap-2">
+            <ShieldCheck size={18} className="text-orange-500" /> India's most reliable transport network
+          </p>
         </div>
-        {/* Sub-tabs only for customer */}
-        {panel === 'customer' && (
-          <div className="flex bg-slate-100 dark:bg-slate-800 p-1.5 rounded-[24px] w-full sm:w-fit border border-slate-200 dark:border-slate-700">
-            <button
-              onClick={() => setView('marketplace')}
-              className={`flex-1 sm:flex-none px-6 py-2.5 rounded-[18px] text-xs font-black transition-all uppercase tracking-tighter ${view === 'marketplace' ? 'bg-white dark:bg-slate-700 shadow-xl text-orange-600' : 'text-slate-500'
-                }`}
-            >New Booking</button>
-            <button
-              onClick={() => setView('active')}
-              className={`flex-1 sm:flex-none px-6 py-2.5 rounded-[18px] text-xs font-black transition-all uppercase tracking-tighter ${view === 'active' ? 'bg-white dark:bg-slate-700 shadow-xl text-orange-600' : 'text-slate-500'
-                }`}
-            >My Trips</button>
-          </div>
-        )}
+        <div className="flex items-center gap-3 bg-white dark:bg-slate-800 p-2 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-700">
+          <button
+            onClick={() => setView('marketplace')}
+            className={`px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${view === 'marketplace' ? 'bg-orange-500 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-50'}`}
+          >
+            New Booking
+          </button>
+          <button
+            onClick={() => activeBooking && setView('active')}
+            disabled={!activeBooking}
+            className={`px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${view === 'active' ? 'bg-orange-500 text-white shadow-lg' : 'text-slate-400 cursor-not-allowed'}`}
+          >
+            Track Order
+          </button>
+        </div>
       </div>
 
-      {panel === 'customer' && (view === 'marketplace' ? (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-          <div className="lg:col-span-5 space-y-6">
-            <form onSubmit={handleSearch} className="bg-white dark:bg-slate-800 p-6 md:p-10 rounded-[32px] md:rounded-[48px] border-4 border-slate-950 dark:border-slate-700 shadow-2xl space-y-6 md:space-y-8 relative overflow-hidden">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3 md:gap-4">
-                  <div className="bg-orange-500 p-2 md:p-3 rounded-2xl text-white shadow-xl shadow-orange-500/20">
-                    <Package size={24} strokeWidth={2.5} />
-                  </div>
-                  <h3 className="text-xl md:text-2xl font-black uppercase tracking-tight">Shipment Details</h3>
-                </div>
-                <button type="button" onClick={detectLocation} className="flex items-center gap-2 text-[10px] font-black uppercase bg-slate-100 dark:bg-slate-900 px-3 py-2 rounded-xl text-slate-500 hover:text-orange-500 transition-colors">
-                  <Target size={14} /> Detect Sales
-                </button>
-              </div>
+      {/* ─── Main Booking Tool ─── */}
+      {view === 'marketplace' && (
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
+          {/* Left: Booking Form */}
+          <div className="xl:col-span-5 space-y-6">
+            <div className="bg-white dark:bg-slate-800 rounded-[40px] p-8 lg:p-10 border border-slate-100 dark:border-slate-700 shadow-2xl space-y-8 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full blur-3xl" />
 
-              <div className="space-y-4 md:space-y-6">
-                {/* Pickup with Suggestions */}
-                <div className="relative">
-                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Pickup Address</label>
-                  <div className="relative mt-2">
-                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-orange-500" size={20} />
+              <div className="space-y-6">
+                <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 flex items-center gap-2">
+                  <MapPin size={12} className="text-orange-500" /> Route Details
+                </h3>
+
+                {/* Pickup */}
+                <div className="relative group">
+                  <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-1 mb-1.5 block">Pickup Location</label>
+                  <div className="relative">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 border-orange-500 flex items-center justify-center">
+                      <div className="w-1.5 h-1.5 bg-orange-500 rounded-full" />
+                    </div>
                     <input
                       type="text"
-                      placeholder="Search pickup location..."
-                      className="w-full bg-slate-50 dark:bg-slate-900 border-0 rounded-2xl py-3 md:py-5 pl-12 pr-4 focus:ring-4 focus:ring-orange-500/10 font-bold text-sm md:text-base"
+                      placeholder="Enter pickup address"
                       value={pickupAddress}
                       onChange={(e) => handleAddressSearch(e.target.value, 'pickup')}
+                      className={inputCls}
                     />
+                    <button onClick={detectLocation} className="absolute right-4 top-1/2 -translate-y-1/2 text-orange-500 hover:scale-110 transition-transform">
+                      <Target size={18} />
+                    </button>
                   </div>
-                  {showSuggestions === 'pickup' && pickupSuggestions.length > 0 && (
-                    <div className="absolute z-50 left-0 right-0 top-full mt-2 bg-white dark:bg-slate-800 border-2 border-slate-950 dark:border-slate-700 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                  {showSuggestions === 'pickup' && (
+                    <div className="absolute z-50 left-0 right-0 mt-2 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-top-2">
                       {pickupSuggestions.map((s) => (
-                        <button key={s.place_id} onClick={() => selectSuggestion(s, 'pickup')} className="w-full text-left px-6 py-4 hover:bg-slate-50 dark:hover:bg-slate-900/50 border-b last:border-0 border-slate-100 dark:border-slate-700 flex items-center gap-3">
-                          <MapPin size={16} className="text-slate-400" />
-                          <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{s.description}</span>
+                        <button key={s.place_id} onClick={() => selectSuggestion(s, 'pickup')} className="w-full text-left p-4 hover:bg-slate-50 dark:hover:bg-slate-900 flex items-start gap-3 border-b border-slate-50 dark:border-slate-800 last:border-0">
+                          <MapPin size={16} className="text-slate-400 shrink-0 mt-1" />
+                          <span className="text-sm font-bold truncate">{s.description}</span>
                         </button>
                       ))}
                     </div>
                   )}
                 </div>
 
-                {/* Dropoff with Suggestions */}
-                <div className="relative">
-                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Drop-off Address</label>
-                  <div className="relative mt-2">
-                    <Navigation className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-500" size={20} />
+                {/* Dropoff */}
+                <div className="relative group">
+                  <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-1 mb-1.5 block">Drop-off Location</label>
+                  <div className="relative">
+                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-red-500" size={18} />
                     <input
                       type="text"
-                      placeholder="Search delivery location..."
-                      className="w-full bg-slate-50 dark:bg-slate-900 border-0 rounded-2xl py-5 pl-12 pr-4 focus:ring-4 focus:ring-orange-500/10 font-bold"
+                      placeholder="Where are you sending to?"
                       value={dropoffAddress}
                       onChange={(e) => handleAddressSearch(e.target.value, 'dropoff')}
+                      className={inputCls}
                     />
                   </div>
-                  {showSuggestions === 'dropoff' && dropoffSuggestions.length > 0 && (
-                    <div className="absolute z-50 left-0 right-0 top-full mt-2 bg-white dark:bg-slate-800 border-2 border-slate-950 dark:border-slate-700 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                  {showSuggestions === 'dropoff' && (
+                    <div className="absolute z-50 left-0 right-0 mt-2 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl shadow-2xl overflow-hidden">
                       {dropoffSuggestions.map((s) => (
-                        <button key={s.place_id} onClick={() => selectSuggestion(s, 'dropoff')} className="w-full text-left px-6 py-4 hover:bg-slate-50 dark:hover:bg-slate-900/50 border-b last:border-0 border-slate-100 dark:border-slate-700 flex items-center gap-3">
-                          <MapPin size={16} className="text-slate-400" />
-                          <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{s.description}</span>
+                        <button key={s.place_id} onClick={() => selectSuggestion(s, 'dropoff')} className="w-full text-left p-4 hover:bg-slate-50 dark:hover:bg-slate-900 flex items-start gap-3 border-b border-slate-50 dark:border-slate-800 last:border-0">
+                          <MapPin size={16} className="text-slate-400 shrink-0 mt-1" />
+                          <span className="text-sm font-bold truncate">{s.description}</span>
                         </button>
                       ))}
                     </div>
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Goods Type</label>
-                    <div className="relative">
-                      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
-                      <select
-                        className="w-full bg-slate-50 dark:bg-slate-900 border-0 rounded-2xl py-5 px-6 focus:ring-4 focus:ring-orange-500/10 font-bold appearance-none cursor-pointer"
-                        value={goodsType}
-                        onChange={(e) => setGoodsType(e.target.value)}
-                      >
-                        <option>FMCG</option>
-                        <option>Electronics</option>
-                        <option>Construction</option>
-                        <option>Textiles</option>
-                        <option>Industrial Equipment</option>
-                      </select>
-                    </div>
+                {/* Additional Details */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-1">Goods Type</label>
+                    <select value={goodsType} onChange={(e) => setGoodsType(e.target.value)} className={inputCls}>
+                      <option value="FMCG">FMCG</option>
+                      <option value="Furniture">Furniture</option>
+                      <option value="Electronics">Electronics</option>
+                      <option value="Textile">Textile</option>
+                      <option value="Construction">Construction</option>
+                      <option value="Other">Other (Specify)</option>
+                    </select>
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Approx Weight (Tons)</label>
+                  {goodsType === 'Other' && (
+                    <div className="space-y-1.5">
+                      <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-1">Item Name</label>
+                      <input
+                        type="text"
+                        value={customItem}
+                        onChange={(e) => setCustomItem(e.target.value)}
+                        placeholder="Enter item name"
+                        className={inputCls}
+                      />
+                    </div>
+                  )}
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-1">Vehicle Type</label>
+                    <select value={vehicleType} onChange={(e) => setVehicleType(e.target.value)} className={inputCls}>
+                      <optgroup label="Mini Trucks">
+                        <option value="Tata Ace">Tata Ace (750kg)</option>
+                        <option value="Mahindra Supro">Mahindra Supro (1 ton)</option>
+                      </optgroup>
+                      <optgroup label="Trailers & Heavy">
+                        <option value="Flatbed Trailer">Flatbed Trailer</option>
+                        <option value="Lowboy Trailer">Lowboy Trailer</option>
+                        <option value="Refrigerated Trailer">Refrigerated Trailer</option>
+                        <option value="Container Trailer">Container Trailer</option>
+                        <option value="Multi-axle Trailer">Multi-axle Trailer</option>
+                      </optgroup>
+                    </select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-1">Est. Weight</label>
                     <div className="relative">
-                      <Weight className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                       <input
                         type="number"
-                        placeholder="e.g. 15"
-                        className="w-full bg-slate-50 dark:bg-slate-900 border-0 rounded-2xl py-5 pl-12 focus:ring-4 focus:ring-orange-500/10 font-bold"
                         value={weight}
                         onChange={(e) => setWeight(e.target.value)}
+                        placeholder="e.g. 500"
+                        className={inputCls}
                       />
+                      <div className="absolute right-2 top-1/2 -translate-y-1/2 flex bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+                        <button
+                          onClick={() => setWeightUnit('kg')}
+                          className={`px-3 py-1.5 text-[10px] font-black transition-colors ${weightUnit === 'kg' ? 'bg-orange-500 text-white' : 'text-slate-500'}`}
+                        >
+                          KG
+                        </button>
+                        <button
+                          onClick={() => setWeightUnit('tons')}
+                          className={`px-3 py-1.5 text-[10px] font-black transition-colors ${weightUnit === 'tons' ? 'bg-orange-500 text-white' : 'text-slate-500'}`}
+                        >
+                          TON
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Vehicle Category</label>
-                    <div className="relative">
-                      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
-                      <select
-                        className="w-full bg-slate-50 dark:bg-slate-900 border-0 rounded-2xl py-5 px-6 focus:ring-4 focus:ring-orange-500/10 font-bold appearance-none cursor-pointer"
-                        value={vehicleType}
-                        onChange={(e) => setVehicleType(e.target.value)}
-                      >
-                        <option>Tata Ace / LCV</option>
-                        <option>14ft Container</option>
-                        <option>19ft Eicher</option>
-                        <option>22ft Multi-Axle</option>
-                        <option>32ft MX Trailer</option>
-                      </select>
+                <div className="bg-orange-50 dark:bg-orange-950/20 rounded-2xl p-4 flex items-center justify-between border border-orange-100 dark:border-orange-900/40">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/40 rounded-xl flex items-center justify-center text-orange-500">
+                      <Navigation size={20} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest leading-none mb-1">Total Distance</p>
+                      <p className="text-xl font-black italic">{distance.toFixed(1)} KM</p>
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Date of Dispatch</label>
-                    <div className="relative">
-                      <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                      <input
-                        type="date"
-                        className="w-full bg-slate-50 dark:bg-slate-900 border-0 rounded-2xl py-5 pl-12 focus:ring-4 focus:ring-orange-500/10 font-bold"
-                        value={bookingDate}
-                        onChange={(e) => setBookingDate(e.target.value)}
-                      />
-                    </div>
+                  <div className="text-right">
+                    <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest leading-none mb-1">Estimated Duration</p>
+                    <p className="text-sm font-bold text-slate-600 dark:text-slate-400">~{Math.round(distance * 3)} mins</p>
                   </div>
                 </div>
               </div>
 
+              {/* Find Trucks Button */}
               <button
-                type="submit"
-                className="w-full bg-slate-950 dark:bg-orange-500 text-white py-6 rounded-[28px] font-black text-xl hover:bg-black dark:hover:bg-orange-600 shadow-2xl transition-all flex items-center justify-center gap-3 group active:scale-[0.98]"
-                disabled={searching}
+                onClick={handleSearch}
+                disabled={searching || !pickupAddress || !dropoffAddress}
+                className="w-full py-5 bg-orange-500 hover:bg-orange-600 text-white rounded-[24px] font-black text-lg uppercase tracking-widest flex items-center justify-center gap-3 disabled:opacity-50 shadow-2xl shadow-orange-500/30 transition-all hover:scale-[1.02] active:scale-95"
               >
                 {searching ? (
-                  <div className="w-8 h-8 border-4 border-white/30 border-t-white rounded-full animate-spin" />
+                  <div className="flex items-center gap-3">
+                    <div className="w-5 h-5 border-4 border-white border-t-transparent rounded-full animate-spin" />
+                    Connecting to Fleet...
+                  </div>
                 ) : (
-                  <>FIND VERIFIED TRUCKS <ArrowRight size={24} strokeWidth={3} className="group-hover:translate-x-2 transition-transform" /></>
+                  <><Search size={22} strokeWidth={3} /> Search Available Trucks</>
                 )}
               </button>
-            </form>
-
-            <div className="p-6 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800 rounded-[32px] flex gap-4">
-              <Info className="text-blue-500 shrink-0" size={24} />
-              <div>
-                <h5 className="font-black text-blue-900 dark:text-blue-300 text-sm">Real-time GPS Guaranteed</h5>
-                <p className="text-xs text-blue-700 dark:text-blue-400 font-medium mt-1">All trucks in our network are equipped with mandatory dual-band GPS sensors and verified documentation.</p>
-              </div>
             </div>
           </div>
 
-          <div className="lg:col-span-7 space-y-6">
-            <div className="relative group">
+          {/* Right: Map / Marketplace Results */}
+          <div className="xl:col-span-7 space-y-6">
+            <div className="bg-white dark:bg-slate-800 rounded-[40px] overflow-hidden border border-slate-100 dark:border-slate-700 shadow-2xl h-[500px] xl:h-[600px] relative group">
               <MapComponent
-                isDraggable={true}
                 startPos={pickupCoords}
                 endPos={dropoffCoords}
                 onPositionsChange={handleMapPositionChange}
+                isDraggable={true}
               />
-              <div className="absolute top-6 left-6 bg-slate-950/90 backdrop-blur-md text-white px-5 py-3 rounded-2xl text-xs font-black shadow-2xl flex items-center gap-3 border border-white/10 pointer-events-none">
-                <Move size={16} className="text-orange-500" />
-                DRAG MARKERS TO REFINE ROUTE
-              </div>
-            </div>
 
-            {searching && (
-              <div className="bg-white dark:bg-slate-900 rounded-[48px] p-24 flex flex-col items-center justify-center text-center space-y-8 border-4 border-dashed border-slate-200 dark:border-slate-800 animate-pulse">
-                <div className="relative">
-                  <div className="w-48 h-48 border-4 border-orange-500/20 rounded-full animate-[ping_3s_infinite]" />
-                  <div className="absolute inset-0 m-auto w-32 h-32 border-8 border-orange-500/40 rounded-full animate-spin border-t-orange-500" />
-                  <Truck className="absolute inset-0 m-auto text-orange-600" size={56} strokeWidth={2.5} />
-                </div>
-                <div>
-                  <h4 className="text-4xl font-black uppercase tracking-tighter">Scanning Cloud Network</h4>
-                  <p className="text-slate-500 text-xl font-bold mt-2 italic">Checking 50,000+ trucks in NCR-UP corridor...</p>
-                </div>
-              </div>
-            )}
-
-            {!searching && foundTrucks.length > 0 && (
-              <div className="space-y-4 animate-in fade-in slide-in-from-right duration-700">
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 ml-4">{foundTrucks.length} TRUCKS READY FOR DISPATCH</h4>
-                  <button
-                    onClick={sendRequestToAllTrucks}
-                    className="bg-orange-500 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-105 transition-transform shadow-xl flex items-center gap-2"
-                  >
-                    <Truck size={16} /> SEND TO ALL DRIVERS
-                  </button>
-                </div>
-                {foundTrucks.map((truck) => (
-                  <div key={truck.id} className="bg-white dark:bg-slate-800 p-5 md:p-8 rounded-[32px] md:rounded-[40px] border border-slate-100 dark:border-slate-700 shadow-xl hover:border-orange-500 transition-all flex flex-col items-center justify-between gap-6 md:gap-8 group">
-                    <div className="flex flex-col md:flex-row gap-6 md:gap-8 w-full items-center md:items-start text-center md:text-left">
-                      <div className="w-20 h-20 md:w-24 md:h-24 bg-slate-100 dark:bg-slate-900 rounded-[24px] md:rounded-[32px] flex items-center justify-center text-slate-400 group-hover:bg-orange-500 group-hover:text-white transition-all duration-500 shadow-lg shrink-0">
-                        <Truck size={36} className="md:w-12 md:h-12" strokeWidth={2} />
-                      </div>
-                      <div className="flex-1 w-full">
-                        <div className="flex flex-col md:flex-row items-center md:items-center gap-2 md:gap-3 mb-2 justify-center md:justify-start">
-                          <h4 className="text-xl md:text-2xl font-black tracking-tight">{truck.truck}</h4>
-                          <div className="bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
-                            <ShieldCheck size={12} /> Verified
+              {/* Marketplace Overlay */}
+              {foundTrucks.length > 0 && !searching && (
+                <div className="absolute inset-x-4 bottom-4 z-10 flex gap-4 overflow-x-auto pb-2 no-scrollbar scroll-smooth">
+                  {foundTrucks.map((truck) => (
+                    <div key={truck.id} className="min-w-[320px] bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-[32px] p-6 shadow-2xl border border-white/20 flex flex-col justify-between">
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/40 rounded-2xl flex items-center justify-center text-orange-500">
+                            <Truck size={24} />
                           </div>
-                        </div>
-                        <div className="flex flex-col md:flex-row items-center gap-2 md:gap-4 justify-center md:justify-start">
-                          <span className="text-base md:text-lg font-bold text-slate-600 dark:text-slate-400">{truck.driver}</span>
-                          <div className="flex items-center gap-1 bg-amber-50 dark:bg-amber-900/30 text-amber-600 px-3 py-1 rounded-xl text-sm font-black">
-                            {truck.rating} <Star size={14} fill="currentColor" />
-                          </div>
-                          <span className="text-sm font-black text-slate-400 uppercase tracking-widest">{truck.dist}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex flex-row md:flex-col items-center justify-between w-full md:w-auto md:items-end gap-3 border-t md:border-t-0 border-slate-100 pt-4 md:pt-0">
-                      <p className="text-2xl md:text-4xl font-black text-orange-600">{truck.price}</p>
-                      <button onClick={() => handleBook(truck)} className="bg-slate-950 dark:bg-white dark:text-slate-950 text-white px-6 md:px-10 py-3 md:py-4 rounded-2xl font-black text-xs md:text-sm uppercase tracking-widest hover:scale-[1.05] transition-transform shadow-2xl flex items-center gap-2 md:gap-3">
-                        DISPATCH <ArrowRight size={20} strokeWidth={3} className="hidden md:block" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      ) : (
-        <div className="bg-white dark:bg-slate-800 rounded-[56px] p-12 border border-slate-100 dark:border-slate-700 shadow-3xl">
-          {!activeBooking ? (
-            <div className="text-center py-24">
-              <div className="bg-slate-50 dark:bg-slate-900 w-32 h-32 rounded-full flex items-center justify-center mx-auto mb-8 border-4 border-dashed border-slate-200 dark:border-slate-800">
-                <Clock size={64} className="text-slate-200" />
-              </div>
-              <h3 className="text-3xl font-black text-slate-400 uppercase tracking-tighter">No Active Trips</h3>
-              <p className="text-slate-500 font-bold max-w-sm mx-auto mt-4">Book a verified truck from the marketplace to track your cargo in real-time.</p>
-              <button onClick={() => setView('marketplace')} className="mt-8 px-10 py-4 bg-orange-500 text-white rounded-2xl font-black uppercase tracking-widest shadow-2xl shadow-orange-500/30 hover:scale-105 transition-transform">Start Searching</button>
-            </div>
-          ) : (
-            <div className="max-w-5xl mx-auto space-y-12 animate-in zoom-in duration-700">
-              <div className="flex flex-col lg:flex-row gap-16 items-start">
-                <div className="flex-1 space-y-10">
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3 text-emerald-500 font-black uppercase text-xs tracking-[0.3em]">
-                      <div className="w-3 h-3 bg-emerald-500 rounded-full animate-[pulse_1s_infinite]" />
-                      {tripProgress < 100 ? 'GPS ACTIVE: IN TRANSIT' : 'TRIP COMPLETED'}
-                    </div>
-                    <h3 className="text-3xl md:text-6xl font-black tracking-tighter leading-none">{activeBooking.truck}</h3>
-
-                    {/* Real-time Booking Status */}
-                    {bookingStatus && (
-                      <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl font-black text-sm ${bookingStatus === 'accepted' ? 'bg-emerald-100 text-emerald-700' :
-                        bookingStatus === 'rejected' ? 'bg-red-100 text-red-700' :
-                          bookingStatus === 'bargaining' ? 'bg-amber-100 text-amber-700' :
-                            'bg-blue-100 text-blue-700'
-                        }`}>
-                        <div className={`w-2 h-2 rounded-full animate-pulse ${bookingStatus === 'accepted' ? 'bg-emerald-500' :
-                          bookingStatus === 'rejected' ? 'bg-red-500' :
-                            bookingStatus === 'bargaining' ? 'bg-amber-500' :
-                              'bg-blue-500'
-                          }`} />
-                        {bookingStatus === 'accepted' ? '✓ DRIVER ACCEPTED' :
-                          bookingStatus === 'rejected' ? '✗ DRIVER DECLINED' :
-                            bookingStatus === 'bargaining' ? '💬 NEGOTIATING PRICE' :
-                              '⏳ WAITING FOR DRIVER'}
-                        {activeBooking.counter_offer && (
-                          <span className="ml-2 text-xs">Counter: ₹{activeBooking.counter_offer}</span>
-                        )}
-                      </div>
-                    )}
-
-                    <div className="flex items-center gap-4 text-slate-500 font-bold text-sm md:text-base">
-                      <span className="flex items-center gap-2"><UserIcon size={18} className="text-orange-500" /> {activeBooking.driver}</span>
-                      <span className="text-slate-300">|</span>
-                      <span>ID: GD-98211</span>
-                    </div>
-                  </div>
-
-                  <div className="relative pl-10 space-y-16">
-                    <div className="absolute left-[15px] top-3 bottom-3 w-1 bg-gradient-to-b from-orange-500 via-blue-500 to-emerald-500 rounded-full" />
-
-                    <div className="relative">
-                      <div className="absolute -left-12 top-0 w-8 h-8 rounded-full bg-orange-500 border-4 border-white dark:border-slate-800 shadow-xl" />
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 leading-none mb-2">Pickup Point</p>
-                      <p className="text-xl font-black">{pickupAddress.split(',')[0]}</p>
-                      <p className="text-xs text-slate-500 font-medium truncate max-w-xs">{pickupAddress}</p>
-                    </div>
-
-                    {tripProgress < 100 ? (
-                      <div className="relative">
-                        <div className="absolute -left-12 top-0 w-8 h-8 rounded-full bg-blue-500 border-4 border-white dark:border-slate-800 shadow-xl animate-bounce" />
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-500 leading-none mb-2">Live Location</p>
-                        <p className="text-xl font-black">{currentCheckpoint}</p>
-                        <p className="text-sm font-black text-blue-600 mt-2 flex items-center gap-2">
-                          <Navigation size={14} className="animate-pulse" /> {remainingKm.toFixed(1)} KM UNTIL DROP
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="relative">
-                        <div className="absolute -left-12 top-0 w-8 h-8 rounded-full bg-emerald-500 border-4 border-white dark:border-slate-800 shadow-xl" />
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500 leading-none mb-2">Current Location</p>
-                        <p className="text-xl font-black">Destination Reached</p>
-                        <p className="text-xs text-emerald-600 font-bold mt-1">Proof of Delivery Pending</p>
-                      </div>
-                    )}
-
-                    <div className="relative">
-                      <div className={`absolute -left-12 top-0 w-8 h-8 rounded-full border-4 border-white dark:border-slate-800 shadow-xl ${tripProgress === 100 ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-slate-700'}`} />
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 leading-none mb-2">Delivery Point</p>
-                      <p className="text-xl font-black">{dropoffAddress.split(',')[0]}</p>
-                      <p className="text-xs text-slate-500 font-medium truncate max-w-xs">{dropoffAddress}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="w-full lg:w-96 space-y-6">
-                  <div className="bg-slate-50 dark:bg-slate-900 p-8 rounded-[40px] border-4 border-slate-950 dark:border-slate-800 shadow-2xl">
-                    <h4 className="font-black text-xl mb-6 flex items-center gap-3"><FileText size={24} className="text-orange-500" /> Digital POD</h4>
-                    {podUploaded ? (
-                      <div className="text-center py-6 animate-in zoom-in">
-                        <div className="bg-emerald-100 dark:bg-emerald-900/30 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 text-emerald-600">
-                          <CheckCircle2 size={40} strokeWidth={3} />
-                        </div>
-                        <p className="font-black text-lg uppercase tracking-tight">Receipt Verified</p>
-                        <p className="text-[10px] uppercase text-slate-400 font-black mt-1">Synced to Cloud Bilty</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-6">
-                        <p className="text-sm text-slate-500 font-bold leading-relaxed">Capture the signed LR/Bilty once the truck reaches the destination to release payment.</p>
-                        <button
-                          onClick={() => setPodUploaded(true)}
-                          disabled={tripProgress < 100}
-                          className="w-full bg-white dark:bg-slate-800 border-4 border-dashed border-slate-200 dark:border-slate-700 p-12 rounded-[32px] flex flex-col items-center gap-4 hover:border-orange-500 transition-all group disabled:opacity-40 disabled:cursor-not-allowed hover:bg-orange-50 dark:hover:bg-orange-950/20"
-                        >
-                          <div className="bg-slate-100 dark:bg-slate-700 p-4 rounded-2xl group-hover:bg-orange-500 group-hover:text-white transition-colors">
-                            <Upload size={32} />
-                          </div>
-                          <span className="text-sm font-black uppercase tracking-widest text-slate-500 group-hover:text-orange-600">Scan POD</span>
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="bg-white dark:bg-slate-900 p-6 rounded-[32px] border border-slate-100 dark:border-slate-800 flex items-center gap-4">
-                    <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-2xl text-blue-600">
-                      <Navigation size={24} />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-black uppercase text-slate-400">Next Hub</p>
-                      <p className="text-sm font-black">{currentCheckpoint}</p>
-                    </div>
-                  </div>
-
-                  <div className="bg-white dark:bg-slate-900 p-6 rounded-[32px] border border-slate-100 dark:border-slate-800">
-                    <h4 className="font-black text-sm uppercase mb-4 flex items-center gap-2">
-                      <MessageSquare size={18} className="text-orange-500" /> Driver Chat
-                    </h4>
-
-                    <div className="h-48 overflow-y-auto mb-4 space-y-3 bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl">
-                      {chatHistory.length === 0 ? (
-                        <p className="text-xs text-slate-400 text-center italic mt-16">Start conversation with driver...</p>
-                      ) : (
-                        chatHistory.map((msg, idx) => (
-                          <div key={idx} className={`flex ${msg.sender === 'customer' ? 'justify-end' : 'justify-start'}`}>
-                            <div className={`max-w-[80%] p-3 rounded-2xl text-xs font-bold ${msg.sender === 'customer' ? 'bg-orange-500 text-white rounded-br-none' : 'bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-bl-none'}`}>
-                              {msg.text}
+                          <div>
+                            <h4 className="font-black text-sm uppercase tracking-tight">{truck.truck}</h4>
+                            <div className="flex items-center gap-2">
+                              <Star size={12} className="text-amber-500 fill-amber-500" />
+                              <span className="text-[10px] font-black text-slate-500">{truck.rating} • {truck.dist}</span>
                             </div>
                           </div>
-                        ))
-                      )}
-                    </div>
-
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={chatMessage}
-                        onChange={(e) => setChatMessage(e.target.value)}
-                        placeholder="Type message..."
-                        className="flex-1 bg-slate-50 dark:bg-slate-950 border-0 rounded-xl px-4 text-xs font-bold focus:ring-2 focus:ring-orange-500"
-                        onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-                      />
-                      <button onClick={sendMessage} className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 p-3 rounded-xl hover:scale-105 transition-transform">
-                        <Send size={16} />
+                        </div>
+                        <p className="text-xl font-black text-orange-500">{truck.price}</p>
+                      </div>
+                      <button
+                        onClick={() => handleBook(truck)}
+                        className="w-full py-3.5 bg-slate-900 dark:bg-orange-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-[1.02] transition-all shadow-lg active:scale-95"
+                      >
+                        Book Now
                       </button>
                     </div>
-                  </div>
+                  ))}
+                </div>
+              )}
 
-                  <button onClick={() => setActiveBooking(null)} className="w-full py-4 text-slate-400 text-sm font-black uppercase tracking-widest hover:text-red-600 transition-colors border-2 border-transparent hover:border-red-600/20 rounded-2xl">Abort Booking</button>
+              {/* Scanning Effect Overlay */}
+              {searching && (
+                <div className="absolute inset-0 z-20 bg-orange-500/10 backdrop-blur-[2px] flex flex-col items-center justify-center text-center p-10">
+                  <div className="relative mb-8">
+                    <div className="w-32 h-32 border-8 border-orange-500 rounded-full animate-ping opacity-20" />
+                    <div className="absolute inset-0 w-32 h-32 border-8 border-orange-500 rounded-full flex items-center justify-center">
+                      <Search size={48} className="text-orange-500 animate-bounce" />
+                    </div>
+                  </div>
+                  <h3 className="text-2xl font-black uppercase tracking-tighter text-slate-900 dark:text-white mb-2">Assigning Nearest Fleet</h3>
+                  <p className="text-slate-600 dark:text-slate-400 font-bold max-w-xs">Scanning 150+ verified drivers within a 5km radius of your location...</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Tracking View ─── */}
+      {view === 'active' && activeBooking && (
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 animate-in zoom-in duration-500">
+          <div className="xl:col-span-4 space-y-6">
+            <div className="bg-white dark:bg-slate-800 rounded-[40px] p-8 border border-slate-100 dark:border-slate-700 shadow-2xl space-y-8">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-2xl font-black uppercase italic italic tracking-tighter">Live Tracking</h3>
+                  <p className="text-[10px] font-black uppercase text-orange-500 tracking-[0.3em]">Order #{activeBooking.bookingId?.slice(-6)}</p>
+                </div>
+                <div className="bg-emerald-500/10 text-emerald-600 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest animate-pulse">
+                  On the move
                 </div>
               </div>
 
-              <div className="space-y-6 pt-6 border-t-2 border-slate-50 dark:border-slate-800">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-black text-2xl uppercase tracking-tighter">Live Google Maps Fleet Track</h4>
-                  <div className="bg-orange-100 dark:bg-orange-900/30 text-orange-600 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2">
-                    <Navigation size={12} className="animate-pulse" /> Precision: 5 Meters
-                  </div>
+              <div className="space-y-6 relative ml-4 before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1 before:bg-slate-100 dark:before:bg-slate-700">
+                <div className="relative pl-8">
+                  <div className="absolute left-[-4px] top-1.5 w-3 h-3 rounded-full bg-orange-500 ring-4 ring-orange-500/20" />
+                  <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest leading-none mb-1">Pickup</p>
+                  <p className="text-sm font-bold truncate">{pickupAddress}</p>
                 </div>
-                <MapComponent
-                  startPos={pickupCoords}
-                  endPos={dropoffCoords}
-                  currentPosition={truckPosition}
-                  isDraggable={false}
-                />
+                <div className="relative pl-8">
+                  <div className="absolute left-[-4px] top-1.5 w-3 h-3 rounded-full bg-slate-300 dark:bg-slate-500" />
+                  <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest leading-none mb-1">Dropoff</p>
+                  <p className="text-sm font-bold truncate">{dropoffAddress}</p>
+                </div>
+              </div>
+
+              <div className="pt-6 border-t border-slate-50 dark:border-slate-700 space-y-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-slate-100 dark:bg-slate-900 rounded-2xl flex items-center justify-center">
+                    <UserIcon size={24} className="text-slate-500" />
+                  </div>
+                  <div>
+                    <h5 className="font-black text-sm uppercase tracking-tight">{activeBooking.driver || 'Suresh Kumar'}</h5>
+                    <div className="flex items-center gap-2">
+                      <Star size={10} className="text-amber-500 fill-amber-500" />
+                      <span className="text-[10px] font-black text-slate-500">Gold Verified Partner</span>
+                    </div>
+                  </div>
+                  <button className="ml-auto bg-blue-500 text-white p-3 rounded-xl shadow-lg hover:scale-110 transition-transform">
+                    <Send size={18} />
+                  </button>
+                </div>
               </div>
             </div>
-          )}
-        </div>
-      ))}
-
-
-      {/* ── DRIVER PANEL ─────────────────────────────────────────── */}
-      {panel === 'driver' && <DriverPanel t={t} />}
-      {/* ── END DRIVER PANEL ─────────────────────────────────────── */}
-
-
-      {/* ── MECHANIC PANEL ───────────────────────────────────────── */}
-      {panel === 'mechanic' && <MechanicPanel t={t} />}
-      {/* ── END MECHANIC PANEL ───────────────────────────────────── */}
-
-      {/* ── PLATFORM INFO SECTION ─────────────────────────────────── */}
-      <div className="mt-16 space-y-10">
-
-        {/* Hero Banner */}
-        <div className="relative overflow-hidden rounded-[40px] bg-gradient-to-br from-slate-950 via-slate-900 to-orange-950 border-4 border-slate-800 shadow-2xl p-10 md:p-16 text-white">
-          <div className="absolute -top-16 -right-16 w-72 h-72 bg-orange-500/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-16 -left-16 w-72 h-72 bg-orange-600/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="relative z-10 max-w-3xl">
-            <span className="inline-flex items-center gap-2 bg-orange-500/20 border border-orange-500/40 text-orange-400 text-[10px] font-black uppercase tracking-[0.3em] px-4 py-2 rounded-full mb-6">
-              <Truck size={12} /> On-Demand Logistics Platform
-            </span>
-            <h2 className="text-3xl md:text-5xl font-black tracking-tight leading-tight mb-4">
-              India's Most Powerful <br />
-              <span className="text-orange-500">Truck Booking</span> Clone App
-            </h2>
-            <p className="text-slate-300 text-base md:text-lg font-medium leading-relaxed mb-6">
-              A ready-made on-demand logistics solution that allows businesses to launch a delivery platform.
-              It connects users with nearby drivers for goods transportation using bikes, mini trucks, or loaders —
-              offering real-time booking, live tracking, and transparent pricing through a single platform.
-            </p>
           </div>
-        </div>
 
-        {/* What Is It + How It Works */}
-        <div className="grid md:grid-cols-2 gap-6">
-          <div className="bg-white dark:bg-slate-800 rounded-[36px] border border-slate-100 dark:border-slate-700 shadow-xl p-8 space-y-5">
-            <div className="flex items-center gap-3">
-              <div className="bg-orange-100 dark:bg-orange-900/30 p-3 rounded-2xl"><Info className="text-orange-500" size={24} /></div>
-              <h3 className="text-xl font-black uppercase tracking-tight">What Is This App?</h3>
-            </div>
-            <p className="text-sm text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
-              A pre-built logistics and transport software designed to replicate the core features of the Porter app.
-              It enables users to book vehicles for goods delivery, track shipments in real time, and make secure online payments.
-            </p>
-            <div className="space-y-3 pt-2">
-              {['User App', 'Driver App', 'Admin Panel'].map((p, i) => (
-                <div key={i} className="flex items-center gap-3 bg-slate-50 dark:bg-slate-900 px-5 py-3 rounded-2xl">
-                  <div className={`w-3 h-3 rounded-full ${i === 0 ? 'bg-orange-500' : i === 1 ? 'bg-blue-500' : 'bg-emerald-500'}`} />
-                  <span className="font-black text-sm uppercase tracking-wide">{p}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="bg-white dark:bg-slate-800 rounded-[36px] border border-slate-100 dark:border-slate-700 shadow-xl p-8 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-2xl"><Navigation className="text-blue-500" size={24} /></div>
-              <h3 className="text-xl font-black uppercase tracking-tight">How It Works</h3>
-            </div>
-            <div className="space-y-3">
-              {[
-                [MapPin, 'orange', 'User enters pickup & drop location'],
-                [Truck, 'blue', 'Selects vehicle type (bike, mini truck, tempo)'],
-                [ArrowRight, 'purple', 'Gets instant fare estimate'],
-                [CheckCircle2, 'emerald', 'Driver accepts the booking'],
-                [Navigation, 'cyan', 'Live tracking begins'],
-                [Package, 'green', 'Goods delivered successfully'],
-                [ShieldCheck, 'emerald', 'Payment completed securely'],
-              ].map(([Icon, color, text]: any, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-full bg-${color}-100 dark:bg-${color}-900/30 flex items-center justify-center shrink-0`}>
-                    <Icon size={14} className={`text-${color}-600`} />
+          <div className="xl:col-span-8">
+            <div className="bg-white dark:bg-slate-800 rounded-[40px] overflow-hidden border border-slate-100 dark:border-slate-700 shadow-2xl h-[500px] xl:h-[600px] relative">
+              <MapComponent
+                startPos={pickupCoords}
+                endPos={dropoffCoords}
+                currentPosition={truckPosition}
+              />
+              <div className="absolute top-6 left-6 right-6">
+                <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-5 rounded-[28px] shadow-2xl border border-white/20 flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center text-white">
+                      <Navigation size={20} className="animate-pulse" />
+                    </div>
+                    <div>
+                      <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest mb-1 leading-none">Status</p>
+                      <p className="text-sm font-black uppercase tracking-tight">{currentCheckpoint}</p>
+                    </div>
                   </div>
-                  <span className="text-sm font-bold text-slate-600 dark:text-slate-300">{text}</span>
+                  <div className="text-right">
+                    <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest mb-1 leading-none">Arrival</p>
+                    <p className="text-sm font-black text-orange-500 uppercase italic">~{Math.round(remainingKm * 3)} mins away</p>
+                  </div>
                 </div>
-              ))}
+              </div>
             </div>
           </div>
         </div>
+      )}
 
-        {/* Benefits Section */}
-        <div className="bg-slate-950 rounded-[40px] p-10 md:p-14 text-white space-y-8 border border-slate-800 shadow-2xl">
-          <div className="text-center space-y-3">
-            <span className="inline-flex items-center gap-2 bg-orange-500/20 border border-orange-500/30 text-orange-400 text-[10px] font-black uppercase tracking-[0.3em] px-5 py-2 rounded-full">
-              <ArrowRight size={12} /> Business Benefits
-            </span>
-            <h3 className="text-2xl md:text-4xl font-black tracking-tight">Why Launch with <span className="text-orange-500">Gaadii Dost?</span></h3>
-          </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {[
-              [Clock, 'orange', 'Faster Market Entry', 'Launch quickly without building from scratch.'],
-              [Star, 'yellow', 'Lower Development Cost', 'Reduce expenses vs custom app development.'],
-              [ShieldCheck, 'emerald', 'Proven Business Model', "Follows Porter's successful logistics model."],
-              [MapPin, 'blue', 'Scalable for Multiple Cities', 'Add cities, drivers, and vehicles as you grow.'],
-              [Package, 'purple', 'Full Brand Ownership', 'Your brand, your pricing, your rules.'],
-              [Truck, 'rose', 'Local & Enterprise Logistics', 'Suitable for SMEs and large enterprises.'],
-            ].map(([Icon, color, title, desc]: any, i) => (
-              <div key={i} className={`bg-slate-900 border border-slate-800 rounded-[28px] p-6 hover:border-${color}-500/50 hover:bg-slate-800 transition-all group`}>
-                <div className={`w-12 h-12 rounded-2xl bg-${color}-500/10 flex items-center justify-center mb-4 group-hover:bg-${color}-500/20 transition-colors`}>
-                  <Icon size={22} className={`text-${color}-400`} />
-                </div>
-                <h5 className="font-black text-base mb-2 text-white">{title}</h5>
-                <p className="text-slate-400 text-xs font-medium leading-relaxed">{desc}</p>
-              </div>
-            ))}
-          </div>
+      {/* ─── Features Informational Section (Requested) ─── */}
+      <div className="pt-20 border-t border-slate-100 dark:border-slate-800 space-y-12">
+        <div className="text-center space-y-4 max-w-3xl mx-auto">
+          <h2 className="text-4xl md:text-5xl font-black tracking-tight uppercase leading-tight">
+            Seamless <span className="text-orange-500">Logistics</span> for Everyone
+          </h2>
+          <p className="text-slate-500 dark:text-slate-400 font-bold text-lg">
+            Instantly connect with India's largest verified fleet and enjoy a stress-free delivery experience.
+          </p>
         </div>
 
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          {[
+            [MapPin, 'orange', 'Easy Booking & Scheduling', 'Easy booking allows users to instantly or pre-schedule parcel deliveries by entering pickup and drop locations within the app.'],
+            [Truck, 'blue', 'Multiple Vehicle Options', 'Users can choose different vehicle types, such as bikes or mini trucks, based on parcel size and delivery needs.'],
+            [Activity, 'emerald', 'Real-Time Parcel Tracking', 'Real-time parcel tracking lets users monitor their delivery live on the map from pickup to final drop.'],
+            [CreditCard, 'purple', 'Secure Online Payments', 'Secure online payments enable users to pay safely using UPI, cards, or digital wallets within the app.'],
+            [History, 'cyan', 'Order History & Invoices', 'Order history allows users to view previous deliveries and download invoices for record-keeping.'],
+            [Zap, 'rose', 'Notification Alerts', 'Notification alerts provide real-time updates about booking confirmation, driver assignment, and delivery status.'],
+          ].map(([Icon, color, title, desc]: any, i) => (
+            <div key={i} className="bg-white dark:bg-slate-800 rounded-[40px] border-4 border-slate-50 dark:border-slate-700 shadow-2xl p-10 space-y-6 hover:border-orange-500/50 transition-all group relative overflow-hidden">
+              <div className={`absolute -right-8 -top-8 w-32 h-32 bg-${color}-500/5 rounded-full blur-3xl group-hover:bg-${color}-500/10 transition-colors`} />
+              <div className={`w-16 h-16 rounded-[20px] bg-${color}-100 dark:bg-${color}-900/40 flex items-center justify-center shrink-0 shadow-lg group-hover:rotate-6 transition-transform`}>
+                <Icon size={32} className={`text-${color}-600 dark:text-${color}-400`} />
+              </div>
+              <div className="space-y-3">
+                <h3 className="text-2xl font-black uppercase tracking-tight leading-none">{title}</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 font-bold leading-relaxed">{desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Trust Banner */}
+        <div className="bg-slate-950 rounded-[40px] p-12 text-white border border-slate-800 shadow-3xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/10 rounded-full blur-3xl" />
+          <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-8">
+            <div className="max-w-xl text-center lg:text-left">
+              <h3 className="text-3xl font-black italic uppercase mb-4 leading-tight">India's Most Trusted <br /><span className="text-orange-500">Transport Network</span></h3>
+              <p className="text-slate-400 font-medium text-lg">Join thousands of businesses and individuals moving goods across India with GADI DOST.</p>
+            </div>
+            <div className="flex flex-wrap justify-center gap-8">
+              <div className="text-center px-6 border-r border-slate-800 last:border-0">
+                <p className="text-4xl font-black text-orange-500">50K+</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mt-1">Verified Drivers</p>
+              </div>
+              <div className="text-center px-6 border-r border-slate-800 last:border-0">
+                <p className="text-4xl font-black text-blue-500">100+</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mt-1">Cities</p>
+              </div>
+              <div className="text-center px-6 last:border-0">
+                <p className="text-4xl font-black text-emerald-500">4.9/5</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mt-1">User Rating</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      {/* ── END PLATFORM INFO SECTION ─────────────────────────────── */}
-
     </div>
   );
 };
