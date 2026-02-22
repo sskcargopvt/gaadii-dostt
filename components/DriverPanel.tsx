@@ -387,83 +387,60 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
                 },
                 (payload: any) => {
                     const booking: BookingRequest = payload.new;
-                    if (!booking) return;
+                    if (!booking || !booking.id) return;
 
-                    // Filtering
-                    const isMatchingType = !booking.vehicle_type || (booking.vehicle_type === profile.vehicle_type);
-                    const distToPickup = haversineKm(
-                        currentCoords?.lat || profile.lat || 0,
-                        currentCoords?.lng || profile.lng || 0,
-                        booking.pickup_lat,
-                        booking.pickup_lng
-                    );
+                    console.log("🔔 Postgres INSERT notification:", booking.id);
 
-                    if (distToPickup <= 100 && isMatchingType) {
-                        setIncomingRequests((prev) => {
-                            if (prev.find((r) => r.id === booking.id)) return prev;
-                            return [booking, ...prev];
-                        });
-                        addNotification(
-                            Bell,
-                            "blue",
-                            "🚚 New Matching Order!",
-                            `${booking.goods_type} | ${booking.weight} | ${booking.distance_km}km`,
-                        );
-                    }
-                },
-            )
-            // 2️⃣ Broadcast fallback — fires when customer manually sends broadcast
-            .on("broadcast", { event: "INSERT" }, (payload: any) => {
-                const booking: BookingRequest =
-                    payload.payload?.new || payload.payload?.new_row || payload.payload;
-                if (!booking) return;
-
-                // Targeted filtering: Match vehicle type and 100km radius
-                const isMatchingType = booking.vehicle_type === profile.vehicle_type;
-
-                // Calculate distance to pickup
-                const distToPickup = haversineKm(
-                    currentCoords?.lat || profile.lat || 0,
-                    currentCoords?.lng || profile.lng || 0,
-                    booking.pickup_lat,
-                    booking.pickup_lng
-                );
-
-                if (distToPickup <= 100 && isMatchingType) {
                     setIncomingRequests((prev) => {
                         if (prev.find((r) => r.id === booking.id)) return prev;
                         return [booking, ...prev];
                     });
-
                     addNotification(
                         Bell,
                         "blue",
-                        "🚚 New Matching Order!",
-                        `${booking.goods_type} | ${booking.weight} | ${booking.distance_km}km`,
+                        "🚚 New Booking Request!",
+                        `${booking.goods_type || 'Goods'} | ${booking.weight || ''} | ₹${booking.offered_price || ''}`,
                     );
+                },
+            )
+            // 2️⃣ Broadcast fallback — fires when customer manually sends broadcast
+            .on("broadcast", { event: "INSERT" }, (payload: any) => {
+                // Support multiple payload shapes (direct row, or wrapped in new/new_row)
+                const booking: BookingRequest =
+                    payload.payload?.new ||
+                    payload.payload?.new_row ||
+                    (payload.payload?.id ? payload.payload : null); // direct row shape
+
+                if (!booking || !booking.id) {
+                    console.warn("⚠️ Received broadcast but could not parse booking:", payload);
+                    return;
                 }
+
+                console.log("📨 Broadcast booking received:", booking.id, booking.status);
+
+                // Show ALL incoming requests (no GPS filter in dev mode)
+                setIncomingRequests((prev) => {
+                    if (prev.find((r) => r.id === booking.id)) return prev;
+                    return [booking, ...prev];
+                });
+
+                addNotification(
+                    Bell,
+                    "blue",
+                    "🚚 New Booking Request!",
+                    `${booking.goods_type || 'Goods'} | ${booking.weight || ''} | ₹${booking.offered_price || ''}`,
+                );
             })
             // 3️⃣ Search Intent — fires when customer searches for matching trucks
             .on("broadcast", { event: "SEARCH_INTENT" }, (payload: any) => {
                 const intent = payload.payload;
                 if (!intent) return;
-
-                const isMatchingType = intent.vehicle_type === profile.vehicle_type;
-                const distToPickup = haversineKm(
-                    currentCoords?.lat || profile.lat || 0,
-                    currentCoords?.lng || profile.lng || 0,
-                    intent.pickup_lat,
-                    intent.pickup_lng
+                addNotification(
+                    Navigation,
+                    "orange",
+                    "🔍 Nearby Search Alert!",
+                    `${intent.goods_type || 'Goods'} | ${intent.distance_km || 0}km | Scanning fleet...`,
                 );
-
-                if (distToPickup <= 100 && isMatchingType) {
-                    addNotification(
-                        Navigation,
-                        "orange",
-                        "🔍 Nearby Search Alert!",
-                        `${intent.goods_type} | ${intent.distance_km}km | Scanning fleet...`,
-                    );
-                }
             })
             .subscribe((status) => {
                 console.log("Driver realtime channel:", status);
@@ -471,10 +448,10 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
 
         channelRef.current = channel;
 
-        // Initial fetch of pending requests
+        // Initial fetch of pending requests immediately
         fetchPendingRequests();
-        // Refresh every 20 seconds as safety net
-        const interval = setInterval(fetchPendingRequests, 20000);
+        // Refresh every 5 seconds as safety net
+        const interval = setInterval(fetchPendingRequests, 5000);
 
         return () => {
             supabase.removeChannel(channel);
@@ -483,13 +460,17 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
     }, [driverId]);
 
     const fetchPendingRequests = async () => {
-        const { data } = await supabase
+        // Fetch ALL pending requests (no distance filter in dev mode)
+        const { data, error } = await supabase
             .from("booking_requests")
             .select("*")
             .eq("status", "pending")
             .order("created_at", { ascending: false })
-            .limit(5);
-        if (data) setIncomingRequests(data);
+            .limit(10);
+        if (data && data.length > 0) {
+            setIncomingRequests(data);
+            console.log("📋 Fetched pending requests:", data.length);
+        }
     };
 
     const fetchTripHistory = async () => {

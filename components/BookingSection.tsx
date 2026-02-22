@@ -339,11 +339,11 @@ const BookingSection: React.FC<{ t: any; user?: User }> = ({ t, user }) => {
 
       const priceValue = truck.price.replace(/[^\d]/g, '');
 
-      // 2. Insert into Supabase - This will automatically notify driver app via realtime
+      // 2. Insert into Supabase
       const { data, error } = await supabase
         .from('booking_requests')
         .insert([{
-          customer_id: user?.id, // Link to authenticated user
+          customer_id: user?.id,
           customer_name: user?.user_metadata?.name || 'Guest User',
           customer_phone: user?.phone || '9999999999',
           pickup_location: pickupAddress,
@@ -357,8 +357,9 @@ const BookingSection: React.FC<{ t: any; user?: User }> = ({ t, user }) => {
           offered_price: priceValue,
           status: 'pending',
           vehicle_id: truck.id,
+          vehicle_type: truck.type || vehicleType,
           distance_km: distance.toFixed(1),
-          messages: [], // Initialize empty messages array for chat
+          messages: [],
           created_at: new Date().toISOString()
         }])
         .select()
@@ -366,25 +367,31 @@ const BookingSection: React.FC<{ t: any; user?: User }> = ({ t, user }) => {
 
       if (error) throw error;
 
-      console.log('✅ Booking created:', data.id);
+      console.log('✅ Booking created in DB:', data.id);
 
-      // 3. Broadcast to driver panel on the SAME channel name DriverPanel subscribes to
+      // 3. Broadcast to driver panel — use a single channel and wait for SUBSCRIBED
       const broadcastChannel = supabase.channel('driver_booking_requests');
-      broadcastChannel.subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          broadcastChannel.send({
+
+      let broadcastSent = false;
+      broadcastChannel.subscribe(async (status) => {
+        console.log('📡 Broadcast channel status:', status);
+        if (status === 'SUBSCRIBED' && !broadcastSent) {
+          broadcastSent = true;
+
+          const result = await broadcastChannel.send({
             type: 'broadcast',
             event: 'INSERT',
-            payload: { type: 'INSERT', new: data, new_row: data }
+            payload: data  // Send the full booking row directly
           });
-          console.log('📢 Realtime broadcast sent to Driver Panel');
-          // Don't remove immediately — keep channel alive for a moment
-          setTimeout(() => supabase.removeChannel(broadcastChannel), 3000);
+
+          console.log('📢 Broadcast result:', result);
+          // Keep channel alive for 8 seconds to ensure delivery
+          setTimeout(() => supabase.removeChannel(broadcastChannel), 8000);
         }
       });
 
       // 4. Set Active State
-      setActiveBooking({ ...truck, bookingId: data.id, status: 'pending' });
+      setActiveBooking({ ...truck, bookingId: data.id, status: 'pending', offered_price: priceValue });
       setBookingStatus('pending');
       setView('active');
     } catch (err) {
