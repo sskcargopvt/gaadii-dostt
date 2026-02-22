@@ -285,6 +285,10 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
     const [isBargaining, setIsBargaining] = useState(false);
     const [bargainPrice, setBargainPrice] = useState("");
 
+    // ─── Auto-save state ──────────────────────────────
+    const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+    const autoSaveTimer = useRef<any>(null);
+
     // ─── Load driver id ────────────────────────────────────
 
     useEffect(() => {
@@ -711,7 +715,7 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
         }
     };
 
-    // ─── Profile save ──────────────────────────────────────
+    // ─── Profile save (manual fallback) ───────────────────
     const handleSaveProfile = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!driverId) return;
@@ -763,6 +767,56 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
         }
     };
 
+    // ─── Auto-save: debounced 800ms after any field change ──
+    useEffect(() => {
+        if (!driverId || !profile.full_name) return; // Don't auto-save empty form
+
+        if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+        setAutoSaveStatus('saving');
+
+        autoSaveTimer.current = setTimeout(async () => {
+            try {
+                const payload = {
+                    ...profile,
+                    driver_id: driverId,
+                    available: driverAvailable,
+                    updated_at: new Date().toISOString(),
+                };
+                const { error } = await supabase
+                    .from('driver_profiles')
+                    .upsert(payload, { onConflict: 'driver_id' });
+
+                if (error) throw error;
+
+                if (profile.vehicle_registration) {
+                    await supabase.from('vehicles').upsert(
+                        {
+                            driver_id: driverId,
+                            registration_number: profile.vehicle_registration,
+                            type: profile.vehicle_type,
+                            model: profile.vehicle_model,
+                            year: profile.vehicle_year,
+                            available: driverAvailable,
+                        },
+                        { onConflict: 'registration_number' },
+                    );
+                }
+
+                setAutoSaveStatus('saved');
+                setProfileExists(true);
+                setTimeout(() => setAutoSaveStatus('idle'), 2500);
+            } catch (err: any) {
+                setAutoSaveStatus('error');
+                console.error('Auto-save error:', err);
+            }
+        }, 800);
+
+        return () => {
+            if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+        };
+    }, [profile, driverId]);
+
+
     const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -794,6 +848,16 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
         !!profile.vehicle_registration &&
         !!profile.license_number;
 
+    // Calculate onboarding progress (0-100)
+    const requiredFields = [
+        profile.full_name,
+        profile.phone,
+        profile.vehicle_registration,
+        profile.license_number,
+    ];
+    const completedFields = requiredFields.filter(Boolean).length;
+    const onboardingProgress = Math.round((completedFields / requiredFields.length) * 100);
+
     // ─── Onboarding gate ──────────────────────────────────
     if (!isProfileComplete && !profileLoading && driverId) {
         return (
@@ -801,19 +865,80 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
                 <div className="w-full max-w-3xl">
                     {/* Header */}
                     <div className="text-center mb-8">
-                        <div className="inline-flex items-center justify-center w-20 h-20 rounded-[28px] bg-blue-600 shadow-2xl shadow-blue-500/30 mb-5">
+                        <div className="inline-flex items-center justify-center w-20 h-20 rounded-[28px] bg-blue-600 shadow-2xl shadow-blue-500/30 mb-5 relative">
                             <Truck size={38} className="text-white" />
+                            {/* Auto-save indicator on icon */}
+                            {autoSaveStatus === 'saving' && (
+                                <div className="absolute -top-1 -right-1 w-5 h-5 bg-blue-400 rounded-full flex items-center justify-center">
+                                    <Loader2 size={12} className="text-white animate-spin" />
+                                </div>
+                            )}
+                            {autoSaveStatus === 'saved' && (
+                                <div className="absolute -top-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center">
+                                    <CheckCircle2 size={12} className="text-white" />
+                                </div>
+                            )}
                         </div>
                         <h1 className="text-4xl font-black uppercase tracking-tighter text-white mb-2">
                             Welcome, Driver!
                         </h1>
                         <p className="text-slate-400 font-bold text-base">
-                            Complete your profile to start receiving orders. All fields are required.
+                            Fill in your details — they save automatically as you type.
                         </p>
+
+                        {/* Progress Bar */}
+                        <div className="mt-6 max-w-sm mx-auto">
+                            <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">
+                                <span>Profile Completion</span>
+                                <span className={onboardingProgress === 100 ? 'text-emerald-400' : 'text-blue-400'}>{onboardingProgress}%</span>
+                            </div>
+                            <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                                <div
+                                    className={`h-full rounded-full transition-all duration-700 ${onboardingProgress === 100
+                                        ? 'bg-emerald-500 shadow-lg shadow-emerald-500/50'
+                                        : 'bg-blue-500'
+                                        }`}
+                                    style={{ width: `${onboardingProgress}%` }}
+                                />
+                            </div>
+                            {/* Step markers */}
+                            <div className="flex justify-between mt-3">
+                                {[
+                                    { label: 'Name', done: !!profile.full_name },
+                                    { label: 'Phone', done: !!profile.phone },
+                                    { label: 'Vehicle', done: !!profile.vehicle_registration },
+                                    { label: 'License', done: !!profile.license_number },
+                                ].map((step) => (
+                                    <div key={step.label} className="flex flex-col items-center gap-1">
+                                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-black transition-all duration-300 ${step.done
+                                            ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/40 scale-110'
+                                            : 'bg-white/10 text-slate-500'
+                                            }`}>
+                                            {step.done ? '✓' : '•'}
+                                        </div>
+                                        <span className={`text-[9px] font-black uppercase tracking-wider ${step.done ? 'text-emerald-400' : 'text-slate-600'
+                                            }`}>{step.label}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Auto-save status text */}
+                        <div className="mt-3 h-5">
+                            {autoSaveStatus === 'saving' && (
+                                <p className="text-[11px] font-black uppercase tracking-widest text-blue-400 animate-pulse">Saving...</p>
+                            )}
+                            {autoSaveStatus === 'saved' && (
+                                <p className="text-[11px] font-black uppercase tracking-widest text-emerald-400">✓ Saved automatically</p>
+                            )}
+                            {autoSaveStatus === 'error' && (
+                                <p className="text-[11px] font-black uppercase tracking-widest text-red-400">⚠ Save failed — check connection</p>
+                            )}
+                        </div>
                     </div>
 
                     <form
-                        onSubmit={handleSaveProfile}
+                        onSubmit={(e) => { e.preventDefault(); handleSaveProfile(e); }}
                         className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-[40px] p-8 md:p-12 space-y-8"
                     >
                         {profileError && (
@@ -998,15 +1123,21 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
                             </div>
                         </div>
 
+                        {/* Submit Button — only shown if auto-save failed or user wants to manually confirm */}
                         <button
                             type="submit"
-                            disabled={profileLoading}
-                            className="w-full py-5 bg-blue-600 hover:bg-blue-500 text-white rounded-[24px] font-black text-lg uppercase tracking-widest flex items-center justify-center gap-3 disabled:opacity-60 shadow-2xl shadow-blue-500/30 transition-all hover:scale-[1.01] active:scale-95"
+                            disabled={profileLoading || !onboardingProgress}
+                            className={`w-full py-5 rounded-[24px] font-black text-lg uppercase tracking-widest flex items-center justify-center gap-3 disabled:opacity-60 shadow-2xl transition-all hover:scale-[1.01] active:scale-95 ${onboardingProgress === 100
+                                ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/30 text-white'
+                                : 'bg-blue-600 hover:bg-blue-500 shadow-blue-500/30 text-white'
+                                }`}
                         >
                             {profileLoading ? (
                                 <><Loader2 size={22} className="animate-spin" /> Saving Profile...</>
+                            ) : onboardingProgress === 100 ? (
+                                <><CheckCircle2 size={22} /> Enter Dashboard →</>
                             ) : (
-                                <><Save size={22} /> Complete Registration & Enter Dashboard</>
+                                <><Save size={22} /> Save & Continue ({completedFields}/{requiredFields.length} done)</>
                             )}
                         </button>
                     </form>
