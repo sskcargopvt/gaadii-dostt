@@ -302,7 +302,10 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
                 data: { session },
             } = await supabase.auth.getSession();
             if (session?.user) {
+                console.log("👤 Driver Authenticated:", session.user.id);
                 setDriverId(session.user.id);
+            } else {
+                console.warn("⚠️ No driver session found");
             }
         })();
     }, []);
@@ -404,11 +407,10 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
                     event: "INSERT",
                     schema: "public",
                     table: "booking_requests",
-                    filter: "status=eq.pending",
                 },
                 (payload: any) => {
                     const booking: BookingRequest = payload.new;
-                    if (!booking || !booking.id) return;
+                    if (!booking || !booking.id || booking.status !== 'pending') return;
 
                     console.log("🔔 Postgres INSERT notification:", booking.id);
 
@@ -472,15 +474,21 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
         channelRef.current = channel;
 
         // Initial fetch of pending requests immediately
-        fetchPendingRequests();
+        if (driverId) {
+            console.log("🚀 Initial fetch for driver:", driverId);
+            fetchPendingRequests();
+        }
+
         // Refresh every 5 seconds as safety net
-        const interval = setInterval(fetchPendingRequests, 5000);
+        const interval = setInterval(() => {
+            if (driverAvailable) fetchPendingRequests();
+        }, 5000);
 
         return () => {
             supabase.removeChannel(channel);
             clearInterval(interval);
         };
-    }, [driverId]);
+    }, [driverId, driverAvailable]);
 
     // Active Booking Realtime Listener (Bargaining/Status)
     useEffect(() => {
@@ -535,16 +543,27 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
     }, [driverId]);
 
     const fetchPendingRequests = async () => {
-        // Fetch ALL pending requests (no distance filter in dev mode)
-        const { data, error } = await supabase
-            .from("booking_requests")
-            .select("*")
-            .eq("status", "pending")
-            .order("created_at", { ascending: false })
-            .limit(10);
-        if (data && data.length > 0) {
-            setIncomingRequests(data);
-            console.log("📋 Fetched pending requests:", data.length);
+        try {
+            // Fetch ALL pending requests (no distance filter in dev mode)
+            const { data, error } = await supabase
+                .from("booking_requests")
+                .select("*")
+                .eq("status", "pending")
+                .order("created_at", { ascending: false })
+                .limit(10);
+
+            if (error) {
+                console.error("❌ Error fetching pending requests:", error);
+                return;
+            }
+
+            // Always update state (even if empty) to reflect current DB state
+            setIncomingRequests(data || []);
+            if (data && data.length > 0) {
+                console.log("📋 Fetched pending requests:", data.length);
+            }
+        } catch (err) {
+            console.error("Unexpected error fetching requests:", err);
         }
     };
 
@@ -1420,7 +1439,7 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
                                 </button>
                             </div>
 
-                            {!driverAvailable && (
+                            {!driverAvailable && incomingRequests.length === 0 && (
                                 <div className="bg-slate-100 dark:bg-slate-800 rounded-[28px] p-6 text-center">
                                     <ToggleLeft
                                         size={32}
@@ -1435,126 +1454,139 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
                                 </div>
                             )}
 
-                            {driverAvailable &&
-                                incomingRequests.length === 0 &&
+                            {!driverAvailable && incomingRequests.length > 0 && (
+                                <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 mb-4 flex items-center gap-3">
+                                    <Zap size={18} className="text-amber-500 animate-pulse" />
+                                    <p className="text-[10px] font-black uppercase text-amber-600 tracking-widest">
+                                        Go Online to Accept these {incomingRequests.length} requests
+                                    </p>
+                                </div>
+                            )}
+
+                            {incomingRequests.length === 0 &&
                                 !activeRequest && (
                                     <div className="rounded-[28px] border-2 border-dashed border-slate-200 dark:border-slate-700 p-8 text-center">
                                         <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                                            <Bell size={22} className="text-blue-500" />
+                                            <Bell size={22} className="text-blue-500 animate-bounce" />
                                         </div>
                                         <p className="font-black text-slate-500 text-sm uppercase">
-                                            Waiting for Orders...
+                                            Looking for Orders...
                                         </p>
                                         <p className="text-xs text-slate-400 font-medium mt-1">
-                                            You'll be notified when a nearby booking is available
+                                            Requests near you will appear here instantly
                                         </p>
+                                        <button
+                                            onClick={fetchPendingRequests}
+                                            className="mt-6 px-6 py-2 bg-blue-500/10 text-blue-500 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-blue-500/20 transition-all"
+                                        >
+                                            Check for new orders now
+                                        </button>
                                     </div>
                                 )}
 
-                            {driverAvailable &&
-                                incomingRequests.map((req) => {
-                                    const distKm =
-                                        req.pickup_lat && req.drop_lat
-                                            ? haversineKm(
-                                                req.pickup_lat,
-                                                req.pickup_lng,
-                                                req.drop_lat,
-                                                req.drop_lng,
-                                            )
-                                            : null;
-                                    const etaMins = distKm
-                                        ? Math.round((distKm / 40) * 60)
+                            {incomingRequests.map((req) => {
+                                const distKm =
+                                    req.pickup_lat && req.drop_lat
+                                        ? haversineKm(
+                                            req.pickup_lat,
+                                            req.pickup_lng,
+                                            req.drop_lat,
+                                            req.drop_lng,
+                                        )
                                         : null;
-                                    const mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${req.pickup_lat},${req.pickup_lng}&destination=${req.drop_lat},${req.drop_lng}&travelmode=driving`;
+                                const etaMins = distKm
+                                    ? Math.round((distKm / 40) * 60)
+                                    : null;
+                                const mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${req.pickup_lat},${req.pickup_lng}&destination=${req.drop_lat},${req.drop_lng}&travelmode=driving`;
 
-                                    return (
-                                        <div
-                                            key={req.id}
-                                            id={`request-${req.id}`}
-                                            className={`relative overflow-hidden rounded-[28px] sm:rounded-[40px] bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700/50 p-6 sm:p-8 text-white shadow-2xl transition-all duration-700 ${highlightedRequestId === req.id ? "ring-4 ring-orange-500 shadow-orange-500/50 scale-[1.02] animate-pulse" : ""}`}
-                                        >
-                                            {/* Top Status Bar */}
-                                            <div className="flex items-center justify-between mb-6">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">Live Request</span>
-                                                </div>
-                                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{fmtDate(req.created_at)}</p>
+                                return (
+                                    <div
+                                        key={req.id}
+                                        id={`request-${req.id}`}
+                                        className={`relative overflow-hidden rounded-[28px] sm:rounded-[40px] bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700/50 p-6 sm:p-8 text-white shadow-2xl transition-all duration-700 ${highlightedRequestId === req.id ? "ring-4 ring-orange-500 shadow-orange-500/50 scale-[1.02] animate-pulse" : ""}`}
+                                    >
+                                        {/* Top Status Bar */}
+                                        <div className="flex items-center justify-between mb-6">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">Live Request</span>
                                             </div>
+                                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{fmtDate(req.created_at)}</p>
+                                        </div>
 
-                                            {/* Header */}
-                                            <div className="flex items-center gap-4 mb-8">
-                                                <div className="w-14 h-14 bg-blue-500/20 rounded-2xl flex items-center justify-center text-blue-400 border border-blue-500/20">
-                                                    <User size={28} />
-                                                </div>
-                                                <div>
-                                                    <h4 className="text-xl font-black tracking-tight">{req.customer_name}</h4>
-                                                    <div className="flex items-center gap-2 mt-1">
-                                                        <span className="px-2 py-0.5 bg-slate-700 rounded-md text-[9px] font-bold text-slate-300">#{req.id?.slice(0, 6).toUpperCase()}</span>
-                                                        <div className="flex items-center gap-1 text-amber-500">
-                                                            <Star size={10} className="fill-amber-500" />
-                                                            <span className="text-[10px] font-black">4.9</span>
-                                                        </div>
+                                        {/* Header */}
+                                        <div className="flex items-center gap-4 mb-8">
+                                            <div className="w-14 h-14 bg-blue-500/20 rounded-2xl flex items-center justify-center text-blue-400 border border-blue-500/20">
+                                                <User size={28} />
+                                            </div>
+                                            <div>
+                                                <h4 className="text-xl font-black tracking-tight">{req.customer_name}</h4>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <span className="px-2 py-0.5 bg-slate-700 rounded-md text-[9px] font-bold text-slate-300">#{req.id?.slice(0, 6).toUpperCase()}</span>
+                                                    <div className="flex items-center gap-1 text-amber-500">
+                                                        <Star size={10} className="fill-amber-500" />
+                                                        <span className="text-[10px] font-black">4.9</span>
                                                     </div>
                                                 </div>
-                                                <div className="ml-auto text-right">
-                                                    <p className="text-[10px] font-black text-slate-500 uppercase mb-1">Proposed Fare</p>
-                                                    <p className="text-2xl font-black text-white italic">₹{Number(req.offered_price).toLocaleString()}</p>
-                                                </div>
                                             </div>
-
-                                            {/* Dynamic Trip Info */}
-                                            <div className="grid grid-cols-2 gap-3 mb-8">
-                                                <div className="bg-slate-700/30 rounded-2xl p-4 border border-slate-700/50">
-                                                    <p className="text-[9px] font-black text-slate-500 uppercase mb-1">Load Details</p>
-                                                    <p className="text-sm font-black truncate">{req.goods_type} • {req.weight}</p>
-                                                </div>
-                                                <div className="bg-slate-700/30 rounded-2xl p-4 border border-slate-700/50">
-                                                    <p className="text-[9px] font-black text-slate-500 uppercase mb-1">Est. Distance</p>
-                                                    <p className="text-sm font-black text-blue-400">{distKm ? `${distKm.toFixed(1)} km` : '—'}</p>
-                                                </div>
-                                            </div>
-
-                                            {/* Route Display */}
-                                            <div className="space-y-6 relative ml-3 mb-8 before:absolute before:left-0 before:top-2 before:bottom-2 before:w-[2px] before:bg-gradient-to-b before:from-blue-500 before:to-orange-500">
-                                                <div className="relative pl-6">
-                                                    <div className="absolute left-[-4px] top-1.5 w-2.5 h-2.5 rounded-full bg-blue-500 ring-4 ring-blue-500/20" />
-                                                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Pickup Point</p>
-                                                    <p className="text-sm font-bold line-clamp-1">{req.pickup_location}</p>
-                                                </div>
-                                                <div className="relative pl-6">
-                                                    <div className="absolute left-[-4px] top-1.5 w-2.5 h-2.5 rounded-full bg-orange-500 ring-4 ring-orange-500/20" />
-                                                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Dropoff Point</p>
-                                                    <p className="text-sm font-bold line-clamp-1">{req.drop_location}</p>
-                                                </div>
-                                            </div>
-
-                                            {/* Action Buttons */}
-                                            <div className="flex gap-3">
-                                                <button
-                                                    onClick={() => acceptRequest(req)}
-                                                    className="flex-[2] bg-blue-500 hover:bg-blue-400 py-4 px-6 rounded-2xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 shadow-xl shadow-blue-500/20 flex items-center justify-center gap-2"
-                                                >
-                                                    <CheckCircle2 size={16} /> Accept Order
-                                                </button>
-                                                <a
-                                                    href={mapsUrl}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="flex-1 bg-slate-700 hover:bg-slate-600 py-4 rounded-2xl flex items-center justify-center transition-all border border-slate-600"
-                                                >
-                                                    <Navigation size={18} />
-                                                </a>
-                                                <button
-                                                    onClick={() => rejectRequest(req)}
-                                                    className="flex-1 bg-slate-700/50 hover:bg-red-500/20 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all text-slate-400 hover:text-red-400 border border-slate-700"
-                                                >
-                                                    Decline
-                                                </button>
+                                            <div className="ml-auto text-right">
+                                                <p className="text-[10px] font-black text-slate-500 uppercase mb-1">Proposed Fare</p>
+                                                <p className="text-2xl font-black text-white italic">₹{Number(req.offered_price).toLocaleString()}</p>
                                             </div>
                                         </div>
-                                    );
-                                })}
+
+                                        {/* Dynamic Trip Info */}
+                                        <div className="grid grid-cols-2 gap-3 mb-8">
+                                            <div className="bg-slate-700/30 rounded-2xl p-4 border border-slate-700/50">
+                                                <p className="text-[9px] font-black text-slate-500 uppercase mb-1">Load Details</p>
+                                                <p className="text-sm font-black truncate">{req.goods_type} • {req.weight}</p>
+                                            </div>
+                                            <div className="bg-slate-700/30 rounded-2xl p-4 border border-slate-700/50">
+                                                <p className="text-[9px] font-black text-slate-500 uppercase mb-1">Est. Distance</p>
+                                                <p className="text-sm font-black text-blue-400">{distKm ? `${distKm.toFixed(1)} km` : '—'}</p>
+                                            </div>
+                                        </div>
+
+                                        {/* Route Display */}
+                                        <div className="space-y-6 relative ml-3 mb-8 before:absolute before:left-0 before:top-2 before:bottom-2 before:w-[2px] before:bg-gradient-to-b before:from-blue-500 before:to-orange-500">
+                                            <div className="relative pl-6">
+                                                <div className="absolute left-[-4px] top-1.5 w-2.5 h-2.5 rounded-full bg-blue-500 ring-4 ring-blue-500/20" />
+                                                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Pickup Point</p>
+                                                <p className="text-sm font-bold line-clamp-1">{req.pickup_location}</p>
+                                            </div>
+                                            <div className="relative pl-6">
+                                                <div className="absolute left-[-4px] top-1.5 w-2.5 h-2.5 rounded-full bg-orange-500 ring-4 ring-orange-500/20" />
+                                                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Dropoff Point</p>
+                                                <p className="text-sm font-bold line-clamp-1">{req.drop_location}</p>
+                                            </div>
+                                        </div>
+
+                                        {/* Action Buttons */}
+                                        <div className="flex gap-3">
+                                            <button
+                                                onClick={() => acceptRequest(req)}
+                                                className="flex-[2] bg-blue-500 hover:bg-blue-400 py-4 px-6 rounded-2xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 shadow-xl shadow-blue-500/20 flex items-center justify-center gap-2"
+                                            >
+                                                <CheckCircle2 size={16} /> Accept Order
+                                            </button>
+                                            <a
+                                                href={mapsUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="flex-1 bg-slate-700 hover:bg-slate-600 py-4 rounded-2xl flex items-center justify-center transition-all border border-slate-600"
+                                            >
+                                                <Navigation size={18} />
+                                            </a>
+                                            <button
+                                                onClick={() => rejectRequest(req)}
+                                                className="flex-1 bg-slate-700/50 hover:bg-red-500/20 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all text-slate-400 hover:text-red-400 border border-slate-700"
+                                            >
+                                                Decline
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
 
                         {/* Active Delivery Status — Full Details */}
