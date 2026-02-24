@@ -30,7 +30,7 @@ import {
 } from 'lucide-react';
 import MapComponent from './MapComponent';
 import { supabase } from '../services/supabaseClient';
-import DriverPanel from './DriverPanel';
+import { DriverPanel } from './DriverPanel';
 import MechanicPanel from './MechanicPanel';
 import { User } from '../types';
 
@@ -70,6 +70,7 @@ const BookingSection: React.FC<{ t: any; user?: User }> = ({ t, user }) => {
   const [view, setView] = useState<'marketplace' | 'active'>('marketplace');
   const [searching, setSearching] = useState(false);
   const [foundTrucks, setFoundTrucks] = useState<any[]>([]);
+  const [hasSearched, setHasSearched] = useState(false);
   const [activeBooking, setActiveBooking] = useState<any>(null);
   const [podUploaded, setPodUploaded] = useState(false);
   const [pendingRequests, setPendingRequests] = useState<any[]>([]); // Track all sent requests
@@ -219,6 +220,7 @@ const BookingSection: React.FC<{ t: any; user?: User }> = ({ t, user }) => {
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     setSearching(true);
+    setHasSearched(true);
     setFoundTrucks([]);
 
     // 1. Get current pickup coordinates (already in pickupCoords state)
@@ -445,6 +447,73 @@ const BookingSection: React.FC<{ t: any; user?: User }> = ({ t, user }) => {
       // Fallback for demo if table doesn't exist
       setActiveBooking(truck);
       setView('active');
+    }
+  };
+
+  // Custom Global Broadcast (for when no specific trucks are found)
+  const sendGlobalBroadcast = async () => {
+    setSearching(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
+
+      const newBooking = {
+        customer_id: user?.id,
+        customer_name: user?.user_metadata?.name || 'Guest User',
+        customer_phone: user?.phone || '9999999999',
+        pickup_location: pickupAddress,
+        drop_location: dropoffAddress,
+        pickup_lat: pickupCoords.lat,
+        pickup_lng: pickupCoords.lng,
+        drop_lat: dropoffCoords.lat,
+        drop_lng: dropoffCoords.lng,
+        goods_type: goodsType,
+        weight: weight || '0',
+        offered_price: userOfferedPrice || String(estPrice),
+        status: 'pending',
+        vehicle_id: null, // Broadcast to everyone
+        vehicle_type: vehicleType,
+        messages: [],
+        created_at: new Date().toISOString()
+      };
+
+      const { data, error } = await supabase
+        .from('booking_requests')
+        .insert([newBooking])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      console.log('✅ Global Booking created:', data.id);
+
+      // Broadcast to Driver Panel channel
+      const broadcastChannel = supabase.channel('driver_booking_requests');
+      broadcastChannel.subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await broadcastChannel.send({
+            type: 'broadcast',
+            event: 'INSERT',
+            payload: { type: 'INSERT', new: data, new_row: data }
+          });
+          setTimeout(() => supabase.removeChannel(broadcastChannel), 3000);
+        }
+      });
+
+      setActiveBooking({
+        bookingId: data.id,
+        status: 'pending',
+        offered_price: userOfferedPrice || String(estPrice),
+        truck: `${vehicleType} (Broadcasting...)`,
+        rating: '—',
+        dist: 'Waiting for response'
+      });
+      setBookingStatus('pending');
+      setView('active');
+    } catch (err) {
+      console.error("Global Broadcast Error:", err);
+    } finally {
+      setSearching(false);
     }
   };
 
@@ -899,6 +968,31 @@ const BookingSection: React.FC<{ t: any; user?: User }> = ({ t, user }) => {
                   </div>
                   <h3 className="text-2xl font-black uppercase tracking-tighter text-slate-900 dark:text-white mb-2">Assigning Nearest Fleet</h3>
                   <p className="text-slate-600 dark:text-slate-400 font-bold max-w-xs">Scanning 150+ verified drivers within a 5km radius of your location...</p>
+                </div>
+              )}
+
+              {/* No Results Fallback */}
+              {!searching && hasSearched && foundTrucks.length === 0 && (
+                <div className="absolute inset-0 z-20 bg-slate-100/90 dark:bg-slate-900/90 backdrop-blur-sm flex flex-col items-center justify-center text-center p-10">
+                  <div className="w-16 h-16 bg-slate-200 dark:bg-slate-800 rounded-3xl flex items-center justify-center mb-6">
+                    <Truck size={32} className="text-slate-400" />
+                  </div>
+                  <h3 className="text-xl font-black uppercase tracking-tight mb-2">No Specific Trucks Nearby</h3>
+                  <p className="text-xs text-slate-500 font-medium max-w-xs mb-8">
+                    We couldn't find a direct match for <strong>{vehicleType}</strong> within 100km right now.
+                  </p>
+                  <button
+                    onClick={sendGlobalBroadcast}
+                    className="px-8 py-4 bg-orange-500 hover:bg-orange-600 text-white rounded-[20px] font-black text-xs uppercase tracking-widest shadow-2xl shadow-orange-500/30 transition-all hover:scale-[1.05] active:scale-95 flex items-center gap-3"
+                  >
+                    <Zap size={16} /> Broadcast to Fleet Network
+                  </button>
+                  <button
+                    onClick={() => { setHasSearched(false); setFoundTrucks([]); }}
+                    className="mt-4 text-[10px] font-black uppercase text-slate-400 hover:text-slate-600 tracking-widest"
+                  >
+                    Clear Selection
+                  </button>
                 </div>
               )}
             </div>

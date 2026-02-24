@@ -122,19 +122,23 @@ const fmtDate = (iso: string) => {
 };
 
 const VEHICLE_TYPES = [
-    "Tata Ace (750kg)",
-    "Mahindra Supro (1 ton)",
+    "Tata Ace",
+    "Mahindra Supro",
     "Flatbed Trailer",
     "Lowboy Trailer",
     "Refrigerated Trailer",
     "Container Trailer",
     "Multi-axle Trailer",
-    "14ft Container",
-    "19ft Eicher",
-    "22ft Multi-Axle",
-    "32ft MX Trailer",
-    "Mini Truck",
-    "Bike / Two-Wheeler",
+    "14ft Truck",
+    "17ft Truck",
+    "19ft Truck",
+    "22ft Truck",
+    "32ft Multi-axle",
+    "FMCG",
+    "Furniture",
+    "Electronics",
+    "Textile",
+    "Construction"
 ];
 
 export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
@@ -899,6 +903,9 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
                             model: profile.vehicle_model,
                             year: profile.vehicle_year,
                             available: driverAvailable,
+                            lat: currentCoords?.lat || 0,
+                            lng: currentCoords?.lng || 0,
+                            updated_at: new Date().toISOString()
                         },
                         { onConflict: 'registration_number' },
                     );
