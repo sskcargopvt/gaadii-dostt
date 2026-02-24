@@ -234,6 +234,7 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
             title: string;
             desc: string;
             time: string;
+            bookingId?: string;
         }[]
     >([]);
     const [earnings, setEarnings] = useState({
@@ -247,6 +248,7 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
     const [loadingEarnings, setLoadingEarnings] = useState(true);
     const [tripHistory, setTripHistory] = useState<BookingRequest[]>([]);
     const [loadingHistory, setLoadingHistory] = useState(false);
+    const [highlightedRequestId, setHighlightedRequestId] = useState<string | null>(null);
     const channelRef = useRef<any>(null);
 
     // ─── Profile state ─────────────────────────────────────
@@ -419,6 +421,7 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
                         "blue",
                         "🚚 New Booking Request!",
                         `${booking.goods_type || 'Goods'} | ${booking.weight || ''} | ₹${booking.offered_price || ''}`,
+                        booking.id,
                     );
                 },
             )
@@ -448,6 +451,7 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
                     "blue",
                     "🚚 New Booking Request!",
                     `${booking.goods_type || 'Goods'} | ${booking.weight || ''} | ₹${booking.offered_price || ''}`,
+                    booking.id,
                 );
             })
             // 3️⃣ Search Intent — fires when customer searches for matching trucks
@@ -604,6 +608,7 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
         color: string,
         title: string,
         desc: string,
+        bookingId?: string,
     ) => {
         const entry = {
             id: Date.now().toString(),
@@ -612,6 +617,7 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
             title,
             desc,
             time: "Just now",
+            bookingId,
         };
         setNotifications((prev) => [entry, ...prev].slice(0, 10));
     };
@@ -1464,7 +1470,8 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
                                     return (
                                         <div
                                             key={req.id}
-                                            className="relative overflow-hidden rounded-[28px] sm:rounded-[40px] bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700/50 p-6 sm:p-8 text-white shadow-2xl"
+                                            id={`request-${req.id}`}
+                                            className={`relative overflow-hidden rounded-[28px] sm:rounded-[40px] bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700/50 p-6 sm:p-8 text-white shadow-2xl transition-all duration-700 ${highlightedRequestId === req.id ? "ring-4 ring-orange-500 shadow-orange-500/50 scale-[1.02] animate-pulse" : ""}`}
                                         >
                                             {/* Top Status Bar */}
                                             <div className="flex items-center justify-between mb-6">
@@ -2008,7 +2015,17 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
                                     notifications.map((n, i) => (
                                         <div
                                             key={n.id}
-                                            className={`flex items-start gap-3 p-3 rounded-2xl ${i === 0 ? "bg-orange-50 dark:bg-orange-900/10 border border-orange-100 dark:border-orange-900/20" : "bg-slate-50 dark:bg-slate-900"}`}
+                                            onClick={() => {
+                                                if (n.bookingId) {
+                                                    setActiveTab("dashboard");
+                                                    setHighlightedRequestId(n.bookingId);
+                                                    setTimeout(() => {
+                                                        document.getElementById(`request-${n.bookingId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                                    }, 100);
+                                                    setTimeout(() => setHighlightedRequestId(null), 5000);
+                                                }
+                                            }}
+                                            className={`flex items-start gap-3 p-3 rounded-2xl cursor-pointer hover:scale-[1.02] transition-transform ${i === 0 ? "bg-orange-50 dark:bg-orange-900/10 border border-orange-100 dark:border-orange-900/20" : "bg-slate-50 dark:bg-slate-900"} ${highlightedRequestId === n.bookingId ? "ring-2 ring-orange-500" : ""}`}
                                         >
                                             <div
                                                 className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 bg-${n.color}-100 dark:bg-${n.color}-900/30`}
@@ -2075,60 +2092,48 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
                                 </span>
                             </div>
                             <div className="space-y-4 max-h-[400px] overflow-y-auto no-scrollbar">
-                                {[
-                                    {
-                                        title: "New Order Nearby",
-                                        desc: "A customer in Delhi is looking for a Tata Ace.",
-                                        time: "2m ago",
-                                        icon: Bell,
-                                        color: "blue",
-                                    },
-                                    {
-                                        title: "Payment Received",
-                                        desc: "₹1,200 credited to your wallet for Trip #GD-982.",
-                                        time: "1h ago",
-                                        icon: IndianRupee,
-                                        color: "emerald",
-                                    },
-                                    {
-                                        title: "Profile Verified",
-                                        desc: "Your documents have been approved. You are now a Pro Driver.",
-                                        time: "5h ago",
-                                        icon: Shield,
-                                        color: "purple",
-                                    },
-                                    {
-                                        title: "Maintenance Alert",
-                                        desc: "Time to check your engine oil for registration UP-14 AB 1234.",
-                                        time: "1d ago",
-                                        icon: Wrench,
-                                        color: "orange",
-                                    },
-                                ].map((alert, i) => (
-                                    <div
-                                        key={i}
-                                        className="flex gap-4 p-4 rounded-2x border border-transparent hover:border-slate-100 dark:hover:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-all cursor-default"
-                                    >
-                                        <div
-                                            className={`w-10 h-10 bg-${alert.color}-100 dark:bg-${alert.color}-900/30 rounded-xl flex items-center justify-center text-${alert.color}-600 shrink-0`}
-                                        >
-                                            <alert.icon size={18} />
-                                        </div>
-                                        <div className="flex-1">
-                                            <div className="flex justify-between">
-                                                <p className="text-xs font-black uppercase tracking-tight">
-                                                    {alert.title}
-                                                </p>
-                                                <span className="text-[8px] font-bold text-slate-400">
-                                                    {alert.time}
-                                                </span>
-                                            </div>
-                                            <p className="text-[11px] text-slate-400 font-medium mt-1 leading-relaxed">
-                                                {alert.desc}
-                                            </p>
-                                        </div>
+                                {notifications.length === 0 ? (
+                                    <div className="py-10 text-center opacity-50">
+                                        <Bell size={24} className="mx-auto mb-2 text-slate-400" />
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">No recent alerts</p>
                                     </div>
-                                ))}
+                                ) : (
+                                    notifications.map((alert, i) => (
+                                        <div
+                                            key={alert.id}
+                                            onClick={() => {
+                                                if (alert.bookingId) {
+                                                    setActiveTab("dashboard");
+                                                    setHighlightedRequestId(alert.bookingId);
+                                                    setTimeout(() => {
+                                                        document.getElementById(`request-${alert.bookingId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                                    }, 100);
+                                                    setTimeout(() => setHighlightedRequestId(null), 5000);
+                                                }
+                                            }}
+                                            className={`flex gap-4 p-4 rounded-2xl border border-transparent hover:border-slate-100 dark:hover:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-all cursor-pointer group ${highlightedRequestId === alert.bookingId ? "ring-2 ring-orange-500" : ""}`}
+                                        >
+                                            <div
+                                                className={`w-10 h-10 bg-${alert.color}-100 dark:bg-${alert.color}-900/30 rounded-xl flex items-center justify-center text-${alert.color}-600 shrink-0 group-hover:scale-110 transition-transform`}
+                                            >
+                                                <alert.icon size={18} />
+                                            </div>
+                                            <div className="flex-1">
+                                                <div className="flex justify-between">
+                                                    <p className="text-xs font-black uppercase tracking-tight">
+                                                        {alert.title}
+                                                    </p>
+                                                    <span className="text-[8px] font-bold text-slate-400">
+                                                        {alert.time}
+                                                    </span>
+                                                </div>
+                                                <p className="text-[11px] text-slate-400 font-medium mt-1 leading-relaxed">
+                                                    {alert.desc}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
                             </div>
                             <button className="w-full py-3 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-blue-500 transition-colors">
                                 Clear All Notifications
