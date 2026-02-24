@@ -133,12 +133,7 @@ const VEHICLE_TYPES = [
     "17ft Truck",
     "19ft Truck",
     "22ft Truck",
-    "32ft Multi-axle",
-    "FMCG",
-    "Furniture",
-    "Electronics",
-    "Textile",
-    "Construction"
+    "32ft Multi-axle"
 ];
 
 export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {

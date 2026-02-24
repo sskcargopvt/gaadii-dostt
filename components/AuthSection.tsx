@@ -34,7 +34,20 @@ const ROLES = [
   { id: 'mechanic', label: 'Mechanic', icon: Wrench, accentColor: '#f97316', desc: 'Offer breakdown & repair services' },
 ] as const;
 
-const VEHICLE_TYPES = ['Tata Ace / LCV', '14ft Container', '19ft Eicher', '22ft Multi-Axle', '32ft MX Trailer', 'Mini Truck', 'Bike / Two-Wheeler'];
+const VEHICLE_TYPES = [
+  'Tata Ace',
+  'Mahindra Supro',
+  'Flatbed Trailer',
+  'Lowboy Trailer',
+  'Refrigerated Trailer',
+  'Container Trailer',
+  'Multi-axle Trailer',
+  '14ft Truck',
+  '17ft Truck',
+  '19ft Truck',
+  '22ft Truck',
+  '32ft Multi-axle'
+];
 const MECHANIC_SERVICES = ['Tyre Puncture', 'Engine Breakdown', 'Brake Failure', 'Towing', 'Battery Jump-Start', 'Fuel Delivery', 'General Repairs', 'AC Repair'];
 
 /* ═══════════════════════════════════════════════════════

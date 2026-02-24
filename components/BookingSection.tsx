@@ -62,6 +62,21 @@ const getCurrentCheckpoint = (progress: number) => {
   return routeCheckpoints[3];
 };
 
+const VEHICLE_TYPES = [
+  'Tata Ace',
+  'Mahindra Supro',
+  'Flatbed Trailer',
+  'Lowboy Trailer',
+  'Refrigerated Trailer',
+  'Container Trailer',
+  'Multi-axle Trailer',
+  '14ft Truck',
+  '17ft Truck',
+  '19ft Truck',
+  '22ft Truck',
+  '32ft Multi-axle'
+];
+
 const BookingSection: React.FC<{ t: any; user?: User }> = ({ t, user }) => {
   // Role-gate: drivers and mechanics see their own panels
   if (user?.role === 'driver') return <DriverPanel t={t} />;
@@ -89,7 +104,7 @@ const BookingSection: React.FC<{ t: any; user?: User }> = ({ t, user }) => {
   const [dropoffAddress, setDropoffAddress] = useState('');
   const [goodsType, setGoodsType] = useState('FMCG');
   const [weight, setWeight] = useState<string>('');
-  const [vehicleType, setVehicleType] = useState('14ft Container');
+  const [vehicleType, setVehicleType] = useState('Tata Ace');
   const [bookingDate, setBookingDate] = useState(new Date().toISOString().split('T')[0]);
 
   // Coordinates
@@ -249,7 +264,28 @@ const BookingSection: React.FC<{ t: any; user?: User }> = ({ t, user }) => {
             );
             return { ...vehicle, distNum: dist };
           })
-          .filter((v: any) => v.distNum <= 100 && v.type === vehicleType)
+          .filter((v: any) => {
+            const requestedTypeLower = vehicleType?.trim().toLowerCase();
+            const vehicleTypeLower = v.type?.trim().toLowerCase();
+
+            const typeMatch = vehicleTypeLower === requestedTypeLower;
+            const distMatch = v.distNum <= 100;
+            const availMatch = v.available === true;
+            const coordMatch = v.lat !== 0 && v.lng !== 0;
+
+            // Detailed logging for filtering
+            if (!typeMatch || !distMatch || !availMatch || !coordMatch) {
+              console.log(`❌ Filtering out ${v.registration_number} (${v.type}):`);
+              if (!typeMatch) console.log(`   - Type mismatch: Requested "${vehicleType}", Vehicle "${v.type}"`);
+              if (!distMatch) console.log(`   - Distance too far: ${v.distNum.toFixed(1)} km`);
+              if (!availMatch) console.log(`   - Not available: ${v.available}`);
+              if (!coordMatch) console.log(`   - Invalid coordinates: ${v.lat},${v.lng}`);
+            } else {
+              console.log(`✅ Matched ${v.registration_number} (${v.type}) | Dist: ${v.distNum.toFixed(1)}km`);
+            }
+
+            return typeMatch && distMatch && availMatch && coordMatch;
+          })
           .sort((a: any, b: any) => a.distNum - b.distNum)
           .map((vehicle: any) => {
             return {
@@ -267,6 +303,7 @@ const BookingSection: React.FC<{ t: any; user?: User }> = ({ t, user }) => {
 
         // Artificial delay for "Scanning" effect
         setTimeout(() => {
+          console.log(`🔍 Search results for ${vehicleType}:`, nearbyTrucks.length, "trucks found.");
           setFoundTrucks(nearbyTrucks);
           setSearching(false);
 
@@ -812,6 +849,13 @@ const BookingSection: React.FC<{ t: any; user?: User }> = ({ t, user }) => {
                       <optgroup label="Mini Trucks">
                         <option value="Tata Ace">Tata Ace (750kg)</option>
                         <option value="Mahindra Supro">Mahindra Supro (1 ton)</option>
+                      </optgroup>
+                      <optgroup label="Standard Trucks">
+                        <option value="14ft Truck">14ft Truck (Eicher)</option>
+                        <option value="17ft Truck">17ft Truck</option>
+                        <option value="19ft Truck">19ft Truck</option>
+                        <option value="22ft Truck">22ft Truck</option>
+                        <option value="32ft Multi-axle">32ft Multi-axle</option>
                       </optgroup>
                       <optgroup label="Trailers & Heavy">
                         <option value="Flatbed Trailer">Flatbed Trailer</option>
