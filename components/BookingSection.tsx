@@ -289,45 +289,62 @@ const BookingSection: React.FC<{ t: any; user?: User }> = ({ t, user }) => {
   useEffect(() => {
     if (!activeBooking?.bookingId) return;
 
-    const topic = `booking:${activeBooking.bookingId}`;
-    const channel = supabase.channel(topic, { config: { private: true } });
+    const bookingId = activeBooking.bookingId;
+    const topic = `booking:${bookingId}`;
 
-    channel
+    // 1. Listen for Broadcasts (Chat/Bargain)
+    const broadcastChannel = supabase.channel(topic);
+    broadcastChannel
       .on('broadcast', { event: '*' }, (payload) => {
         console.log('Booking broadcast received:', payload);
-
-        // Normalize payload (DB trigger sends new row data)
         const updated = payload.new ?? payload.new_row ?? payload.payload;
-
         if (!updated) return;
 
-        // Update booking status
-        setBookingStatus(updated.status || '');
+        if (updated.id === bookingId) {
+          setActiveBooking((prev: any) => prev ? ({
+            ...prev,
+            status: updated.status || prev.status,
+            offered_price: updated.offered_price || prev.offered_price,
+            driver_id: updated.driver_id || prev.driver_id
+          }) : null);
 
-        // Update active booking with new data
-        setActiveBooking((prev: any) => ({
-          ...prev,
-          status: updated.status || prev.status,
-          offered_price: updated.offered_price || prev.offered_price,
-          messages: updated.messages || prev.messages
-        }));
-
-        if (updated.messages) {
-          setChatHistory(updated.messages);
+          if (updated.messages) {
+            setChatHistory(updated.messages);
+          }
         }
       })
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          console.log('✅ Subscribed to booking updates:', topic);
-        } else if (status === 'CHANNEL_ERROR') {
-          console.error('❌ Channel error for:', topic);
-        } else {
-          console.log('Channel status:', status);
+      .subscribe();
+
+    // 2. Listen for Postgres Changes (Status Updates)
+    const dbChannel = supabase.channel(`db-booking-${bookingId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'booking_requests',
+          filter: `id=eq.${bookingId}`
+        },
+        (payload) => {
+          console.log('✅ DB update received via postgres_changes:', payload.new);
+          const updated = payload.new;
+          setActiveBooking((prev: any) => prev ? ({
+            ...prev,
+            status: updated.status || prev.status,
+            offered_price: updated.offered_price || prev.offered_price,
+            driver_id: updated.driver_id || prev.driver_id
+          }) : null);
+
+          if (updated.messages) {
+            setChatHistory(updated.messages);
+          }
         }
-      });
+      )
+      .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(broadcastChannel);
+      supabase.removeChannel(dbChannel);
     };
   }, [activeBooking?.bookingId]);
 
@@ -839,8 +856,8 @@ const BookingSection: React.FC<{ t: any; user?: User }> = ({ t, user }) => {
                   <h3 className="text-2xl font-black uppercase italic italic tracking-tighter">Live Tracking</h3>
                   <p className="text-[10px] font-black uppercase text-orange-500 tracking-[0.3em]">Order #{activeBooking.bookingId?.slice(-6)}</p>
                 </div>
-                <div className="bg-emerald-500/10 text-emerald-600 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest animate-pulse">
-                  On the move
+                <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest animate-pulse ${activeBooking.status === 'pending' ? 'bg-orange-500/10 text-orange-600' : 'bg-emerald-500/10 text-emerald-600'}`}>
+                  {activeBooking.status === 'pending' ? 'Broadcasting to drivers' : 'On the move'}
                 </div>
               </div>
 
@@ -858,21 +875,31 @@ const BookingSection: React.FC<{ t: any; user?: User }> = ({ t, user }) => {
               </div>
 
               <div className="pt-6 border-t border-slate-50 dark:border-slate-700 space-y-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-slate-100 dark:bg-slate-900 rounded-2xl flex items-center justify-center">
-                    <UserIcon size={24} className="text-slate-500" />
-                  </div>
-                  <div>
-                    <h5 className="font-black text-sm uppercase tracking-tight">{activeBooking.driver || 'Suresh Kumar'}</h5>
-                    <div className="flex items-center gap-2">
-                      <Star size={10} className="text-amber-500 fill-amber-500" />
-                      <span className="text-[10px] font-black text-slate-500">Gold Verified Partner</span>
+                {activeBooking.status === 'pending' ? (
+                  <div className="flex flex-col items-center justify-center py-6 text-center space-y-3">
+                    <div className="w-12 h-12 bg-orange-500/10 rounded-full flex items-center justify-center">
+                      <Zap size={24} className="text-orange-500 animate-pulse" />
                     </div>
+                    <p className="text-sm font-black uppercase tracking-tighter">Waiting for driver response</p>
+                    <p className="text-[10px] font-bold text-slate-400 px-10">We've sent your request to 10+ nearby fleet partners.</p>
                   </div>
-                  <button className="ml-auto bg-blue-500 text-white p-3 rounded-xl shadow-lg hover:scale-110 transition-transform">
-                    <MessageSquare size={18} />
-                  </button>
-                </div>
+                ) : (
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-slate-100 dark:bg-slate-900 rounded-2xl flex items-center justify-center">
+                      <UserIcon size={24} className="text-slate-500" />
+                    </div>
+                    <div>
+                      <h5 className="font-black text-sm uppercase tracking-tight">{activeBooking.driver || 'Assigned Driver'}</h5>
+                      <div className="flex items-center gap-2">
+                        <Star size={10} className="text-amber-500 fill-amber-500" />
+                        <span className="text-[10px] font-black text-slate-500">Verified Gold Partner</span>
+                      </div>
+                    </div>
+                    <button className="ml-auto bg-blue-500 text-white p-3 rounded-xl shadow-lg hover:scale-110 transition-transform">
+                      <MessageSquare size={18} />
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* ── Chat & Pricing Tool ── */}

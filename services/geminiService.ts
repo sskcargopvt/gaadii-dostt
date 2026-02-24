@@ -14,14 +14,14 @@ export const getLoadEstimation = async (material: string, weight: number, distan
     reasoning: "" // Reasoning will be set based on the failure type.
   };
 
-  if (!process.env.API_KEY) {
+  if (!import.meta.env.VITE_GEMINI_API_KEY) {
     console.warn("Gemini API key not found. Using fallback estimation.");
     fallbackData.reasoning = "Live AI analysis is unavailable. This is a standard estimate based on industry averages.";
     return { data: fallbackData, source: 'fallback' };
   }
-  
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  
+
+  const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
+
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-pro-preview",

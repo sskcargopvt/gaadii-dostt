@@ -210,15 +210,36 @@ const EmergencySection: React.FC<{ t: any }> = ({ t }) => {
     if (!selectedService) return;
     setLoading(true);
     try {
-      await supabase.from('emergency_requests').insert([{
-        type: selectedService.name,
-        status: 'assigned',
-        eta: 15,
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
+
+      const { data, error } = await supabase.from('mechanic_requests').insert([{
+        customer_name: user?.user_metadata?.name || 'Customer',
+        customer_phone: user?.phone || '9999999999',
+        service_type: selectedService.name,
+        status: 'pending',
         location: userLocation,
         lat: coords?.lat,
         lng: coords?.lng,
-        amount: selectedService.price
-      }]);
+        offered_price: selectedService.price,
+        created_at: new Date().toISOString()
+      }]).select().single();
+
+      if (error) throw error;
+
+      // Broadcast to mechanics
+      const channel = supabase.channel('mechanic_requests');
+      channel.subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await channel.send({
+            type: 'broadcast',
+            event: 'INSERT',
+            payload: { type: 'INSERT', new: data, new_row: data }
+          });
+          setTimeout(() => supabase.removeChannel(channel), 5000);
+        }
+      });
+
       setStep('tracking');
     } catch (e) {
       console.error(e);
