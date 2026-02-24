@@ -26,7 +26,7 @@ import {
   TrendingUp,
   ToggleLeft,
   ToggleRight,
-  User as UserIcon, CreditCard, History, Bike, IndianRupee, Activity, Zap
+  User as UserIcon, CreditCard, History, Bike, IndianRupee, Activity, Zap, Phone
 } from 'lucide-react';
 import MapComponent from './MapComponent';
 import { supabase } from '../services/supabaseClient';
@@ -99,6 +99,22 @@ const BookingSection: React.FC<{ t: any; user?: User }> = ({ t, user }) => {
   const [distance, setDistance] = useState<number>(0);
   const [weightUnit, setWeightUnit] = useState<'kg' | 'tons'>('kg');
   const [customItem, setCustomItem] = useState('');
+  const [estPrice, setEstPrice] = useState(0);
+  const [userOfferedPrice, setUserOfferedPrice] = useState<string>('');
+  const [isEditingPrice, setIsEditingPrice] = useState(false);
+
+  // Price Estimation
+  useEffect(() => {
+    let base = 500;
+    let ratePerKm = 40;
+    if (vehicleType.includes('Tata Ace')) { base = 400; ratePerKm = 30; }
+    else if (vehicleType.includes('Trailer')) { base = 5000; ratePerKm = 150; }
+
+    const calculated = Math.round(base + (distance * ratePerKm));
+    setEstPrice(calculated);
+    if (!isEditingPrice) setUserOfferedPrice(String(calculated));
+  }, [distance, vehicleType, isEditingPrice]);
+  const [driverProfile, setDriverProfile] = useState<any>(null);
 
   // Suggestions
   const [pickupSuggestions, setPickupSuggestions] = useState<any[]>([]);
@@ -348,6 +364,19 @@ const BookingSection: React.FC<{ t: any; user?: User }> = ({ t, user }) => {
     };
   }, [activeBooking?.bookingId]);
 
+  // Fetch driver details when accepted
+  useEffect(() => {
+    if (!activeBooking?.driver_id) return;
+    (async () => {
+      const { data } = await supabase
+        .from('vehicles')
+        .select('*')
+        .eq('driver_id', activeBooking.driver_id)
+        .single();
+      if (data) setDriverProfile(data);
+    })();
+  }, [activeBooking?.driver_id]);
+
   const handleBook = async (truck: any) => {
     try {
       // 1. Get Session for User Details
@@ -371,7 +400,7 @@ const BookingSection: React.FC<{ t: any; user?: User }> = ({ t, user }) => {
           drop_lng: dropoffCoords.lng,
           goods_type: goodsType === 'Other' ? customItem : goodsType,
           weight: `${weight} ${weightUnit}`,
-          offered_price: priceValue,
+          offered_price: userOfferedPrice || priceValue,
           status: 'pending',
           vehicle_id: truck.id,
           vehicle_type: truck.type || vehicleType,
@@ -408,7 +437,7 @@ const BookingSection: React.FC<{ t: any; user?: User }> = ({ t, user }) => {
       });
 
       // 4. Set Active State
-      setActiveBooking({ ...truck, bookingId: data.id, status: 'pending', offered_price: priceValue });
+      setActiveBooking({ ...truck, bookingId: data.id, status: 'pending', offered_price: userOfferedPrice || priceValue });
       setBookingStatus('pending');
       setView('active');
     } catch (err) {
@@ -438,7 +467,7 @@ const BookingSection: React.FC<{ t: any; user?: User }> = ({ t, user }) => {
         drop_lng: dropoffCoords.lng,
         goods_type: goodsType,
         weight: weight || '0',
-        offered_price: truck.price.replace(/[^\d]/g, ''),
+        offered_price: userOfferedPrice || truck.price.replace(/[^\d]/g, ''),
         status: 'pending',
         vehicle_id: truck.id,
         messages: [], // Initialize empty messages array
@@ -767,6 +796,37 @@ const BookingSection: React.FC<{ t: any; user?: User }> = ({ t, user }) => {
                     <p className="text-sm font-bold text-slate-600 dark:text-slate-400">~{Math.round(distance * 3)} mins</p>
                   </div>
                 </div>
+
+                <div className="bg-slate-50 dark:bg-slate-900 rounded-2xl p-4 border border-slate-100 dark:border-slate-800 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Calculated Estimate</p>
+                    <p className="font-black text-sm">₹{estPrice.toLocaleString()}</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-1">Your Offered Price (₹)</label>
+                    <div className="relative">
+                      <IndianRupee className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                      <input
+                        type="number"
+                        value={userOfferedPrice}
+                        onChange={(e) => {
+                          setUserOfferedPrice(e.target.value);
+                          setIsEditingPrice(true);
+                        }}
+                        className={`${inputCls} !pl-10`}
+                        placeholder="e.g. 5000"
+                      />
+                      {isEditingPrice && (
+                        <button
+                          onClick={() => setIsEditingPrice(false)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-[8px] font-black uppercase text-orange-500 hover:text-orange-600"
+                        >
+                          Reset
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Find Trucks Button */}
@@ -885,17 +945,29 @@ const BookingSection: React.FC<{ t: any; user?: User }> = ({ t, user }) => {
                   </div>
                 ) : (
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-slate-100 dark:bg-slate-900 rounded-2xl flex items-center justify-center">
-                      <UserIcon size={24} className="text-slate-500" />
+                    <div className="w-12 h-12 bg-slate-100 dark:bg-slate-900 rounded-2xl flex items-center justify-center overflow-hidden">
+                      {driverProfile?.profile_photo_url ? (
+                        <img src={driverProfile.profile_photo_url} alt="Driver" className="w-full h-full object-cover" />
+                      ) : (
+                        <UserIcon size={24} className="text-slate-500" />
+                      )}
                     </div>
-                    <div>
-                      <h5 className="font-black text-sm uppercase tracking-tight">{activeBooking.driver || 'Assigned Driver'}</h5>
+                    <div className="flex-1 min-w-0">
+                      <h5 className="font-black text-sm uppercase tracking-tight truncate">{driverProfile?.full_name || 'Assigned Driver'}</h5>
                       <div className="flex items-center gap-2">
                         <Star size={10} className="text-amber-500 fill-amber-500" />
                         <span className="text-[10px] font-black text-slate-500">Verified Gold Partner</span>
                       </div>
                     </div>
-                    <button className="ml-auto bg-blue-500 text-white p-3 rounded-xl shadow-lg hover:scale-110 transition-transform">
+                    {driverProfile?.phone && (
+                      <a
+                        href={`tel:${driverProfile.phone}`}
+                        className="bg-emerald-500 text-white p-3 rounded-xl shadow-lg hover:scale-110 transition-transform"
+                      >
+                        <Phone size={18} />
+                      </a>
+                    )}
+                    <button className="bg-blue-500 text-white p-3 rounded-xl shadow-lg hover:scale-110 transition-transform">
                       <MessageSquare size={18} />
                     </button>
                   </div>

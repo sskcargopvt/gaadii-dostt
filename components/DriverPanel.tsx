@@ -39,6 +39,7 @@ import {
 } from "lucide-react";
 
 import { supabase } from "../services/supabaseClient";
+import MapComponent from "./MapComponent";
 
 // ─── Types ─────────────────────────────────────────────
 interface DriverProfile {
@@ -476,6 +477,39 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
             clearInterval(interval);
         };
     }, [driverId]);
+
+    // Active Booking Realtime Listener (Bargaining/Status)
+    useEffect(() => {
+        if (!activeRequest?.id) return;
+
+        const topic = `booking:${activeRequest.id}`;
+        const channel = supabase.channel(topic)
+            .on('postgres_changes', {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'booking_requests',
+                filter: `id=eq.${activeRequest.id}`
+            }, (payload) => {
+                const updated = payload.new as BookingRequest;
+                console.log("💎 Active booking updated in Driver Panel:", updated);
+                setActiveRequest(prev => prev ? ({ ...prev, ...updated }) : null);
+                if (updated.messages) {
+                    setChatHistory(updated.messages);
+                }
+            })
+            .on('broadcast', { event: '*' }, (payload) => {
+                const updated = payload.payload;
+                if (updated?.id === activeRequest.id) {
+                    setActiveRequest(prev => prev ? ({ ...prev, ...updated }) : null);
+                    if (updated.messages) {
+                        setChatHistory(updated.messages);
+                    }
+                }
+            })
+            .subscribe();
+
+        return () => { supabase.removeChannel(channel); };
+    }, [activeRequest?.id]);
 
     // ─── Real-time incoming mechanic/emergency requests (for Driver Visibility) ───
     useEffect(() => {
@@ -1597,7 +1631,20 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
                                         </a>
                                     </div>
 
-                                    {/* Route */}
+                                    {/* Route Map */}
+                                    <div className="rounded-3xl overflow-hidden shadow-inner bg-slate-100 dark:bg-slate-900 h-[220px] relative group">
+                                        <MapComponent
+                                            startPos={{ lat: activeRequest.pickup_lat, lng: activeRequest.pickup_lng }}
+                                            endPos={{ lat: activeRequest.drop_lat, lng: activeRequest.drop_lng }}
+                                            currentPosition={currentCoords || undefined}
+                                        />
+                                        <div className="absolute top-4 right-4 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20 shadow-lg flex items-center gap-2">
+                                            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                                            <span className="text-[10px] font-black uppercase tracking-widest">GPS Tracking Active</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Route details */}
                                     <div className="bg-slate-50 dark:bg-slate-900 rounded-2xl p-4 space-y-3">
                                         <div className="flex gap-3 items-start">
                                             <div className="flex flex-col items-center gap-1 pt-1">
