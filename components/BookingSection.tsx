@@ -479,7 +479,7 @@ const BookingSection: React.FC<{ t: any; user?: User }> = ({ t, user }) => {
           const result = await broadcastChannel.send({
             type: 'broadcast',
             event: 'INSERT',
-            payload: finalData  // Send the full booking row directly
+            payload: { new: finalData }  // Wrap in `new` property consistently
           });
 
           console.log('📢 Broadcast result:', result);
