@@ -484,7 +484,7 @@ const BookingSection: React.FC<{ t: any; user?: User }> = ({ t, user }) => {
 
           console.log('📢 Broadcast result:', result);
           // Keep channel alive for 8 seconds to ensure delivery
-          setTimeout(() => supabase.removeChannel(broadcastChannel), 8000);
+          // timeout removed
         }
       });
 
@@ -549,7 +549,7 @@ const BookingSection: React.FC<{ t: any; user?: User }> = ({ t, user }) => {
             event: 'INSERT',
             payload: { type: 'INSERT', new: finalData, new_row: finalData }
           });
-          setTimeout(() => supabase.removeChannel(broadcastChannel), 3000);
+          // timeout removed
         }
       });
 
@@ -621,7 +621,7 @@ const BookingSection: React.FC<{ t: any; user?: User }> = ({ t, user }) => {
             });
           }
           console.log('📢 All booking broadcasts sent to Driver Panel');
-          setTimeout(() => supabase.removeChannel(broadcastChannel), 3000);
+          // timeout removed
         }
       });
 

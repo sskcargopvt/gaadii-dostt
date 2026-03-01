@@ -398,7 +398,6 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
 
     // ─── Real-time incoming booking requests ───────────────
     useEffect(() => {
-        if (!driverId) return;
 
         // ── Dual subscription: Postgres changes + Broadcast ──────────
         // This guarantees the driver sees new bookings even if broadcast slightly delays.
@@ -481,10 +480,8 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
         channelRef.current = channel;
 
         // Initial fetch of pending requests immediately
-        if (driverId) {
-            console.log("🚀 Initial fetch for driver:", driverId);
-            fetchPendingRequests();
-        }
+        console.log("🚀 Initial fetch for pending requests");
+        fetchPendingRequests();
 
         // Refresh every 5 seconds as safety net
         const interval = setInterval(() => {
