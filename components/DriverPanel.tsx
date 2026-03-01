@@ -1383,61 +1383,8 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
             {/* ═══════════════════════════════════════════════ */}
             {activeTab === "dashboard" && (
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                    {/* ── LEFT: Earnings & Incoming ── */}
+                    {/* ── LEFT: Incoming & Route ── */}
                     <div className="lg:col-span-8 space-y-6">
-                        {/* Earnings Summary Dashboard */}
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-                            {[
-                                {
-                                    label: "Today's Earnings",
-                                    value: `₹${earnings.today.toLocaleString()}`,
-                                    sub: `${earnings.todayCount} Trips`,
-                                    color: "blue",
-                                    icon: IndianRupee,
-                                },
-                                {
-                                    label: "Weekly Income",
-                                    value: `₹${earnings.week.toLocaleString()}`,
-                                    sub: `${earnings.weekCount} Trips`,
-                                    color: "emerald",
-                                    icon: TrendingUp,
-                                },
-                                {
-                                    label: "Completed Payouts",
-                                    value: `₹${earnings.month.toLocaleString()}`,
-                                    sub: `Verified`,
-                                    color: "slate",
-                                    icon: CheckCircle2,
-                                },
-                            ].map((stat, i) => (
-                                <div
-                                    key={i}
-                                    className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-[24px] sm:rounded-[32px] border border-slate-100 dark:border-slate-700 shadow-lg overflow-hidden relative group hover:scale-[1.02] transition-all"
-                                >
-                                    <div
-                                        className={`absolute top-0 right-0 w-16 h-16 sm:w-20 sm:h-20 bg-${stat.color}-500/5 rounded-full blur-2xl`}
-                                    />
-                                    <div className="flex flex-col items-start gap-0">
-                                        <div
-                                            className={`w-8 h-8 sm:w-10 sm:h-10 bg-${stat.color}-100 dark:bg-${stat.color}-900/30 rounded-xl flex items-center justify-center mb-3 text-${stat.color}-600 shrink-0`}
-                                        >
-                                            <stat.icon size={16} />
-                                        </div>
-                                        <div>
-                                            <p className="text-[8px] sm:text-[10px] font-black uppercase text-slate-400 tracking-widest">
-                                                {stat.label}
-                                            </p>
-                                            <p className="text-lg sm:text-2xl font-black mt-0.5 italic">
-                                                {stat.value}
-                                            </p>
-                                            <p className="text-[8px] sm:text-[10px] font-bold text-slate-500 mt-0.5 uppercase">
-                                                {stat.sub}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
 
                         {/* Incoming Requests */}
                         <div className="space-y-4">
@@ -1967,6 +1914,60 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
                                     </p>
                                 </div>
                             )}
+                        </div>
+
+                        {/* Earnings Summary Dashboard */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                            {[
+                                {
+                                    label: "Today's Earnings",
+                                    value: `₹${earnings.today.toLocaleString()}`,
+                                    sub: `${earnings.todayCount} Trips`,
+                                    color: "blue",
+                                    icon: IndianRupee,
+                                },
+                                {
+                                    label: "Weekly Income",
+                                    value: `₹${earnings.week.toLocaleString()}`,
+                                    sub: `${earnings.weekCount} Trips`,
+                                    color: "emerald",
+                                    icon: TrendingUp,
+                                },
+                                {
+                                    label: "Completed Payouts",
+                                    value: `₹${earnings.month.toLocaleString()}`,
+                                    sub: `Verified`,
+                                    color: "slate",
+                                    icon: CheckCircle2,
+                                },
+                            ].map((stat, i) => (
+                                <div
+                                    key={i}
+                                    className="bg-white dark:bg-slate-800 p-4 sm:p-6 rounded-[24px] sm:rounded-[32px] border border-slate-100 dark:border-slate-700 shadow-lg overflow-hidden relative group hover:scale-[1.02] transition-all"
+                                >
+                                    <div
+                                        className={`absolute top-0 right-0 w-16 h-16 sm:w-20 sm:h-20 bg-${stat.color}-500/5 rounded-full blur-2xl`}
+                                    />
+                                    <div className="flex flex-col items-start gap-0">
+                                        <div
+                                            className={`w-8 h-8 sm:w-10 sm:h-10 bg-${stat.color}-100 dark:bg-${stat.color}-900/30 rounded-xl flex items-center justify-center mb-3 text-${stat.color}-600 shrink-0`}
+                                        >
+                                            <stat.icon size={16} />
+                                        </div>
+                                        <div>
+                                            <p className="text-[8px] sm:text-[10px] font-black uppercase text-slate-400 tracking-widest">
+                                                {stat.label}
+                                            </p>
+                                            <p className="text-lg sm:text-2xl font-black mt-0.5 italic">
+                                                {stat.value}
+                                            </p>
+                                            <p className="text-[8px] sm:text-[10px] font-bold text-slate-500 mt-0.5 uppercase">
+                                                {stat.sub}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </div>
 
