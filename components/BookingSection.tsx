@@ -268,10 +268,17 @@ const BookingSection: React.FC<{ t: any; user?: User }> = ({ t, user }) => {
             const requestedTypeLower = vehicleType?.trim().toLowerCase();
             const vehicleTypeLower = v.type?.trim().toLowerCase();
 
-            const typeMatch = vehicleTypeLower === requestedTypeLower;
             const distMatch = v.distNum <= 100;
             const availMatch = v.available === true;
             const coordMatch = v.lat !== 0 && v.lng !== 0;
+
+            // Strict match unless "Any Available Truck" is selected
+            let typeMatch = false;
+            if (requestedTypeLower === 'any available truck') {
+              typeMatch = true; // matches any vehicle
+            } else {
+              typeMatch = vehicleTypeLower === requestedTypeLower;
+            }
 
             // Detailed logging for filtering
             if (!typeMatch || !distMatch || !availMatch || !coordMatch) {
@@ -425,34 +432,40 @@ const BookingSection: React.FC<{ t: any; user?: User }> = ({ t, user }) => {
       const priceValue = truck.price.replace(/[^\d]/g, '');
 
       // 2. Insert into Supabase
+      const newBookingData = {
+        customer_id: user?.id || 'demo-user',
+        customer_name: user?.user_metadata?.name || 'Guest User',
+        customer_phone: user?.phone || '9999999999',
+        pickup_location: pickupAddress,
+        drop_location: dropoffAddress,
+        pickup_lat: pickupCoords.lat,
+        pickup_lng: pickupCoords.lng,
+        drop_lat: dropoffCoords.lat,
+        drop_lng: dropoffCoords.lng,
+        goods_type: goodsType === 'Other' ? customItem : goodsType,
+        weight: `${weight} ${weightUnit}`,
+        offered_price: userOfferedPrice || priceValue,
+        status: 'pending',
+        vehicle_id: truck.id,
+        vehicle_type: truck.type || vehicleType,
+        distance_km: distance.toFixed(1),
+        messages: [],
+        created_at: new Date().toISOString()
+      };
+
       const { data, error } = await supabase
         .from('booking_requests')
-        .insert([{
-          customer_id: user?.id,
-          customer_name: user?.user_metadata?.name || 'Guest User',
-          customer_phone: user?.phone || '9999999999',
-          pickup_location: pickupAddress,
-          drop_location: dropoffAddress,
-          pickup_lat: pickupCoords.lat,
-          pickup_lng: pickupCoords.lng,
-          drop_lat: dropoffCoords.lat,
-          drop_lng: dropoffCoords.lng,
-          goods_type: goodsType === 'Other' ? customItem : goodsType,
-          weight: `${weight} ${weightUnit}`,
-          offered_price: userOfferedPrice || priceValue,
-          status: 'pending',
-          vehicle_id: truck.id,
-          vehicle_type: truck.type || vehicleType,
-          distance_km: distance.toFixed(1),
-          messages: [],
-          created_at: new Date().toISOString()
-        }])
+        .insert([newBookingData])
         .select()
         .single();
 
-      if (error) throw error;
-
-      console.log('✅ Booking created in DB:', data.id);
+      let finalData = data;
+      if (error) {
+        console.warn("⚠️ DB Insert Failed (RLS or missing table). Falling back to P2P Broadcast only:", error.message);
+        finalData = { ...newBookingData, id: `demo-${Date.now()}` };
+      } else {
+        console.log('✅ Booking created in DB:', data.id);
+      }
 
       // 3. Broadcast to driver panel — use a single channel and wait for SUBSCRIBED
       const broadcastChannel = supabase.channel('driver_booking_requests');
@@ -466,7 +479,7 @@ const BookingSection: React.FC<{ t: any; user?: User }> = ({ t, user }) => {
           const result = await broadcastChannel.send({
             type: 'broadcast',
             event: 'INSERT',
-            payload: data  // Send the full booking row directly
+            payload: finalData  // Send the full booking row directly
           });
 
           console.log('📢 Broadcast result:', result);
@@ -476,12 +489,11 @@ const BookingSection: React.FC<{ t: any; user?: User }> = ({ t, user }) => {
       });
 
       // 4. Set Active State
-      setActiveBooking({ ...truck, bookingId: data.id, status: 'pending', offered_price: userOfferedPrice || priceValue });
+      setActiveBooking({ ...truck, bookingId: finalData.id, status: 'pending', offered_price: userOfferedPrice || priceValue });
       setBookingStatus('pending');
       setView('active');
     } catch (err) {
-      console.error("Booking Error:", err);
-      // Fallback for demo if table doesn't exist
+      console.error("Critical Booking Error:", err);
       setActiveBooking(truck);
       setView('active');
     }
@@ -520,9 +532,13 @@ const BookingSection: React.FC<{ t: any; user?: User }> = ({ t, user }) => {
         .select()
         .single();
 
-      if (error) throw error;
-
-      console.log('✅ Global Booking created:', data.id);
+      let finalData = data;
+      if (error) {
+        console.warn("⚠️ Global DB Insert Failed. Falling back to P2P Broadcast:", error.message);
+        finalData = { ...newBooking, id: `global-demo-${Date.now()}` };
+      } else {
+        console.log('✅ Global Booking created:', data.id);
+      }
 
       // Broadcast to Driver Panel channel
       const broadcastChannel = supabase.channel('driver_booking_requests');
@@ -531,14 +547,14 @@ const BookingSection: React.FC<{ t: any; user?: User }> = ({ t, user }) => {
           await broadcastChannel.send({
             type: 'broadcast',
             event: 'INSERT',
-            payload: { type: 'INSERT', new: data, new_row: data }
+            payload: { type: 'INSERT', new: finalData, new_row: finalData }
           });
           setTimeout(() => supabase.removeChannel(broadcastChannel), 3000);
         }
       });
 
       setActiveBooking({
-        bookingId: data.id,
+        bookingId: finalData.id,
         status: 'pending',
         offered_price: userOfferedPrice || String(estPrice),
         truck: `${vehicleType} (Broadcasting...)`,
@@ -585,15 +601,19 @@ const BookingSection: React.FC<{ t: any; user?: User }> = ({ t, user }) => {
         .insert(requests)
         .select();
 
-      if (error) throw error;
-
-      console.log(`✅ Broadcast ${data?.length || 0} booking requests to drivers`);
+      let finalData = data || [];
+      if (error) {
+        console.warn("⚠️ Broadcast DB Insert Failed. Falling back to P2P Broadcast:", error.message);
+        finalData = requests.map((req, i) => ({ ...req, id: `broadcast-demo-${Date.now()}-${i}` }));
+      } else {
+        console.log(`✅ Broadcast ${data?.length || 0} booking requests to drivers`);
+      }
 
       // Broadcast all bookings to Driver Panel on the correct channel
       const broadcastChannel = supabase.channel('driver_booking_requests');
       broadcastChannel.subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
-          for (const booking of (data || [])) {
+          for (const booking of finalData) {
             await broadcastChannel.send({
               type: 'broadcast',
               event: 'INSERT',
@@ -846,6 +866,7 @@ const BookingSection: React.FC<{ t: any; user?: User }> = ({ t, user }) => {
                   <div className="space-y-1.5">
                     <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-1">Vehicle Type</label>
                     <select value={vehicleType} onChange={(e) => setVehicleType(e.target.value)} className={inputCls}>
+                      <option value="Any Available Truck">🚀 Any Available Truck</option>
                       <optgroup label="Mini Trucks">
                         <option value="Tata Ace">Tata Ace (750kg)</option>
                         <option value="Mahindra Supro">Mahindra Supro (1 ton)</option>
