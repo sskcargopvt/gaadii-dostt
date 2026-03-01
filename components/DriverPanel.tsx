@@ -136,6 +136,13 @@ const VEHICLE_TYPES = [
     "32ft Multi-axle"
 ];
 
+const playNotificationSound = () => {
+    try {
+        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+        audio.play().catch(e => console.log('Audio disabled by browser auto-play policy:', e));
+    } catch (e) { }
+};
+
 export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
     // ─── Tab ───────────────────────────────────────────────
     const [activeTab, setActiveTab] = useState<
@@ -413,6 +420,7 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
 
                     setIncomingRequests((prev) => {
                         if (prev.find((r) => r.id === booking.id)) return prev;
+                        playNotificationSound();
                         return [booking, ...prev];
                     });
                     addNotification(
@@ -439,9 +447,10 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
 
                 console.log("📨 Broadcast booking received:", booking.id, booking.status);
 
-                // Show ALL incoming requests (no GPS filter in dev mode)
+                // Show ALL incoming requests
                 setIncomingRequests((prev) => {
                     if (prev.find((r) => r.id === booking.id)) return prev;
+                    playNotificationSound();
                     return [booking, ...prev];
                 });
 
@@ -457,6 +466,7 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
             .on("broadcast", { event: "SEARCH_INTENT" }, (payload: any) => {
                 const intent = payload.payload;
                 if (!intent) return;
+                playNotificationSound();
                 addNotification(
                     Navigation,
                     "orange",
@@ -1273,12 +1283,8 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
         );
     }
 
-    // Filter out requests that are more than 100km away from driver's live location
-    const filteredRequests = incomingRequests.filter(req => {
-        if (!currentCoords || !req.pickup_lat || !req.pickup_lng) return true;
-        const driverToPickupKm = haversineKm(currentCoords.lat, currentCoords.lng, req.pickup_lat, req.pickup_lng);
-        return driverToPickupKm <= 100;
-    });
+    // Filter removed as user requested all requests to be shown to everyone
+    const filteredRequests = [...incomingRequests];
 
     // ─── Render ────────────────────────────────────────────
     return (
