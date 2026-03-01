@@ -7,7 +7,7 @@ const supabase = createClient(
 
 console.log('Testing Supabase Realtime Connection...');
 
-const channel = supabase.channel('driver_booking_requests');
+const channel = supabase.channel('driver_booking_requests', { config: { broadcast: { self: true } } });
 let listenerTriggered = false;
 
 channel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'booking_requests' }, (payload) => {
