@@ -396,9 +396,7 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
         // ── Dual subscription: Postgres changes + Broadcast ──────────
         // This guarantees the driver sees new bookings even if broadcast slightly delays.
         const channel = supabase
-            .channel("driver_booking_requests", {
-                config: { broadcast: { self: false } },
-            })
+            .channel("driver_booking_requests")
             // 1️⃣ Postgres realtime — fires when a new row is inserted in booking_requests
             .on(
                 "postgres_changes",
@@ -556,8 +554,17 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
                 return;
             }
 
-            // Always update state (even if empty) to reflect current DB state
-            setIncomingRequests(data || []);
+            // Merge with existing so broadcast items aren't wiped if DB returns empty
+            setIncomingRequests(prev => {
+                const dbIds = new Set((data || []).map(r => r.id));
+                const merged = [...(data || [])];
+                prev.forEach(p => {
+                    if (!dbIds.has(p.id) && p.status === 'pending') {
+                        merged.push(p);
+                    }
+                });
+                return merged;
+            });
             if (data && data.length > 0) {
                 console.log("📋 Fetched pending requests:", data.length);
             }
@@ -660,6 +667,9 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
                         .update({ available: next })
                         .eq("driver_id", driverId);
                 }
+            }
+            if (next) {
+                fetchPendingRequests();
             }
             addNotification(
                 next ? ToggleRight : ToggleLeft,
@@ -1263,6 +1273,13 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
         );
     }
 
+    // Filter out requests that are more than 100km away from driver's live location
+    const filteredRequests = incomingRequests.filter(req => {
+        if (!currentCoords || !req.pickup_lat || !req.pickup_lng) return true;
+        const driverToPickupKm = haversineKm(currentCoords.lat, currentCoords.lng, req.pickup_lat, req.pickup_lng);
+        return driverToPickupKm <= 100;
+    });
+
     // ─── Render ────────────────────────────────────────────
     return (
 
@@ -1427,9 +1444,9 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
                             <div className="flex items-center justify-between">
                                 <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">
                                     Incoming Requests{" "}
-                                    {incomingRequests.length > 0 && (
+                                    {filteredRequests.length > 0 && (
                                         <span className="bg-orange-500 text-white px-2 py-0.5 rounded-full text-[9px] ml-2">
-                                            {incomingRequests.length}
+                                            {filteredRequests.length}
                                         </span>
                                     )}
                                 </h4>
@@ -1441,7 +1458,7 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
                                 </button>
                             </div>
 
-                            {!driverAvailable && incomingRequests.length === 0 && (
+                            {!driverAvailable && filteredRequests.length === 0 && (
                                 <div className="bg-slate-100 dark:bg-slate-800 rounded-[28px] p-6 text-center">
                                     <ToggleLeft
                                         size={32}
@@ -1456,16 +1473,16 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
                                 </div>
                             )}
 
-                            {!driverAvailable && incomingRequests.length > 0 && (
+                            {!driverAvailable && filteredRequests.length > 0 && (
                                 <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 mb-4 flex items-center gap-3">
                                     <Zap size={18} className="text-amber-500 animate-pulse" />
                                     <p className="text-[10px] font-black uppercase text-amber-600 tracking-widest">
-                                        Go Online to Accept these {incomingRequests.length} requests
+                                        Go Online to Accept these {filteredRequests.length} requests
                                     </p>
                                 </div>
                             )}
 
-                            {incomingRequests.length === 0 &&
+                            {filteredRequests.length === 0 &&
                                 !activeRequest && (
                                     <div className="rounded-[28px] border-2 border-dashed border-slate-200 dark:border-slate-700 p-8 text-center">
                                         <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center mx-auto mb-3">
@@ -1486,18 +1503,15 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
                                     </div>
                                 )}
 
-                            {incomingRequests.map((req) => {
-                                const distKm =
-                                    req.pickup_lat && req.drop_lat
-                                        ? haversineKm(
-                                            req.pickup_lat,
-                                            req.pickup_lng,
-                                            req.drop_lat,
-                                            req.drop_lng,
-                                        )
-                                        : null;
-                                const etaMins = distKm
-                                    ? Math.round((distKm / 40) * 60)
+                            {filteredRequests.map((req) => {
+                                const driverToPickupKm = (currentCoords && req.pickup_lat && req.pickup_lng)
+                                    ? haversineKm(currentCoords.lat, currentCoords.lng, req.pickup_lat, req.pickup_lng)
+                                    : null;
+                                const tripDistKm = req.pickup_lat && req.drop_lat
+                                    ? haversineKm(req.pickup_lat, req.pickup_lng, req.drop_lat, req.drop_lng)
+                                    : null;
+                                const etaMins = driverToPickupKm
+                                    ? Math.round((driverToPickupKm / 40) * 60)
                                     : null;
                                 const mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${req.pickup_lat},${req.pickup_lng}&destination=${req.drop_lat},${req.drop_lng}&travelmode=driving`;
 
@@ -1544,8 +1558,9 @@ export const DriverPanel: React.FC<{ t: any }> = ({ t }) => {
                                                 <p className="text-sm font-black truncate">{req.goods_type} • {req.weight}</p>
                                             </div>
                                             <div className="bg-slate-700/30 rounded-2xl p-4 border border-slate-700/50">
-                                                <p className="text-[9px] font-black text-slate-500 uppercase mb-1">Est. Distance</p>
-                                                <p className="text-sm font-black text-blue-400">{distKm ? `${distKm.toFixed(1)} km` : '—'}</p>
+                                                <p className="text-[9px] font-black text-slate-500 uppercase mb-1">Pickup Distance</p>
+                                                <p className="text-sm font-black text-blue-400">{driverToPickupKm ? `${driverToPickupKm.toFixed(1)} km away` : '—'}</p>
+                                                {tripDistKm && <p className="text-[9px] font-bold text-slate-500 mt-1">Trip: {tripDistKm.toFixed(1)} km</p>}
                                             </div>
                                         </div>
 
